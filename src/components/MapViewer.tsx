@@ -30,9 +30,9 @@ export const MapViewer = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('El archivo es demasiado grande. Máximo 10MB.');
+    // Validate file size (20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('El archivo es demasiado grande. Máximo 20MB.');
       return;
     }
 
@@ -50,12 +50,13 @@ export const MapViewer = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!isAddingToken || !mapContainerRef.current) return;
+  const handleMapClick = (event: React.MouseEvent<HTMLImageElement>) => {
+    if (!isAddingToken) return;
 
-    const rect = mapContainerRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    // Get click position relative to the image
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
 
     const newToken: TokenData = {
       id: Date.now().toString(),
@@ -71,6 +72,7 @@ export const MapViewer = () => {
   };
 
   const handleTokenMove = (id: string, x: number, y: number) => {
+    // x and y are now percentages (0-100)
     setTokens(tokens.map(token => 
       token.id === id ? { ...token, x, y } : token
     ));
@@ -132,7 +134,7 @@ export const MapViewer = () => {
                   Carga tu mapa
                 </h2>
                 <p className="text-muted-foreground mb-4">
-                  Sube una imagen JPG de hasta 10MB
+                  Sube una imagen JPG de hasta 20MB
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -155,15 +157,15 @@ export const MapViewer = () => {
               >
                 <div
                   ref={mapContainerRef}
-                  className="relative inline-block cursor-crosshair"
-                  onClick={handleMapClick}
+                  className="relative inline-block"
                   style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
                 >
                   <img
                     src={mapImage}
                     alt="Mapa de juego"
-                    className="max-w-none"
+                    className="max-w-none select-none"
                     draggable={false}
+                    onClick={handleMapClick}
                   />
                   
                   {/* Grid overlay */}
@@ -203,6 +205,7 @@ export const MapViewer = () => {
                       isSelected={selectedToken === token.id}
                       onMove={handleTokenMove}
                       onClick={() => setSelectedToken(token.id)}
+                      mapContainerRef={mapContainerRef}
                     />
                   ))}
                 </div>
