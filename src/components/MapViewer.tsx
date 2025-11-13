@@ -27,25 +27,42 @@ export const MapViewer = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleFileUpload called');
     const file = event.target.files?.[0];
-    if (!file) return;
+    console.log('File selected:', file);
+    
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+
+    console.log('File size:', file.size, 'bytes');
+    console.log('File type:', file.type);
 
     // Validate file size (20MB)
     if (file.size > 20 * 1024 * 1024) {
+      console.error('File too large');
       toast.error('El archivo es demasiado grande. Máximo 20MB.');
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
+      console.error('Invalid file type');
       toast.error('Por favor, sube una imagen válida.');
       return;
     }
 
+    console.log('Starting to read file...');
     const reader = new FileReader();
     reader.onload = (e) => {
+      console.log('File loaded successfully');
       setMapImage(e.target?.result as string);
       toast.success('Mapa cargado correctamente');
+    };
+    reader.onerror = (e) => {
+      console.error('Error reading file:', e);
+      toast.error('Error al cargar el archivo');
     };
     reader.readAsDataURL(file);
   };
@@ -120,7 +137,10 @@ export const MapViewer = () => {
           onToggleGrid={() => setShowGrid(!showGrid)}
           gridSize={gridSize}
           onGridSizeChange={setGridSize}
-          onUploadClick={() => fileInputRef.current?.click()}
+          onUploadClick={() => {
+            console.log('onUploadClick called from MapControls');
+            fileInputRef.current?.click();
+          }}
           hasMap={!!mapImage}
         />
 
@@ -134,10 +154,13 @@ export const MapViewer = () => {
                   Carga tu mapa
                 </h2>
                 <p className="text-muted-foreground mb-4">
-                  Sube una imagen JPG de hasta 20MB
+                  Sube una imagen de hasta 20MB
                 </p>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    console.log('Central upload button clicked');
+                    fileInputRef.current?.click();
+                  }}
                   className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
                 >
                   Seleccionar mapa
@@ -218,7 +241,7 @@ export const MapViewer = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg"
+        accept="image/*"
         onChange={handleFileUpload}
         className="hidden"
       />

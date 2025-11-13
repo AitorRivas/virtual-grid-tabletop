@@ -23,7 +23,10 @@ export const MapControls = ({
     <div className="bg-toolbar-bg border-b border-border p-4">
       <div className="flex items-center gap-4 max-w-7xl mx-auto">
         <Button
-          onClick={onUploadClick}
+          onClick={() => {
+            console.log('Upload button clicked');
+            onUploadClick();
+          }}
           variant={hasMap ? "secondary" : "default"}
           size="sm"
           className="gap-2"
