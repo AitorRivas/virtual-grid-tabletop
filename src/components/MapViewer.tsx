@@ -7,7 +7,8 @@ import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 
-export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan';
+export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
+export type TokenStatus = 'active' | 'dead' | 'inactive';
 
 export interface TokenData {
   id: string;
@@ -15,6 +16,8 @@ export interface TokenData {
   y: number;
   color: TokenColor;
   name: string;
+  initiative: number;
+  status: TokenStatus;
 }
 
 export const MapViewer = () => {
@@ -22,50 +25,49 @@ export const MapViewer = () => {
   const [tokens, setTokens] = useState<TokenData[]>([]);
   const [showGrid, setShowGrid] = useState(true);
   const [gridSize, setGridSize] = useState(50);
+  const [tokenSize, setTokenSize] = useState(50);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isAddingToken, setIsAddingToken] = useState(false);
   const [newTokenColor, setNewTokenColor] = useState<TokenColor>('red');
   const [newTokenName, setNewTokenName] = useState('');
   const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
+  
+  // Combat mode state
+  const [combatMode, setCombatMode] = useState(false);
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
+  // Get tokens sorted by initiative (descending) for combat, excluding dead/inactive
+  const combatOrder = [...tokens]
+    .filter(t => t.status === 'active')
+    .sort((a, b) => b.initiative - a.initiative);
+  
+  const currentTurnTokenId = combatMode && combatOrder.length > 0 
+    ? combatOrder[currentTurnIndex % combatOrder.length]?.id 
+    : null;
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('handleFileUpload called');
     const file = event.target.files?.[0];
-    console.log('File selected:', file);
-    
-    if (!file) {
-      console.log('No file selected');
-      return;
-    }
+    if (!file) return;
 
-    console.log('File size:', file.size, 'bytes');
-    console.log('File type:', file.type);
-
-    // Validate file size (20MB)
     if (file.size > 20 * 1024 * 1024) {
-      console.error('File too large');
       toast.error('El archivo es demasiado grande. Máximo 20MB.');
       return;
     }
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      console.error('Invalid file type');
       toast.error('Por favor, sube una imagen válida.');
       return;
     }
 
-    console.log('Starting to read file...');
     const reader = new FileReader();
     reader.onload = (e) => {
-      console.log('File loaded successfully');
       setMapImage(e.target?.result as string);
       toast.success('Mapa cargado correctamente');
     };
-    reader.onerror = (e) => {
-      console.error('Error reading file:', e);
+    reader.onerror = () => {
       toast.error('Error al cargar el archivo');
     };
     reader.readAsDataURL(file);
@@ -73,18 +75,14 @@ export const MapViewer = () => {
 
   const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isAddingToken) return;
-    
-    // Prevent the event from bubbling to TransformComponent
     event.stopPropagation();
 
-    // Get click position relative to the map container
     const rect = mapContainerRef.current?.getBoundingClientRect();
     if (!rect) return;
     
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-    // Store the position and show name input
     setPendingTokenPosition({ x, y });
     setNewTokenName(`Token ${tokens.length + 1}`);
     setIsAddingToken(false);
@@ -99,6 +97,8 @@ export const MapViewer = () => {
       y: pendingTokenPosition.y,
       color: newTokenColor,
       name: newTokenName.trim() || `Token ${tokens.length + 1}`,
+      initiative: 0,
+      status: 'active',
     };
 
     setTokens([...tokens, newToken]);
@@ -113,7 +113,12 @@ export const MapViewer = () => {
   };
 
   const handleTokenMove = (id: string, x: number, y: number) => {
-    // x and y are now percentages (0-100)
+    // In combat mode, only allow moving the current turn token
+    if (combatMode && id !== currentTurnTokenId) {
+      toast.error('Solo puedes mover el token del turno actual');
+      return;
+    }
+    
     setTokens(tokens.map(token => 
       token.id === id ? { ...token, x, y } : token
     ));
@@ -125,6 +130,22 @@ export const MapViewer = () => {
     ));
   };
 
+  const handleInitiativeChange = (id: string, initiative: number) => {
+    setTokens(tokens.map(token => 
+      token.id === id ? { ...token, initiative } : token
+    ));
+  };
+
+  const handleStatusChange = (id: string, status: TokenStatus) => {
+    setTokens(tokens.map(token => 
+      token.id === id ? { ...token, status } : token
+    ));
+    
+    if (status !== 'active') {
+      toast.success(status === 'dead' ? 'Token eliminado del combate' : 'Token marcado como inactivo');
+    }
+  };
+
   const handleDeleteToken = (id: string) => {
     setTokens(tokens.filter(token => token.id !== id));
     setSelectedToken(null);
@@ -134,7 +155,36 @@ export const MapViewer = () => {
   const handleClearAll = () => {
     setTokens([]);
     setSelectedToken(null);
+    setCurrentTurnIndex(0);
     toast.success('Todos los tokens eliminados');
+  };
+
+  const handleNextTurn = () => {
+    if (combatOrder.length === 0) return;
+    setCurrentTurnIndex((prev) => (prev + 1) % combatOrder.length);
+    const nextToken = combatOrder[(currentTurnIndex + 1) % combatOrder.length];
+    if (nextToken) {
+      toast.success(`Turno de ${nextToken.name}`);
+    }
+  };
+
+  const handlePrevTurn = () => {
+    if (combatOrder.length === 0) return;
+    setCurrentTurnIndex((prev) => (prev - 1 + combatOrder.length) % combatOrder.length);
+  };
+
+  const handleStartCombat = () => {
+    setCombatMode(true);
+    setCurrentTurnIndex(0);
+    if (combatOrder.length > 0) {
+      toast.success(`¡Combate iniciado! Turno de ${combatOrder[0].name}`);
+    }
+  };
+
+  const handleEndCombat = () => {
+    setCombatMode(false);
+    setCurrentTurnIndex(0);
+    toast.success('Combate finalizado');
   };
 
   return (
@@ -151,6 +201,17 @@ export const MapViewer = () => {
         onSelectToken={setSelectedToken}
         onDeleteToken={handleDeleteToken}
         onTokenNameChange={handleTokenNameChange}
+        onInitiativeChange={handleInitiativeChange}
+        onStatusChange={handleStatusChange}
+        combatMode={combatMode}
+        currentTurnTokenId={currentTurnTokenId}
+        combatOrder={combatOrder}
+        onStartCombat={handleStartCombat}
+        onEndCombat={handleEndCombat}
+        onNextTurn={handleNextTurn}
+        onPrevTurn={handlePrevTurn}
+        tokenSize={tokenSize}
+        onTokenSizeChange={setTokenSize}
       />
 
       {/* Main viewer */}
@@ -161,10 +222,7 @@ export const MapViewer = () => {
           onToggleGrid={() => setShowGrid(!showGrid)}
           gridSize={gridSize}
           onGridSizeChange={setGridSize}
-          onUploadClick={() => {
-            console.log('onUploadClick called from MapControls');
-            fileInputRef.current?.click();
-          }}
+          onUploadClick={() => fileInputRef.current?.click()}
           hasMap={!!mapImage}
         />
 
@@ -181,10 +239,7 @@ export const MapViewer = () => {
                   Sube una imagen de hasta 20MB
                 </p>
                 <button
-                  onClick={() => {
-                    console.log('Central upload button clicked');
-                    fileInputRef.current?.click();
-                  }}
+                  onClick={() => fileInputRef.current?.click()}
                   className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
                 >
                   Seleccionar mapa
@@ -192,7 +247,7 @@ export const MapViewer = () => {
               </div>
             </div>
           ) : (
-          <TransformWrapper
+            <TransformWrapper
               initialScale={1}
               minScale={0.1}
               maxScale={10}
@@ -259,9 +314,14 @@ export const MapViewer = () => {
                     <Token
                       key={token.id}
                       {...token}
+                      size={tokenSize}
                       isSelected={selectedToken === token.id}
+                      isCurrentTurn={combatMode && token.id === currentTurnTokenId}
+                      combatMode={combatMode}
                       onMove={handleTokenMove}
                       onClick={() => setSelectedToken(token.id)}
+                      onDelete={() => handleDeleteToken(token.id)}
+                      onMarkDead={() => handleStatusChange(token.id, 'dead')}
                       mapContainerRef={mapContainerRef}
                     />
                   ))}
