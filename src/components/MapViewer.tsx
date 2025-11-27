@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from './Token';
 import { MapControls } from './MapControls';
 import { TokenToolbar } from './TokenToolbar';
 import { toast } from 'sonner';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan';
 
@@ -23,6 +25,8 @@ export const MapViewer = () => {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isAddingToken, setIsAddingToken] = useState(false);
   const [newTokenColor, setNewTokenColor] = useState<TokenColor>('red');
+  const [newTokenName, setNewTokenName] = useState('');
+  const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -67,25 +71,45 @@ export const MapViewer = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleMapClick = (event: React.MouseEvent<HTMLImageElement>) => {
+  const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isAddingToken) return;
+    
+    // Prevent the event from bubbling to TransformComponent
+    event.stopPropagation();
 
-    // Get click position relative to the image
-    const rect = event.currentTarget.getBoundingClientRect();
+    // Get click position relative to the map container
+    const rect = mapContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
+    // Store the position and show name input
+    setPendingTokenPosition({ x, y });
+    setNewTokenName(`Token ${tokens.length + 1}`);
+    setIsAddingToken(false);
+  };
+
+  const confirmAddToken = () => {
+    if (!pendingTokenPosition) return;
+    
     const newToken: TokenData = {
       id: Date.now().toString(),
-      x,
-      y,
+      x: pendingTokenPosition.x,
+      y: pendingTokenPosition.y,
       color: newTokenColor,
-      name: `Token ${tokens.length + 1}`,
+      name: newTokenName.trim() || `Token ${tokens.length + 1}`,
     };
 
     setTokens([...tokens, newToken]);
-    setIsAddingToken(false);
+    setPendingTokenPosition(null);
+    setNewTokenName('');
     toast.success('Token añadido');
+  };
+
+  const cancelAddToken = () => {
+    setPendingTokenPosition(null);
+    setNewTokenName('');
   };
 
   const handleTokenMove = (id: string, x: number, y: number) => {
@@ -191,14 +215,14 @@ export const MapViewer = () => {
                   ref={mapContainerRef}
                   className="relative"
                   style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
+                  onClick={handleMapClick}
                 >
                   <img
                     src={mapImage}
                     alt="Mapa de juego"
-                    className="block select-none"
+                    className="block select-none pointer-events-none"
                     style={{ maxWidth: 'none', maxHeight: 'none' }}
                     draggable={false}
-                    onClick={handleMapClick}
                   />
                   
                   {/* Grid overlay */}
@@ -255,6 +279,34 @@ export const MapViewer = () => {
         onChange={handleFileUpload}
         className="hidden"
       />
+
+      {/* Token name dialog */}
+      {pendingTokenPosition && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card p-6 rounded-lg shadow-xl border border-border max-w-sm w-full mx-4">
+            <h3 className="text-lg font-bold text-card-foreground mb-4">Nombre del token</h3>
+            <Input
+              value={newTokenName}
+              onChange={(e) => setNewTokenName(e.target.value)}
+              placeholder="Escribe el nombre..."
+              className="mb-4"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmAddToken();
+                if (e.key === 'Escape') cancelAddToken();
+              }}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={cancelAddToken}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmAddToken}>
+                Añadir
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
