@@ -168,25 +168,35 @@ export const MapViewer = () => {
               </div>
             </div>
           ) : (
-            <TransformWrapper
+          <TransformWrapper
               initialScale={1}
               minScale={0.1}
-              maxScale={5}
+              maxScale={10}
               centerOnInit
+              limitToBounds={false}
+              panning={{ disabled: isAddingToken }}
             >
               <TransformComponent
-                wrapperClass="w-full h-full"
-                contentClass="w-full h-full"
+                wrapperStyle={{
+                  width: '100%',
+                  height: '100%',
+                }}
+                contentStyle={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <div
                   ref={mapContainerRef}
-                  className="relative inline-block"
+                  className="relative"
                   style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
                 >
                   <img
                     src={mapImage}
                     alt="Mapa de juego"
-                    className="max-w-none select-none"
+                    className="block select-none"
+                    style={{ maxWidth: 'none', maxHeight: 'none' }}
                     draggable={false}
                     onClick={handleMapClick}
                   />
