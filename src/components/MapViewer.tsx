@@ -3,9 +3,11 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from './Token';
 import { MapControls } from './MapControls';
 import { TokenToolbar } from './TokenToolbar';
+import { DiceRoller } from './DiceRoller';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Slider } from './ui/slider';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
@@ -16,6 +18,7 @@ export interface TokenData {
   y: number;
   color: TokenColor;
   name: string;
+  size: number;
   initiative: number;
   status: TokenStatus;
 }
@@ -25,11 +28,12 @@ export const MapViewer = () => {
   const [tokens, setTokens] = useState<TokenData[]>([]);
   const [showGrid, setShowGrid] = useState(true);
   const [gridSize, setGridSize] = useState(50);
-  const [tokenSize, setTokenSize] = useState(50);
+  const [defaultTokenSize, setDefaultTokenSize] = useState(50);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isAddingToken, setIsAddingToken] = useState(false);
   const [newTokenColor, setNewTokenColor] = useState<TokenColor>('red');
   const [newTokenName, setNewTokenName] = useState('');
+  const [newTokenSize, setNewTokenSize] = useState(50);
   const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
   
   // Combat mode state
@@ -85,6 +89,7 @@ export const MapViewer = () => {
 
     setPendingTokenPosition({ x, y });
     setNewTokenName(`Token ${tokens.length + 1}`);
+    setNewTokenSize(defaultTokenSize);
     setIsAddingToken(false);
   };
 
@@ -97,6 +102,7 @@ export const MapViewer = () => {
       y: pendingTokenPosition.y,
       color: newTokenColor,
       name: newTokenName.trim() || `Token ${tokens.length + 1}`,
+      size: newTokenSize,
       initiative: 0,
       status: 'active',
     };
@@ -137,13 +143,38 @@ export const MapViewer = () => {
   };
 
   const handleStatusChange = (id: string, status: TokenStatus) => {
+    // Get current token info before changing
+    const targetToken = tokens.find(t => t.id === id);
+    const wasCurrentTurn = combatMode && id === currentTurnTokenId;
+    
     setTokens(tokens.map(token => 
       token.id === id ? { ...token, status } : token
     ));
     
+    // If we're in combat and the token being marked dead was the current turn,
+    // we need to adjust the index to stay on the same position (which will now be the next token)
+    if (wasCurrentTurn && status !== 'active') {
+      // The combatOrder will recalculate, but the index should stay the same
+      // to point to what was the next token
+      const newCombatOrder = tokens
+        .filter(t => t.id !== id && t.status === 'active')
+        .sort((a, b) => b.initiative - a.initiative);
+      
+      if (newCombatOrder.length > 0) {
+        // Adjust index if it would be out of bounds
+        setCurrentTurnIndex(prev => Math.min(prev, newCombatOrder.length - 1));
+      }
+    }
+    
     if (status !== 'active') {
       toast.success(status === 'dead' ? 'Token eliminado del combate' : 'Token marcado como inactivo');
     }
+  };
+
+  const handleTokenSizeChange = (id: string, size: number) => {
+    setTokens(tokens.map(token => 
+      token.id === id ? { ...token, size } : token
+    ));
   };
 
   const handleDeleteToken = (id: string) => {
@@ -203,6 +234,7 @@ export const MapViewer = () => {
         onTokenNameChange={handleTokenNameChange}
         onInitiativeChange={handleInitiativeChange}
         onStatusChange={handleStatusChange}
+        onTokenSizeChange={handleTokenSizeChange}
         combatMode={combatMode}
         currentTurnTokenId={currentTurnTokenId}
         combatOrder={combatOrder}
@@ -210,8 +242,8 @@ export const MapViewer = () => {
         onEndCombat={handleEndCombat}
         onNextTurn={handleNextTurn}
         onPrevTurn={handlePrevTurn}
-        tokenSize={tokenSize}
-        onTokenSizeChange={setTokenSize}
+        defaultTokenSize={defaultTokenSize}
+        onDefaultTokenSizeChange={setDefaultTokenSize}
       />
 
       {/* Main viewer */}
@@ -314,7 +346,6 @@ export const MapViewer = () => {
                     <Token
                       key={token.id}
                       {...token}
-                      size={tokenSize}
                       isSelected={selectedToken === token.id}
                       isCurrentTurn={combatMode && token.id === currentTurnTokenId}
                       combatMode={combatMode}
@@ -344,19 +375,45 @@ export const MapViewer = () => {
       {pendingTokenPosition && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-card p-6 rounded-lg shadow-xl border border-border max-w-sm w-full mx-4">
-            <h3 className="text-lg font-bold text-card-foreground mb-4">Nombre del token</h3>
-            <Input
-              value={newTokenName}
-              onChange={(e) => setNewTokenName(e.target.value)}
-              placeholder="Escribe el nombre..."
-              className="mb-4"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') confirmAddToken();
-                if (e.key === 'Escape') cancelAddToken();
-              }}
-            />
-            <div className="flex gap-2 justify-end">
+            <h3 className="text-lg font-bold text-card-foreground mb-4">Nuevo token</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-card-foreground mb-1 block">
+                  Nombre
+                </label>
+                <Input
+                  value={newTokenName}
+                  onChange={(e) => setNewTokenName(e.target.value)}
+                  placeholder="Escribe el nombre..."
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmAddToken();
+                    if (e.key === 'Escape') cancelAddToken();
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-card-foreground mb-2 block">
+                  Tamaño: {newTokenSize}px
+                </label>
+                <Slider
+                  value={[newTokenSize]}
+                  onValueChange={(value) => setNewTokenSize(value[0])}
+                  min={20}
+                  max={200}
+                  step={5}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>Pequeño</span>
+                  <span>Grande</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 justify-end mt-6">
               <Button variant="secondary" onClick={cancelAddToken}>
                 Cancelar
               </Button>
@@ -367,6 +424,9 @@ export const MapViewer = () => {
           </div>
         </div>
       )}
+
+      {/* Dice Roller */}
+      <DiceRoller />
     </div>
   );
 };
