@@ -18,6 +18,7 @@ interface TokenToolbarProps {
   onTokenNameChange: (id: string, name: string) => void;
   onInitiativeChange: (id: string, initiative: number) => void;
   onStatusChange: (id: string, status: TokenStatus) => void;
+  onTokenSizeChange: (id: string, size: number) => void;
   combatMode: boolean;
   currentTurnTokenId: string | null;
   combatOrder: TokenData[];
@@ -25,8 +26,8 @@ interface TokenToolbarProps {
   onEndCombat: () => void;
   onNextTurn: () => void;
   onPrevTurn: () => void;
-  tokenSize: number;
-  onTokenSizeChange: (size: number) => void;
+  defaultTokenSize: number;
+  onDefaultTokenSizeChange: (size: number) => void;
 }
 
 const tokenColors: { color: TokenColor; label: string; class: string }[] = [
@@ -53,6 +54,7 @@ export const TokenToolbar = ({
   onTokenNameChange,
   onInitiativeChange,
   onStatusChange,
+  onTokenSizeChange,
   combatMode,
   currentTurnTokenId,
   combatOrder,
@@ -60,8 +62,8 @@ export const TokenToolbar = ({
   onEndCombat,
   onNextTurn,
   onPrevTurn,
-  tokenSize,
-  onTokenSizeChange,
+  defaultTokenSize,
+  onDefaultTokenSizeChange,
 }: TokenToolbarProps) => {
   return (
     <div className="w-80 bg-card border-r border-border flex flex-col">
@@ -101,17 +103,17 @@ export const TokenToolbar = ({
           </div>
         </div>
 
-        {/* Token size slider */}
+        {/* Default token size slider */}
         <div className="space-y-2 mb-4">
           <label className="text-sm font-medium text-card-foreground flex items-center gap-2">
             <Ruler className="w-4 h-4" />
-            Tamaño de tokens: {tokenSize}px
+            Tamaño por defecto: {defaultTokenSize}px
           </label>
           <Slider
-            value={[tokenSize]}
-            onValueChange={(value) => onTokenSizeChange(value[0])}
+            value={[defaultTokenSize]}
+            onValueChange={(value) => onDefaultTokenSizeChange(value[0])}
             min={20}
-            max={100}
+            max={200}
             step={5}
             className="w-full"
           />
@@ -268,47 +270,66 @@ export const TokenToolbar = ({
                     </Button>
                   </div>
 
-                  {/* Initiative and status controls */}
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="flex-1">
-                      <label className="text-xs text-muted-foreground">Iniciativa:</label>
-                      <Input
-                        type="number"
-                        value={token.initiative}
-                        onChange={(e) => onInitiativeChange(token.id, parseInt(e.target.value) || 0)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-7 text-sm bg-background"
-                        disabled={combatMode}
-                      />
+                  {/* Initiative, size and status controls */}
+                  <div className="space-y-2 mt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs text-muted-foreground">Iniciativa:</label>
+                        <Input
+                          type="number"
+                          value={token.initiative}
+                          onChange={(e) => onInitiativeChange(token.id, parseInt(e.target.value) || 0)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-7 text-sm bg-background"
+                          disabled={combatMode}
+                        />
+                      </div>
+                      
+                      {token.status !== 'active' ? (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStatusChange(token.id, 'active');
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1 text-xs"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          Revivir
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStatusChange(token.id, 'dead');
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 text-xs hover:bg-gray-700 hover:text-white"
+                        >
+                          <Skull className="w-3 h-3" />
+                          Muerto
+                        </Button>
+                      )}
                     </div>
                     
-                    {token.status !== 'active' ? (
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onStatusChange(token.id, 'active');
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="h-7 gap-1 text-xs"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Revivir
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onStatusChange(token.id, 'dead');
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 gap-1 text-xs hover:bg-gray-700 hover:text-white"
-                      >
-                        <Skull className="w-3 h-3" />
-                        Muerto
-                      </Button>
-                    )}
+                    {/* Individual token size */}
+                    <div>
+                      <label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Ruler className="w-3 h-3" />
+                        Tamaño: {token.size}px
+                      </label>
+                      <Slider
+                        value={[token.size]}
+                        onValueChange={(value) => onTokenSizeChange(token.id, value[0])}
+                        onClick={(e) => e.stopPropagation()}
+                        min={20}
+                        max={200}
+                        step={5}
+                        className="w-full mt-1"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
