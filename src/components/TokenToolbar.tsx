@@ -1,9 +1,13 @@
-import { Plus, Trash2, Users, Swords, ChevronLeft, ChevronRight, Skull, RotateCcw, Ruler } from 'lucide-react';
+import { Plus, Trash2, Users, Swords, ChevronLeft, ChevronRight, Skull, RotateCcw, Ruler, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Slider } from './ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { TokenColor, TokenData, TokenStatus } from './MapViewer';
+import { ConditionManager } from './ConditionManager';
+import { conditions } from '@/data/conditions';
+import { useState } from 'react';
 
 interface TokenToolbarProps {
   selectedColor: TokenColor;
@@ -19,6 +23,7 @@ interface TokenToolbarProps {
   onInitiativeChange: (id: string, initiative: number) => void;
   onStatusChange: (id: string, status: TokenStatus) => void;
   onTokenSizeChange: (id: string, size: number) => void;
+  onToggleCondition: (tokenId: string, conditionId: string) => void;
   combatMode: boolean;
   currentTurnTokenId: string | null;
   combatOrder: TokenData[];
@@ -55,6 +60,7 @@ export const TokenToolbar = ({
   onInitiativeChange,
   onStatusChange,
   onTokenSizeChange,
+  onToggleCondition,
   combatMode,
   currentTurnTokenId,
   combatOrder,
@@ -65,8 +71,22 @@ export const TokenToolbar = ({
   defaultTokenSize,
   onDefaultTokenSizeChange,
 }: TokenToolbarProps) => {
+  const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set());
+
+  const toggleTokenExpanded = (tokenId: string) => {
+    setExpandedTokens(prev => {
+      const next = new Set(prev);
+      if (next.has(tokenId)) {
+        next.delete(tokenId);
+      } else {
+        next.add(tokenId);
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className="w-80 bg-card border-r border-border flex flex-col">
+    <div className="bg-card border-r border-border flex flex-col h-full">
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-2 mb-4">
           <Users className="w-5 h-5 text-primary" />
@@ -228,110 +248,177 @@ export const TokenToolbar = ({
               )}
 
               {tokens.map((token) => (
-                <div
+                <Collapsible
                   key={token.id}
-                  className={`p-3 rounded-lg border ${
-                    token.id === currentTurnTokenId
-                      ? 'border-primary bg-primary/10'
-                      : selectedToken === token.id
-                      ? 'border-primary bg-secondary'
-                      : token.status !== 'active'
-                      ? 'border-border bg-secondary/30 opacity-60'
-                      : 'border-border bg-secondary/50'
-                  } hover:bg-secondary transition-colors cursor-pointer`}
-                  onClick={() => onSelectToken(token.id)}
+                  open={expandedTokens.has(token.id)}
+                  onOpenChange={() => toggleTokenExpanded(token.id)}
                 >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div
-                      className={`w-8 h-8 rounded-full ${
-                        token.status === 'dead' 
-                          ? 'bg-gray-800' 
-                          : tokenColors.find((c) => c.color === token.color)?.class
-                      } border-2 border-foreground/30 flex-shrink-0 flex items-center justify-center`}
-                    >
-                      {token.status === 'dead' && <Skull className="w-4 h-4 text-white" />}
-                    </div>
-                    <Input
-                      value={token.name}
-                      onChange={(e) => onTokenNameChange(token.id, e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 h-8 bg-background"
-                    />
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteToken(token.id);
-                      }}
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  {/* Initiative, size and status controls */}
-                  <div className="space-y-2 mt-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <label className="text-xs text-muted-foreground">Iniciativa:</label>
-                        <Input
-                          type="number"
-                          value={token.initiative}
-                          onChange={(e) => onInitiativeChange(token.id, parseInt(e.target.value) || 0)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-7 text-sm bg-background"
-                          disabled={combatMode}
-                        />
-                      </div>
-                      
-                      {token.status !== 'active' ? (
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onStatusChange(token.id, 'active');
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="h-7 gap-1 text-xs"
+                  <div
+                    className={`rounded-lg border ${
+                      token.id === currentTurnTokenId
+                        ? 'border-primary bg-primary/10'
+                        : selectedToken === token.id
+                        ? 'border-primary bg-secondary'
+                        : token.status !== 'active'
+                        ? 'border-border bg-secondary/30 opacity-60'
+                        : 'border-border bg-secondary/50'
+                    } hover:bg-secondary transition-colors cursor-pointer`}
+                    onClick={() => onSelectToken(token.id)}
+                  >
+                    <div className="p-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div
+                          className={`w-8 h-8 rounded-full ${
+                            token.status === 'dead' 
+                              ? 'bg-gray-800' 
+                              : tokenColors.find((c) => c.color === token.color)?.class
+                          } border-2 border-foreground/30 flex-shrink-0 flex items-center justify-center`}
                         >
-                          <RotateCcw className="w-3 h-3" />
-                          Revivir
-                        </Button>
-                      ) : (
+                          {token.status === 'dead' && <Skull className="w-4 h-4 text-white" />}
+                        </div>
+                        <Input
+                          value={token.name}
+                          onChange={(e) => onTokenNameChange(token.id, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-1 h-8 bg-background"
+                        />
                         <Button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onStatusChange(token.id, 'dead');
+                            onDeleteToken(token.id);
                           }}
                           variant="ghost"
                           size="sm"
-                          className="h-7 gap-1 text-xs hover:bg-gray-700 hover:text-white"
+                          className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
                         >
-                          <Skull className="w-3 h-3" />
-                          Muerto
+                          <Trash2 className="w-4 h-4" />
                         </Button>
+                      </div>
+
+                      {/* Active conditions badges */}
+                      {token.conditions.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {token.conditions.slice(0, 4).map(condId => {
+                            const condition = conditions.find(c => c.id === condId);
+                            if (!condition) return null;
+                            const Icon = condition.icon;
+                            return (
+                              <span
+                                key={condId}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs"
+                                style={{ 
+                                  backgroundColor: `hsl(${condition.color} / 0.3)`,
+                                  color: `hsl(${condition.color})`,
+                                }}
+                                title={condition.description}
+                              >
+                                <Icon className="w-3 h-3" />
+                                {condition.nameEs}
+                              </span>
+                            );
+                          })}
+                          {token.conditions.length > 4 && (
+                            <span className="text-xs text-muted-foreground">+{token.conditions.length - 4}</span>
+                          )}
+                        </div>
                       )}
+
+                      {/* Initiative and status controls */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <label className="text-xs text-muted-foreground">Iniciativa:</label>
+                          <Input
+                            type="number"
+                            value={token.initiative}
+                            onChange={(e) => onInitiativeChange(token.id, parseInt(e.target.value) || 0)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-7 text-sm bg-background"
+                            disabled={combatMode}
+                          />
+                        </div>
+                        
+                        {token.status !== 'active' ? (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(token.id, 'active');
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 text-xs"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            Revivir
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(token.id, 'dead');
+                            }}
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1 text-xs hover:bg-gray-700 hover:text-white"
+                          >
+                            <Skull className="w-3 h-3" />
+                            Muerto
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Expand button */}
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2 gap-2 text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          Estados y tamaño
+                          {expandedTokens.has(token.id) ? (
+                            <ChevronUp className="w-3 h-3 ml-auto" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3 ml-auto" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
                     </div>
-                    
-                    {/* Individual token size */}
-                    <div>
-                      <label className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Ruler className="w-3 h-3" />
-                        Tamaño: {token.size}px
-                      </label>
-                      <Slider
-                        value={[token.size]}
-                        onValueChange={(value) => onTokenSizeChange(token.id, value[0])}
-                        onClick={(e) => e.stopPropagation()}
-                        min={20}
-                        max={200}
-                        step={5}
-                        className="w-full mt-1"
-                      />
-                    </div>
+
+                    <CollapsibleContent>
+                      <div className="px-3 pb-3 pt-0 space-y-3 border-t border-border/50">
+                        {/* Individual token size */}
+                        <div className="pt-3">
+                          <label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Ruler className="w-3 h-3" />
+                            Tamaño: {token.size}px
+                          </label>
+                          <Slider
+                            value={[token.size]}
+                            onValueChange={(value) => onTokenSizeChange(token.id, value[0])}
+                            onClick={(e) => e.stopPropagation()}
+                            min={20}
+                            max={200}
+                            step={5}
+                            className="w-full mt-1"
+                          />
+                        </div>
+
+                        {/* Condition manager */}
+                        <div>
+                          <label className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                            <Sparkles className="w-3 h-3" />
+                            Estados alterados
+                          </label>
+                          <ConditionManager
+                            activeConditions={token.conditions}
+                            onToggleCondition={(conditionId) => onToggleCondition(token.id, conditionId)}
+                          />
+                        </div>
+                      </div>
+                    </CollapsibleContent>
                   </div>
-                </div>
+                </Collapsible>
               ))}
             </>
           )}

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
 import { Token } from './Token';
 import { MapControls } from './MapControls';
 import { TokenToolbar } from './TokenToolbar';
@@ -21,6 +22,7 @@ export interface TokenData {
   size: number;
   initiative: number;
   status: TokenStatus;
+  conditions: string[];
 }
 
 export const MapViewer = () => {
@@ -105,6 +107,7 @@ export const MapViewer = () => {
       size: newTokenSize,
       initiative: 0,
       status: 'active',
+      conditions: [],
     };
 
     setTokens([...tokens, newToken]);
@@ -177,6 +180,19 @@ export const MapViewer = () => {
     ));
   };
 
+  const handleToggleCondition = (tokenId: string, conditionId: string) => {
+    setTokens(tokens.map(token => {
+      if (token.id !== tokenId) return token;
+      const hasCondition = token.conditions.includes(conditionId);
+      return {
+        ...token,
+        conditions: hasCondition 
+          ? token.conditions.filter(c => c !== conditionId)
+          : [...token.conditions, conditionId]
+      };
+    }));
+  };
+
   const handleDeleteToken = (id: string) => {
     setTokens(tokens.filter(token => token.id !== id));
     setSelectedToken(null);
@@ -219,149 +235,158 @@ export const MapViewer = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-board-bg">
-      {/* Sidebar */}
-      <TokenToolbar
-        selectedColor={newTokenColor}
-        onColorChange={setNewTokenColor}
-        isAddingToken={isAddingToken}
-        onToggleAddToken={() => setIsAddingToken(!isAddingToken)}
-        onClearAll={handleClearAll}
-        tokens={tokens}
-        selectedToken={selectedToken}
-        onSelectToken={setSelectedToken}
-        onDeleteToken={handleDeleteToken}
-        onTokenNameChange={handleTokenNameChange}
-        onInitiativeChange={handleInitiativeChange}
-        onStatusChange={handleStatusChange}
-        onTokenSizeChange={handleTokenSizeChange}
-        combatMode={combatMode}
-        currentTurnTokenId={currentTurnTokenId}
-        combatOrder={combatOrder}
-        onStartCombat={handleStartCombat}
-        onEndCombat={handleEndCombat}
-        onNextTurn={handleNextTurn}
-        onPrevTurn={handlePrevTurn}
-        defaultTokenSize={defaultTokenSize}
-        onDefaultTokenSizeChange={setDefaultTokenSize}
-      />
+    <div className="h-screen w-screen overflow-hidden bg-board-bg">
+      <ResizablePanelGroup direction="horizontal" className="h-full">
+        {/* Sidebar */}
+        <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
+          <TokenToolbar
+            selectedColor={newTokenColor}
+            onColorChange={setNewTokenColor}
+            isAddingToken={isAddingToken}
+            onToggleAddToken={() => setIsAddingToken(!isAddingToken)}
+            onClearAll={handleClearAll}
+            tokens={tokens}
+            selectedToken={selectedToken}
+            onSelectToken={setSelectedToken}
+            onDeleteToken={handleDeleteToken}
+            onTokenNameChange={handleTokenNameChange}
+            onInitiativeChange={handleInitiativeChange}
+            onStatusChange={handleStatusChange}
+            onTokenSizeChange={handleTokenSizeChange}
+            onToggleCondition={handleToggleCondition}
+            combatMode={combatMode}
+            currentTurnTokenId={currentTurnTokenId}
+            combatOrder={combatOrder}
+            onStartCombat={handleStartCombat}
+            onEndCombat={handleEndCombat}
+            onNextTurn={handleNextTurn}
+            onPrevTurn={handlePrevTurn}
+            defaultTokenSize={defaultTokenSize}
+            onDefaultTokenSizeChange={setDefaultTokenSize}
+          />
+        </ResizablePanel>
 
-      {/* Main viewer */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top controls */}
-        <MapControls
-          showGrid={showGrid}
-          onToggleGrid={() => setShowGrid(!showGrid)}
-          gridSize={gridSize}
-          onGridSizeChange={setGridSize}
-          onUploadClick={() => fileInputRef.current?.click()}
-          hasMap={!!mapImage}
-        />
+        <ResizableHandle withHandle />
 
-        {/* Map area */}
-        <div className="flex-1 relative overflow-hidden bg-board-bg">
-          {!mapImage ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🗺️</div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Carga tu mapa
-                </h2>
-                <p className="text-muted-foreground mb-4">
-                  Sube una imagen de hasta 20MB
-                </p>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
-                >
-                  Seleccionar mapa
-                </button>
-              </div>
-            </div>
-          ) : (
-            <TransformWrapper
-              initialScale={1}
-              minScale={0.1}
-              maxScale={10}
-              centerOnInit
-              limitToBounds={false}
-              panning={{ disabled: isAddingToken }}
-            >
-              <TransformComponent
-                wrapperStyle={{
-                  width: '100%',
-                  height: '100%',
-                }}
-                contentStyle={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <div
-                  ref={mapContainerRef}
-                  className="relative"
-                  style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
-                  onClick={handleMapClick}
-                >
-                  <img
-                    src={mapImage}
-                    alt="Mapa de juego"
-                    className="block select-none pointer-events-none"
-                    style={{ maxWidth: 'none', maxHeight: 'none' }}
-                    draggable={false}
-                  />
-                  
-                  {/* Grid overlay */}
-                  {showGrid && (
-                    <svg
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                      }}
+        {/* Main viewer */}
+        <ResizablePanel defaultSize={75}>
+          <div className="flex flex-col h-full min-w-0 overflow-hidden">
+            {/* Top controls */}
+            <MapControls
+              showGrid={showGrid}
+              onToggleGrid={() => setShowGrid(!showGrid)}
+              gridSize={gridSize}
+              onGridSizeChange={setGridSize}
+              onUploadClick={() => fileInputRef.current?.click()}
+              hasMap={!!mapImage}
+            />
+
+            {/* Map area */}
+            <div className="flex-1 relative overflow-hidden bg-board-bg">
+              {!mapImage ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="text-6xl mb-4">🗺️</div>
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
+                      Carga tu mapa
+                    </h2>
+                    <p className="text-muted-foreground mb-4">
+                      Sube una imagen de hasta 20MB
+                    </p>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
                     >
-                      <defs>
-                        <pattern
-                          id="grid"
-                          width={gridSize}
-                          height={gridSize}
-                          patternUnits="userSpaceOnUse"
-                        >
-                          <path
-                            d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
-                            fill="none"
-                            stroke="hsl(var(--grid-line))"
-                            strokeWidth="1"
-                            opacity="0.3"
-                          />
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#grid)" />
-                    </svg>
-                  )}
-
-                  {/* Tokens */}
-                  {tokens.map(token => (
-                    <Token
-                      key={token.id}
-                      {...token}
-                      isSelected={selectedToken === token.id}
-                      isCurrentTurn={combatMode && token.id === currentTurnTokenId}
-                      combatMode={combatMode}
-                      onMove={handleTokenMove}
-                      onClick={() => setSelectedToken(token.id)}
-                      onDelete={() => handleDeleteToken(token.id)}
-                      onMarkDead={() => handleStatusChange(token.id, 'dead')}
-                      mapContainerRef={mapContainerRef}
-                    />
-                  ))}
+                      Seleccionar mapa
+                    </button>
+                  </div>
                 </div>
-              </TransformComponent>
-            </TransformWrapper>
-          )}
-        </div>
-      </div>
+              ) : (
+                <TransformWrapper
+                  initialScale={1}
+                  minScale={0.1}
+                  maxScale={10}
+                  centerOnInit
+                  limitToBounds={false}
+                  panning={{ disabled: isAddingToken }}
+                >
+                  <TransformComponent
+                    wrapperStyle={{
+                      width: '100%',
+                      height: '100%',
+                    }}
+                    contentStyle={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <div
+                      ref={mapContainerRef}
+                      className="relative"
+                      style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
+                      onClick={handleMapClick}
+                    >
+                      <img
+                        src={mapImage}
+                        alt="Mapa de juego"
+                        className="block select-none pointer-events-none"
+                        style={{ maxWidth: 'none', maxHeight: 'none' }}
+                        draggable={false}
+                      />
+                      
+                      {/* Grid overlay */}
+                      {showGrid && (
+                        <svg
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                          }}
+                        >
+                          <defs>
+                            <pattern
+                              id="grid"
+                              width={gridSize}
+                              height={gridSize}
+                              patternUnits="userSpaceOnUse"
+                            >
+                              <path
+                                d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
+                                fill="none"
+                                stroke="hsl(var(--grid-line))"
+                                strokeWidth="1"
+                                opacity="0.3"
+                              />
+                            </pattern>
+                          </defs>
+                          <rect width="100%" height="100%" fill="url(#grid)" />
+                        </svg>
+                      )}
+
+                      {/* Tokens */}
+                      {tokens.map(token => (
+                        <Token
+                          key={token.id}
+                          {...token}
+                          isSelected={selectedToken === token.id}
+                          isCurrentTurn={combatMode && token.id === currentTurnTokenId}
+                          combatMode={combatMode}
+                          onMove={handleTokenMove}
+                          onClick={() => setSelectedToken(token.id)}
+                          onDelete={() => handleDeleteToken(token.id)}
+                          onMarkDead={() => handleStatusChange(token.id, 'dead')}
+                          mapContainerRef={mapContainerRef}
+                        />
+                      ))}
+                    </div>
+                  </TransformComponent>
+                </TransformWrapper>
+              )}
+            </div>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       <input
         ref={fileInputRef}
