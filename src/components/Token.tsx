@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Trash2, Skull } from 'lucide-react';
 import { TokenColor, TokenStatus } from './MapViewer';
+import { getConditionById } from '@/data/conditions';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface TokenProps {
   id: string;
@@ -10,6 +12,7 @@ interface TokenProps {
   name: string;
   size: number;
   status: TokenStatus;
+  conditions: string[];
   isSelected: boolean;
   isCurrentTurn: boolean;
   combatMode: boolean;
@@ -33,7 +36,7 @@ const colorClasses: Record<TokenColor, string> = {
 };
 
 export const Token = ({ 
-  id, x, y, color, name, size, status, isSelected, isCurrentTurn, combatMode,
+  id, x, y, color, name, size, status, conditions: tokenConditions, isSelected, isCurrentTurn, combatMode,
   onMove, onClick, onDelete, onMarkDead, mapContainerRef 
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -95,86 +98,155 @@ export const Token = ({
   const isInactive = status === 'inactive';
   const displayColor = isDead ? 'black' : color;
 
-  return (
-    <div
-      ref={tokenRef}
-      className={`absolute ${status === 'active' ? 'cursor-move' : 'cursor-not-allowed'}`}
-      style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        transform: 'translate(-50%, -50%)',
-        width: size,
-        height: size,
-        zIndex: isSelected ? 100 : isCurrentTurn ? 90 : 50,
-        opacity: isDead || isInactive ? 0.5 : 1,
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-    >
-      {/* Current turn indicator */}
-      {isCurrentTurn && (
-        <div 
-          className="absolute inset-0 rounded-full animate-pulse"
-          style={{
-            border: '3px solid hsl(var(--primary))',
-            boxShadow: '0 0 20px hsl(var(--primary) / 0.5)',
-          }}
-        />
-      )}
-      
-      {/* Token circle */}
-      <div
-        className={`w-full h-full rounded-full ${colorClasses[displayColor]} border-2 ${
-          isSelected ? 'border-primary' : 'border-foreground/30'
-        } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative`}
-        style={{
-          boxShadow: isSelected 
-            ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
-            : isCurrentTurn 
-            ? '0 0 15px hsl(var(--primary) / 0.6)' 
-            : 'var(--token-shadow)',
-          fontSize: size * 0.4,
-        }}
-      >
-        {isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()}
-      </div>
-      
-      {/* Token name label */}
-      <div
-        className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-card/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold text-card-foreground border border-border pointer-events-none"
-        style={{ fontSize: Math.max(10, size * 0.2) }}
-      >
-        {name}
-        {isDead && ' 💀'}
-        {isInactive && ' ⏸️'}
-      </div>
+  // Get active conditions data
+  const activeConditionsData = tokenConditions
+    .map(id => getConditionById(id))
+    .filter(Boolean);
 
-      {/* Quick action buttons */}
-      {showActions && status === 'active' && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onMarkDead();
+  // Show max 6 icons around the token
+  const visibleConditions = activeConditionsData.slice(0, 6);
+  const hasMoreConditions = activeConditionsData.length > 6;
+
+  return (
+    <TooltipProvider>
+      <div
+        ref={tokenRef}
+        className={`absolute ${status === 'active' ? 'cursor-move' : 'cursor-not-allowed'}`}
+        style={{
+          left: `${x}%`,
+          top: `${y}%`,
+          transform: 'translate(-50%, -50%)',
+          width: size,
+          height: size,
+          zIndex: isSelected ? 100 : isCurrentTurn ? 90 : 50,
+          opacity: isDead || isInactive ? 0.5 : 1,
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
+      >
+        {/* Current turn indicator */}
+        {isCurrentTurn && (
+          <div 
+            className="absolute inset-0 rounded-full animate-pulse"
+            style={{
+              border: '3px solid hsl(var(--primary))',
+              boxShadow: '0 0 20px hsl(var(--primary) / 0.5)',
             }}
-            className="p-1 bg-gray-700 hover:bg-gray-600 rounded text-white transition-colors"
-            title="Marcar como muerto"
-          >
-            <Skull className="w-4 h-4" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="p-1 bg-destructive hover:bg-destructive/80 rounded text-destructive-foreground transition-colors"
-            title="Eliminar token"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          />
+        )}
+
+        {/* Condition icons around the token */}
+        {visibleConditions.length > 0 && (
+          <div className="absolute inset-0 pointer-events-none">
+            {visibleConditions.map((condition, index) => {
+              if (!condition) return null;
+              const Icon = condition.icon;
+              const angle = (index * 60) - 90; // Start from top, space 60 degrees apart
+              const radius = size / 2 + 8;
+              const x = Math.cos((angle * Math.PI) / 180) * radius;
+              const y = Math.sin((angle * Math.PI) / 180) * radius;
+              
+              return (
+                <Tooltip key={condition.id}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute w-5 h-5 rounded-full flex items-center justify-center shadow-md border border-foreground/20 pointer-events-auto"
+                      style={{
+                        left: '50%',
+                        top: '50%',
+                        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                        backgroundColor: `hsl(${condition.color})`,
+                      }}
+                    >
+                      <Icon className="w-3 h-3 text-white" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <p className="font-semibold">{condition.nameEs}</p>
+                    <p className="text-muted-foreground">{condition.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+            {hasMoreConditions && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="absolute w-5 h-5 rounded-full flex items-center justify-center shadow-md border border-foreground/20 bg-secondary text-secondary-foreground text-xs font-bold pointer-events-auto"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(calc(-50% + ${Math.cos((5 * 60 - 90) * Math.PI / 180) * (size / 2 + 8)}px), calc(-50% + ${Math.sin((5 * 60 - 90) * Math.PI / 180) * (size / 2 + 8)}px))`,
+                    }}
+                  >
+                    +{activeConditionsData.length - 5}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  <p className="font-semibold">Más estados:</p>
+                  {activeConditionsData.slice(5).map(c => (
+                    <p key={c?.id}>{c?.nameEs}</p>
+                  ))}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        )}
+        
+        {/* Token circle */}
+        <div
+          className={`w-full h-full rounded-full ${colorClasses[displayColor]} border-2 ${
+            isSelected ? 'border-primary' : 'border-foreground/30'
+          } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative`}
+          style={{
+            boxShadow: isSelected 
+              ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
+              : isCurrentTurn 
+              ? '0 0 15px hsl(var(--primary) / 0.6)' 
+              : 'var(--token-shadow)',
+            fontSize: size * 0.4,
+          }}
+        >
+          {isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()}
         </div>
-      )}
-    </div>
+        
+        {/* Token name label */}
+        <div
+          className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-card/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold text-card-foreground border border-border pointer-events-none"
+          style={{ fontSize: Math.max(10, size * 0.2) }}
+        >
+          {name}
+          {isDead && ' 💀'}
+          {isInactive && ' ⏸️'}
+        </div>
+
+        {/* Quick action buttons */}
+        {showActions && status === 'active' && (
+          <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkDead();
+              }}
+              className="p-1 bg-gray-700 hover:bg-gray-600 rounded text-white transition-colors"
+              title="Marcar como muerto"
+            >
+              <Skull className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="p-1 bg-destructive hover:bg-destructive/80 rounded text-destructive-foreground transition-colors"
+              title="Eliminar token"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 };
