@@ -219,7 +219,7 @@ export const MapViewer = () => {
   };
 
   return (
-    <div className="flex h-screen bg-board-bg">
+    <div className="flex h-screen w-screen overflow-hidden bg-board-bg">
       {/* Sidebar */}
       <TokenToolbar
         selectedColor={newTokenColor}
@@ -247,7 +247,7 @@ export const MapViewer = () => {
       />
 
       {/* Main viewer */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top controls */}
         <MapControls
           showGrid={showGrid}
