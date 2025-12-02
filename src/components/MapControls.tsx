@@ -10,6 +10,8 @@ interface MapControlsProps {
   onGridSizeChange: (size: number) => void;
   gridColor: string;
   onGridColorChange: (color: string) => void;
+  gridLineWidth: number;
+  onGridLineWidthChange: (width: number) => void;
   zoomLevel: number;
   onZoomChange: (zoom: number) => void;
   onUploadClick: () => void;
@@ -23,6 +25,8 @@ export const MapControls = ({
   onGridSizeChange,
   gridColor,
   onGridColorChange,
+  gridLineWidth,
+  onGridLineWidthChange,
   zoomLevel,
   onZoomChange,
   onUploadClick,
@@ -87,6 +91,24 @@ export const MapControls = ({
                     onChange={(e) => onGridColorChange(e.target.value)}
                     className="w-8 h-8 rounded cursor-pointer border border-border"
                   />
+                </div>
+                
+                <div className="flex items-center gap-2 ml-2">
+                  <Label htmlFor="grid-width" className="text-sm text-muted-foreground">
+                    Grosor:
+                  </Label>
+                  <Slider
+                    id="grid-width"
+                    value={[gridLineWidth]}
+                    onValueChange={(values) => onGridLineWidthChange(values[0])}
+                    min={1}
+                    max={5}
+                    step={0.5}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground min-w-[2rem]">
+                    {gridLineWidth}px
+                  </span>
                 </div>
               </>
             )}

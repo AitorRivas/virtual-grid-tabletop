@@ -31,6 +31,7 @@ export const MapViewer = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [gridSize, setGridSize] = useState(50);
   const [gridColor, setGridColor] = useState('#000000');
+  const [gridLineWidth, setGridLineWidth] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [defaultTokenSize, setDefaultTokenSize] = useState(50);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
@@ -282,10 +283,15 @@ export const MapViewer = () => {
               onGridSizeChange={setGridSize}
               gridColor={gridColor}
               onGridColorChange={setGridColor}
+              gridLineWidth={gridLineWidth}
+              onGridLineWidthChange={setGridLineWidth}
               zoomLevel={zoomLevel}
               onZoomChange={(zoom) => {
-                setZoomLevel(zoom);
-                transformRef.current?.zoomToElement('map', zoom);
+                transformRef.current?.setTransform(
+                  transformRef.current.state.positionX,
+                  transformRef.current.state.positionY,
+                  zoom
+                );
               }}
               onUploadClick={() => fileInputRef.current?.click()}
               hasMap={!!mapImage}
@@ -367,8 +373,8 @@ export const MapViewer = () => {
                                 d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
                                 fill="none"
                                 stroke={gridColor}
-                                strokeWidth="1"
-                                opacity="0.3"
+                                strokeWidth={gridLineWidth}
+                                opacity="0.5"
                               />
                             </pattern>
                           </defs>
