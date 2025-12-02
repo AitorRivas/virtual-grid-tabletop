@@ -103,9 +103,9 @@ export const Token = ({
     .map(id => getConditionById(id))
     .filter(Boolean);
 
-  // Show max 6 icons around the token
-  const visibleConditions = activeConditionsData.slice(0, 6);
-  const hasMoreConditions = activeConditionsData.length > 6;
+  // Show max 5 icons around the token (6th position for +X indicator)
+  const visibleConditions = activeConditionsData.slice(0, 5);
+  const hasMoreConditions = activeConditionsData.length > 5;
 
   return (
     <TooltipProvider>
@@ -137,13 +137,14 @@ export const Token = ({
         )}
 
         {/* Condition icons around the token */}
-        {visibleConditions.length > 0 && (
+        {(visibleConditions.length > 0 || hasMoreConditions) && (
           <div className="absolute inset-0 pointer-events-none">
             {visibleConditions.map((condition, index) => {
               if (!condition) return null;
               const Icon = condition.icon;
               const angle = (index * 60) - 90; // Start from top, space 60 degrees apart
-              const radius = size / 2 + 8;
+              const iconSize = Math.max(16, size * 0.25); // Scale with token size, min 16px
+              const radius = size / 2 + iconSize / 2 + 4; // Dynamic radius based on icon size
               const x = Math.cos((angle * Math.PI) / 180) * radius;
               const y = Math.sin((angle * Math.PI) / 180) * radius;
               
@@ -151,15 +152,19 @@ export const Token = ({
                 <Tooltip key={condition.id}>
                   <TooltipTrigger asChild>
                     <div
-                      className="absolute w-5 h-5 rounded-full flex items-center justify-center shadow-md border border-foreground/20 pointer-events-auto"
+                      className="absolute rounded-full flex items-center justify-center shadow-md border border-foreground/20 pointer-events-auto"
                       style={{
+                        width: iconSize,
+                        height: iconSize,
                         left: '50%',
                         top: '50%',
                         transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
                         backgroundColor: `hsl(${condition.color})`,
                       }}
                     >
-                      <Icon className="w-3 h-3 text-white" />
+                      <div style={{ width: iconSize * 0.6, height: iconSize * 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon className="text-white w-full h-full" />
+                      </div>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs">
@@ -173,20 +178,23 @@ export const Token = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div
-                    className="absolute w-5 h-5 rounded-full flex items-center justify-center shadow-md border border-foreground/20 bg-secondary text-secondary-foreground text-xs font-bold pointer-events-auto"
+                    className="absolute rounded-full flex items-center justify-center shadow-md border border-foreground/20 bg-secondary text-secondary-foreground font-bold pointer-events-auto"
                     style={{
+                      width: Math.max(16, size * 0.25),
+                      height: Math.max(16, size * 0.25),
+                      fontSize: Math.max(10, size * 0.15),
                       left: '50%',
                       top: '50%',
-                      transform: `translate(calc(-50% + ${Math.cos((5 * 60 - 90) * Math.PI / 180) * (size / 2 + 8)}px), calc(-50% + ${Math.sin((5 * 60 - 90) * Math.PI / 180) * (size / 2 + 8)}px))`,
+                      transform: `translate(calc(-50% + ${Math.cos((5 * 60 - 90) * Math.PI / 180) * (size / 2 + Math.max(16, size * 0.25) / 2 + 4)}px), calc(-50% + ${Math.sin((5 * 60 - 90) * Math.PI / 180) * (size / 2 + Math.max(16, size * 0.25) / 2 + 4)}px))`,
                     }}
                   >
                     +{activeConditionsData.length - 5}
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  <p className="font-semibold">Más estados:</p>
+                <TooltipContent side="top" className="text-xs max-h-48 overflow-y-auto">
+                  <p className="font-semibold mb-1">Más estados:</p>
                   {activeConditionsData.slice(5).map(c => (
-                    <p key={c?.id}>{c?.nameEs}</p>
+                    <p key={c?.id} className="text-xs">{c?.nameEs}</p>
                   ))}
                 </TooltipContent>
               </Tooltip>
