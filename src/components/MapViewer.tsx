@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
 import { Token } from './Token';
 import { MapControls } from './MapControls';
@@ -30,6 +30,8 @@ export const MapViewer = () => {
   const [tokens, setTokens] = useState<TokenData[]>([]);
   const [showGrid, setShowGrid] = useState(true);
   const [gridSize, setGridSize] = useState(50);
+  const [gridColor, setGridColor] = useState('#000000');
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [defaultTokenSize, setDefaultTokenSize] = useState(50);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isAddingToken, setIsAddingToken] = useState(false);
@@ -44,6 +46,7 @@ export const MapViewer = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
 
   // Get tokens sorted by initiative (descending) for combat, excluding dead/inactive
   const combatOrder = [...tokens]
@@ -277,6 +280,13 @@ export const MapViewer = () => {
               onToggleGrid={() => setShowGrid(!showGrid)}
               gridSize={gridSize}
               onGridSizeChange={setGridSize}
+              gridColor={gridColor}
+              onGridColorChange={setGridColor}
+              zoomLevel={zoomLevel}
+              onZoomChange={(zoom) => {
+                setZoomLevel(zoom);
+                transformRef.current?.zoomToElement('map', zoom);
+              }}
               onUploadClick={() => fileInputRef.current?.click()}
               hasMap={!!mapImage}
             />
@@ -303,12 +313,14 @@ export const MapViewer = () => {
                 </div>
               ) : (
                 <TransformWrapper
+                  ref={transformRef}
                   initialScale={1}
                   minScale={0.1}
                   maxScale={10}
                   centerOnInit
                   limitToBounds={false}
                   panning={{ disabled: isAddingToken }}
+                  onZoom={(ref) => setZoomLevel(ref.state.scale)}
                 >
                   <TransformComponent
                     wrapperStyle={{
@@ -354,7 +366,7 @@ export const MapViewer = () => {
                               <path
                                 d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
                                 fill="none"
-                                stroke="hsl(var(--grid-line))"
+                                stroke={gridColor}
                                 strokeWidth="1"
                                 opacity="0.3"
                               />
