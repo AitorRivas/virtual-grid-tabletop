@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
 import { Token } from './Token';
 import { MapControls } from './MapControls';
@@ -41,13 +41,18 @@ export const MapViewer = () => {
   const [newTokenSize, setNewTokenSize] = useState(50);
   const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
   
+  // Store zoom functions
+  const zoomFunctionsRef = useRef<{
+    setTransform: (x: number, y: number, scale: number) => void;
+    state: { positionX: number; positionY: number; scale: number };
+  } | null>(null);
+  
   // Combat mode state
   const [combatMode, setCombatMode] = useState(false);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const transformRef = useRef<ReactZoomPanPinchRef>(null);
 
   // Get tokens sorted by initiative (descending) for combat, excluding dead/inactive
   const combatOrder = [...tokens]
@@ -287,11 +292,10 @@ export const MapViewer = () => {
               onGridLineWidthChange={setGridLineWidth}
               zoomLevel={zoomLevel}
               onZoomChange={(zoom) => {
-                transformRef.current?.setTransform(
-                  transformRef.current.state.positionX,
-                  transformRef.current.state.positionY,
-                  zoom
-                );
+                if (zoomFunctionsRef.current) {
+                  const { state, setTransform } = zoomFunctionsRef.current;
+                  setTransform(state.positionX, state.positionY, zoom);
+                }
               }}
               onUploadClick={() => fileInputRef.current?.click()}
               hasMap={!!mapImage}
@@ -319,86 +323,96 @@ export const MapViewer = () => {
                 </div>
               ) : (
                 <TransformWrapper
-                  ref={transformRef}
                   initialScale={1}
                   minScale={0.1}
                   maxScale={10}
                   centerOnInit
                   limitToBounds={false}
                   panning={{ disabled: isAddingToken }}
-                  onZoom={(ref) => setZoomLevel(ref.state.scale)}
+                  onZoom={(ref) => {
+                    setZoomLevel(ref.state.scale);
+                    zoomFunctionsRef.current = ref;
+                  }}
+                  onPanning={(ref) => {
+                    zoomFunctionsRef.current = ref;
+                  }}
+                  onInit={(ref) => {
+                    zoomFunctionsRef.current = ref;
+                  }}
                 >
-                  <TransformComponent
-                    wrapperStyle={{
-                      width: '100%',
-                      height: '100%',
-                    }}
-                    contentStyle={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <div
-                      ref={mapContainerRef}
-                      className="relative"
-                      style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
-                      onClick={handleMapClick}
+                  {({ zoomIn, zoomOut, resetTransform, zoomToElement, ...rest }) => (
+                    <TransformComponent
+                      wrapperStyle={{
+                        width: '100%',
+                        height: '100%',
+                      }}
+                      contentStyle={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      <img
-                        src={mapImage}
-                        alt="Mapa de juego"
-                        className="block select-none pointer-events-none"
-                        style={{ maxWidth: 'none', maxHeight: 'none' }}
-                        draggable={false}
-                      />
-                      
-                      {/* Grid overlay */}
-                      {showGrid && (
-                        <svg
-                          className="absolute inset-0 pointer-events-none"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                          }}
-                        >
-                          <defs>
-                            <pattern
-                              id="grid"
-                              width={gridSize}
-                              height={gridSize}
-                              patternUnits="userSpaceOnUse"
-                            >
-                              <path
-                                d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
-                                fill="none"
-                                stroke={gridColor}
-                                strokeWidth={gridLineWidth}
-                                opacity="0.5"
-                              />
-                            </pattern>
-                          </defs>
-                          <rect width="100%" height="100%" fill="url(#grid)" />
-                        </svg>
-                      )}
-
-                      {/* Tokens */}
-                      {tokens.map(token => (
-                        <Token
-                          key={token.id}
-                          {...token}
-                          isSelected={selectedToken === token.id}
-                          isCurrentTurn={combatMode && token.id === currentTurnTokenId}
-                          combatMode={combatMode}
-                          onMove={handleTokenMove}
-                          onClick={() => setSelectedToken(token.id)}
-                          onDelete={() => handleDeleteToken(token.id)}
-                          onMarkDead={() => handleStatusChange(token.id, 'dead')}
-                          mapContainerRef={mapContainerRef}
+                      <div
+                        ref={mapContainerRef}
+                        className="relative"
+                        style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
+                        onClick={handleMapClick}
+                      >
+                        <img
+                          src={mapImage}
+                          alt="Mapa de juego"
+                          className="block select-none pointer-events-none"
+                          style={{ maxWidth: 'none', maxHeight: 'none' }}
+                          draggable={false}
                         />
-                      ))}
-                    </div>
-                  </TransformComponent>
+                        
+                        {/* Grid overlay */}
+                        {showGrid && (
+                          <svg
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                            }}
+                          >
+                            <defs>
+                              <pattern
+                                id="grid"
+                                width={gridSize}
+                                height={gridSize}
+                                patternUnits="userSpaceOnUse"
+                              >
+                                <path
+                                  d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
+                                  fill="none"
+                                  stroke={gridColor}
+                                  strokeWidth={gridLineWidth}
+                                  opacity="0.5"
+                                />
+                              </pattern>
+                            </defs>
+                            <rect width="100%" height="100%" fill="url(#grid)" />
+                          </svg>
+                        )}
+
+                        {/* Tokens */}
+                        {tokens.map(token => (
+                          <Token
+                            key={token.id}
+                            {...token}
+                            isSelected={selectedToken === token.id}
+                            isCurrentTurn={combatMode && token.id === currentTurnTokenId}
+                            combatMode={combatMode}
+                            onMove={handleTokenMove}
+                            onClick={() => setSelectedToken(token.id)}
+                            onDelete={() => handleDeleteToken(token.id)}
+                            onMarkDead={() => handleStatusChange(token.id, 'dead')}
+                            mapContainerRef={mapContainerRef}
+                          />
+                        ))}
+                      </div>
+                    </TransformComponent>
+                  )}
                 </TransformWrapper>
               )}
             </div>
