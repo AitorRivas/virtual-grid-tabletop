@@ -295,6 +295,7 @@ export const MapViewer = () => {
                 if (zoomFunctionsRef.current) {
                   const { state, setTransform } = zoomFunctionsRef.current;
                   setTransform(state.positionX, state.positionY, zoom);
+                  setZoomLevel(zoom);
                 }
               }}
               onUploadClick={() => fileInputRef.current?.click()}
