@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
+import { Character, Monster, getModifier } from '@/types/dnd';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
@@ -243,6 +244,38 @@ export const MapViewer = () => {
     toast.success('Combate finalizado');
   };
 
+  const handleAddCharacterToMap = (character: Character) => {
+    const newToken: TokenData = {
+      id: `char-${Date.now()}`,
+      x: 50, // Center of map
+      y: 50,
+      color: character.token_color,
+      name: character.name,
+      size: character.token_size,
+      initiative: getModifier(character.dexterity) + character.initiative_bonus,
+      status: 'active',
+      conditions: [],
+    };
+    setTokens([...tokens, newToken]);
+    toast.success(`${character.name} añadido al mapa`);
+  };
+
+  const handleAddMonsterToMap = (monster: Monster) => {
+    const newToken: TokenData = {
+      id: `monster-${Date.now()}`,
+      x: 50,
+      y: 50,
+      color: monster.token_color,
+      name: monster.name,
+      size: monster.token_size,
+      initiative: getModifier(monster.dexterity),
+      status: 'active',
+      conditions: [],
+    };
+    setTokens([...tokens, newToken]);
+    toast.success(`${monster.name} añadido al mapa`);
+  };
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-board-bg">
       <ResizablePanelGroup direction="horizontal" className="h-full">
@@ -272,6 +305,8 @@ export const MapViewer = () => {
             onPrevTurn={handlePrevTurn}
             defaultTokenSize={defaultTokenSize}
             onDefaultTokenSizeChange={setDefaultTokenSize}
+            onAddCharacterToMap={handleAddCharacterToMap}
+            onAddMonsterToMap={handleAddMonsterToMap}
           />
         </ResizablePanel>
 
