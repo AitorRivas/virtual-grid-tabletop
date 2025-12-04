@@ -5,11 +5,14 @@ import { Token } from './Token';
 import { MapControls } from './MapControls';
 import { TokenToolbar } from './TokenToolbar';
 import { DiceRoller } from './DiceRoller';
+import { TurnTracker } from './TurnTracker';
+import { AmbientPlayer } from './AmbientPlayer';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
+import { Film, X } from 'lucide-react';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
@@ -41,6 +44,9 @@ export const MapViewer = () => {
   const [newTokenName, setNewTokenName] = useState('');
   const [newTokenSize, setNewTokenSize] = useState(50);
   const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
+  
+  // Cinema mode state
+  const [cinemaMode, setCinemaMode] = useState(false);
   
   // Store zoom functions
   const zoomFunctionsRef = useRef<{
@@ -157,7 +163,6 @@ export const MapViewer = () => {
 
   const handleStatusChange = (id: string, status: TokenStatus) => {
     // Get current token info before changing
-    const targetToken = tokens.find(t => t.id === id);
     const wasCurrentTurn = combatMode && id === currentTurnTokenId;
     
     setTokens(tokens.map(token => 
@@ -276,6 +281,159 @@ export const MapViewer = () => {
     toast.success(`${monster.name} añadido al mapa`);
   };
 
+  // Render map content (shared between normal and cinema mode)
+  const renderMapContent = () => (
+    <TransformWrapper
+      initialScale={1}
+      minScale={0.1}
+      maxScale={10}
+      centerOnInit
+      limitToBounds={false}
+      panning={{ disabled: isAddingToken }}
+      onZoom={(ref) => {
+        setZoomLevel(ref.state.scale);
+        zoomFunctionsRef.current = ref;
+      }}
+      onPanning={(ref) => {
+        zoomFunctionsRef.current = ref;
+      }}
+      onInit={(ref) => {
+        zoomFunctionsRef.current = ref;
+      }}
+    >
+      {({ zoomIn, zoomOut, resetTransform, zoomToElement, ...rest }) => (
+        <TransformComponent
+          wrapperStyle={{
+            width: '100%',
+            height: '100%',
+          }}
+          contentStyle={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            ref={mapContainerRef}
+            className="relative"
+            style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
+            onClick={handleMapClick}
+          >
+            <img
+              src={mapImage!}
+              alt="Mapa de juego"
+              className="block select-none pointer-events-none"
+              style={{ maxWidth: 'none', maxHeight: 'none' }}
+              draggable={false}
+            />
+            
+            {/* Grid overlay */}
+            {showGrid && !cinemaMode && (
+              <svg
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                }}
+              >
+                <defs>
+                  <pattern
+                    id="grid"
+                    width={gridSize}
+                    height={gridSize}
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <path
+                      d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
+                      fill="none"
+                      stroke={gridColor}
+                      strokeWidth={gridLineWidth}
+                      opacity="0.5"
+                    />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              </svg>
+            )}
+
+            {/* Tokens */}
+            {tokens.map(token => (
+              <Token
+                key={token.id}
+                {...token}
+                isSelected={selectedToken === token.id}
+                isCurrentTurn={combatMode && token.id === currentTurnTokenId}
+                combatMode={combatMode}
+                onMove={handleTokenMove}
+                onClick={() => setSelectedToken(token.id)}
+                onDelete={() => handleDeleteToken(token.id)}
+                onMarkDead={() => handleStatusChange(token.id, 'dead')}
+                mapContainerRef={mapContainerRef}
+              />
+            ))}
+          </div>
+        </TransformComponent>
+      )}
+    </TransformWrapper>
+  );
+
+  // Cinema Mode View
+  if (cinemaMode && mapImage) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-black flex flex-col">
+        {/* Top black bar */}
+        <div className="h-16 bg-black flex items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <Film className="w-5 h-5 text-primary" />
+            <span className="text-foreground font-semibold">Modo Cine</span>
+          </div>
+          <Button
+            onClick={() => setCinemaMode(false)}
+            variant="ghost"
+            size="sm"
+            className="text-foreground hover:text-primary gap-2"
+          >
+            <X className="w-4 h-4" />
+            Salir
+          </Button>
+        </div>
+
+        {/* Map area */}
+        <div className="flex-1 relative overflow-hidden bg-black">
+          {renderMapContent()}
+          
+          {/* Turn Tracker overlay in cinema mode */}
+          {combatMode && combatOrder.length > 0 && (
+            <div className="absolute top-4 right-4 z-20">
+              <TurnTracker
+                combatOrder={combatOrder}
+                currentTurnTokenId={currentTurnTokenId}
+                onNextTurn={handleNextTurn}
+                onPrevTurn={handlePrevTurn}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Bottom black bar */}
+        <div className="h-16 bg-black" />
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        {/* Ambient Player */}
+        <AmbientPlayer />
+      </div>
+    );
+  }
+
+  // Normal View
   return (
     <div className="h-screen w-screen overflow-hidden bg-board-bg">
       <ResizablePanelGroup direction="horizontal" className="h-full">
@@ -335,6 +493,8 @@ export const MapViewer = () => {
               }}
               onUploadClick={() => fileInputRef.current?.click()}
               hasMap={!!mapImage}
+              cinemaMode={cinemaMode}
+              onToggleCinemaMode={() => setCinemaMode(!cinemaMode)}
             />
 
             {/* Map area */}
@@ -358,98 +518,21 @@ export const MapViewer = () => {
                   </div>
                 </div>
               ) : (
-                <TransformWrapper
-                  initialScale={1}
-                  minScale={0.1}
-                  maxScale={10}
-                  centerOnInit
-                  limitToBounds={false}
-                  panning={{ disabled: isAddingToken }}
-                  onZoom={(ref) => {
-                    setZoomLevel(ref.state.scale);
-                    zoomFunctionsRef.current = ref;
-                  }}
-                  onPanning={(ref) => {
-                    zoomFunctionsRef.current = ref;
-                  }}
-                  onInit={(ref) => {
-                    zoomFunctionsRef.current = ref;
-                  }}
-                >
-                  {({ zoomIn, zoomOut, resetTransform, zoomToElement, ...rest }) => (
-                    <TransformComponent
-                      wrapperStyle={{
-                        width: '100%',
-                        height: '100%',
-                      }}
-                      contentStyle={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <div
-                        ref={mapContainerRef}
-                        className="relative"
-                        style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
-                        onClick={handleMapClick}
-                      >
-                        <img
-                          src={mapImage}
-                          alt="Mapa de juego"
-                          className="block select-none pointer-events-none"
-                          style={{ maxWidth: 'none', maxHeight: 'none' }}
-                          draggable={false}
-                        />
-                        
-                        {/* Grid overlay */}
-                        {showGrid && (
-                          <svg
-                            className="absolute inset-0 pointer-events-none"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                            }}
-                          >
-                            <defs>
-                              <pattern
-                                id="grid"
-                                width={gridSize}
-                                height={gridSize}
-                                patternUnits="userSpaceOnUse"
-                              >
-                                <path
-                                  d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
-                                  fill="none"
-                                  stroke={gridColor}
-                                  strokeWidth={gridLineWidth}
-                                  opacity="0.5"
-                                />
-                              </pattern>
-                            </defs>
-                            <rect width="100%" height="100%" fill="url(#grid)" />
-                          </svg>
-                        )}
-
-                        {/* Tokens */}
-                        {tokens.map(token => (
-                          <Token
-                            key={token.id}
-                            {...token}
-                            isSelected={selectedToken === token.id}
-                            isCurrentTurn={combatMode && token.id === currentTurnTokenId}
-                            combatMode={combatMode}
-                            onMove={handleTokenMove}
-                            onClick={() => setSelectedToken(token.id)}
-                            onDelete={() => handleDeleteToken(token.id)}
-                            onMarkDead={() => handleStatusChange(token.id, 'dead')}
-                            mapContainerRef={mapContainerRef}
-                          />
-                        ))}
-                      </div>
-                    </TransformComponent>
+                <>
+                  {renderMapContent()}
+                  
+                  {/* Turn Tracker overlay */}
+                  {combatMode && combatOrder.length > 0 && (
+                    <div className="absolute top-4 right-4 z-20">
+                      <TurnTracker
+                        combatOrder={combatOrder}
+                        currentTurnTokenId={currentTurnTokenId}
+                        onNextTurn={handleNextTurn}
+                        onPrevTurn={handlePrevTurn}
+                      />
+                    </div>
                   )}
-                </TransformWrapper>
+                </>
               )}
             </div>
           </div>
@@ -520,6 +603,9 @@ export const MapViewer = () => {
 
       {/* Dice Roller */}
       <DiceRoller />
+
+      {/* Ambient Player */}
+      <AmbientPlayer />
     </div>
   );
 };

@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useMonsters } from '@/hooks/useMonsters';
-import { Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS, ALIGNMENTS, getModifier, formatModifier, TokenColor, CreatureSize } from '@/types/dnd';
+import { 
+  Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS, 
+  ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
+  getRaceLabel, getClassLabel, getMonsterTypeLabel, getCreatureSizeLabel
+} from '@/types/dnd';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,10 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, User, Skull, Sword, Shield, Heart, Zap } from 'lucide-react';
+import { Plus, Trash2, User, Skull, Shield, Heart, Zap } from 'lucide-react';
 
 const TOKEN_COLORS: TokenColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'black'];
-const CREATURE_SIZES: CreatureSize[] = ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'];
 
 interface CharacterManagerProps {
   onAddCharacterToMap: (character: Character) => void;
@@ -150,14 +153,22 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     <Label>Raza</Label>
                     <Select value={charForm.race} onValueChange={(v) => setCharForm({ ...charForm, race: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{DND_RACES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {DND_RACES.map(r => (
+                          <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label>Clase</Label>
                     <Select value={charForm.class} onValueChange={(v) => setCharForm({ ...charForm, class: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{DND_CLASSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {DND_CLASSES.map(c => (
+                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -253,7 +264,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {char.race} {char.class} Nv.{char.level}
+                      {getRaceLabel(char.race)} {getClassLabel(char.class)} Nv.{char.level}
                     </div>
                     <div className="flex gap-3 mt-1 text-xs">
                       <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> CA {char.armor_class}</span>
@@ -289,7 +300,11 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     <Label>CR</Label>
                     <Select value={monsterForm.challenge_rating} onValueChange={(v) => setMonsterForm({ ...monsterForm, challenge_rating: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{CHALLENGE_RATINGS.map(cr => <SelectItem key={cr} value={cr}>{cr}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {CHALLENGE_RATINGS.map(cr => (
+                          <SelectItem key={cr} value={cr}>{cr}</SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -298,14 +313,22 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     <Label>Tipo</Label>
                     <Select value={monsterForm.type} onValueChange={(v) => setMonsterForm({ ...monsterForm, type: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{MONSTER_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {MONSTER_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label>Tamaño</Label>
                     <Select value={monsterForm.size} onValueChange={(v) => setMonsterForm({ ...monsterForm, size: v as CreatureSize })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{CREATURE_SIZES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {CREATURE_SIZES.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -400,8 +423,8 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         </Button>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {monster.size} {monster.type} CR {monster.challenge_rating}
+                    <div className="text-xs text-muted-foreground">
+                      {getMonsterTypeLabel(monster.type)} {getCreatureSizeLabel(monster.size)} · CR {monster.challenge_rating}
                     </div>
                     <div className="flex gap-3 mt-1 text-xs">
                       <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> CA {monster.armor_class}</span>
