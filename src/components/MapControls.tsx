@@ -1,4 +1,4 @@
-import { Upload, Grid3x3, Minus, Plus, ZoomIn } from 'lucide-react';
+import { Upload, Grid3x3, Minus, Plus, ZoomIn, Film } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -16,6 +16,8 @@ interface MapControlsProps {
   onZoomChange: (zoom: number) => void;
   onUploadClick: () => void;
   hasMap: boolean;
+  cinemaMode?: boolean;
+  onToggleCinemaMode?: () => void;
 }
 
 export const MapControls = ({
@@ -31,6 +33,8 @@ export const MapControls = ({
   onZoomChange,
   onUploadClick,
   hasMap,
+  cinemaMode,
+  onToggleCinemaMode,
 }: MapControlsProps) => {
   return (
     <div className="bg-toolbar-bg border-b border-border p-4">
@@ -131,6 +135,22 @@ export const MapControls = ({
                     {Math.round(zoomLevel * 100)}%
                   </span>
                 </div>
+
+                {onToggleCinemaMode && (
+                  <>
+                    <div className="h-6 w-px bg-border" />
+                    
+                    <Button
+                      onClick={onToggleCinemaMode}
+                      variant={cinemaMode ? "default" : "secondary"}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Film className="w-4 h-4" />
+                      Modo Cine
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </>
