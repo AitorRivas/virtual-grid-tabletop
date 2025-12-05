@@ -117,8 +117,8 @@ export const TokenToolbar = ({
         )}
       </div>
 
-      <Tabs defaultValue="tokens" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-2 rounded-none border-b">
+      <Tabs defaultValue="tokens" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <TabsList className="grid w-full grid-cols-2 rounded-none border-b flex-shrink-0">
           <TabsTrigger value="tokens" className="gap-1 text-xs">
             <Users className="w-4 h-4" />
             Mapa
@@ -129,8 +129,8 @@ export const TokenToolbar = ({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tokens" className="flex-1 flex flex-col m-0 overflow-hidden data-[state=active]:flex-1">
-          <div className="p-4 border-b border-border">
+        <TabsContent value="tokens" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden data-[state=active]:flex-1">
+          <div className="p-4 border-b border-border flex-shrink-0">
             {/* Add token button */}
             <Button
               onClick={onToggleAddToken}
@@ -191,7 +191,7 @@ export const TokenToolbar = ({
           </div>
 
           {/* Combat Mode Section */}
-          <div className="p-4 border-b border-border bg-secondary/30">
+          <div className="p-4 border-b border-border bg-secondary/30 flex-shrink-0">
             <div className="flex items-center gap-2 mb-3">
               <Swords className="w-5 h-5 text-destructive" />
               <h3 className="font-bold text-card-foreground">Modo Combate</h3>
@@ -252,7 +252,7 @@ export const TokenToolbar = ({
           </div>
 
           {/* Token list */}
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="p-4 space-y-2">
               {tokens.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
