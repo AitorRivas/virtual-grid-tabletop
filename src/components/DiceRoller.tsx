@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Dices } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Dices, GripHorizontal } from 'lucide-react';
 import { Button } from './ui/button';
+import { useDraggable } from '@/hooks/useDraggable';
 
 interface DiceType {
   sides: number;
@@ -24,9 +25,22 @@ interface DiceResult {
   isRolling: boolean;
 }
 
+const DEFAULT_POSITION = { x: window.innerWidth - 72, y: window.innerHeight - 72 };
+
 export const DiceRoller = () => {
   const [results, setResults] = useState<DiceResult[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const { position, isDragging, dragRef, handleMouseDown, resetPosition } = useDraggable({
+    defaultPosition: DEFAULT_POSITION,
+  });
+
+  // Reset position when minimized
+  useEffect(() => {
+    if (!isExpanded) {
+      resetPosition();
+    }
+  }, [isExpanded, resetPosition]);
 
   const rollDice = (sides: number) => {
     const id = Date.now();
@@ -133,110 +147,132 @@ export const DiceRoller = () => {
     }
   };
 
-  const getDiceColor = (sides: number) => {
-    const dice = diceTypes.find(d => d.sides === sides);
-    return dice?.color || 'bg-secondary';
-  };
-
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div 
+      ref={dragRef}
+      className="fixed z-50"
+      style={{ 
+        left: isExpanded ? position.x : 'auto',
+        top: isExpanded ? position.y : 'auto',
+        right: isExpanded ? 'auto' : '16px',
+        bottom: isExpanded ? 'auto' : '16px',
+      }}
+    >
       {/* Toggle button */}
-      <Button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="rounded-full w-14 h-14 shadow-lg bg-primary hover:bg-primary/90"
-        size="icon"
-      >
-        <Dices className="w-6 h-6" />
-      </Button>
+      {!isExpanded && (
+        <Button
+          onClick={() => setIsExpanded(true)}
+          className="rounded-full w-14 h-14 shadow-lg bg-primary hover:bg-primary/90"
+          size="icon"
+        >
+          <Dices className="w-6 h-6" />
+        </Button>
+      )}
 
       {/* Dice panel */}
       {isExpanded && (
-        <div className="absolute bottom-16 right-0 bg-card border border-border rounded-lg shadow-xl p-4 w-72 animate-in slide-in-from-bottom-2">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-card-foreground flex items-center gap-2">
+        <div className="bg-card border border-border rounded-lg shadow-xl w-72">
+          {/* Draggable header */}
+          <div 
+            className={`flex items-center justify-between p-3 border-b border-border cursor-move select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            onMouseDown={handleMouseDown}
+          >
+            <div className="flex items-center gap-2">
+              <GripHorizontal className="w-4 h-4 text-muted-foreground" />
               <Dices className="w-5 h-5 text-primary" />
-              Lanzar Dados
-            </h3>
+              <h3 className="font-bold text-card-foreground">Lanzar Dados</h3>
+            </div>
+            <Button
+              onClick={() => setIsExpanded(false)}
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+            >
+              ✕
+            </Button>
+          </div>
+
+          <div className="p-4">
             {results.length > 0 && (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={clearResults}
-                className="text-xs h-7"
+                className="text-xs h-7 mb-3 w-full"
               >
                 Limpiar
               </Button>
             )}
-          </div>
 
-          {/* Dice buttons */}
-          <div className="grid grid-cols-6 gap-2 mb-4">
-            {diceTypes.map(({ sides, label, color }) => (
-              <button
-                key={sides}
-                onClick={() => rollDice(sides)}
-                className={`aspect-square rounded-lg ${color} hover:opacity-80 active:scale-95 transition-all flex items-center justify-center text-xs font-bold text-foreground shadow-md`}
-                title={`Lanzar ${label}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Results */}
-          {results.length > 0 && (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              <p className="text-xs text-muted-foreground font-medium">Resultados:</p>
-              <div className="space-y-2">
-                {results.map((result) => (
-                  <div
-                    key={result.id}
-                    className={`flex items-center gap-3 p-2 rounded-lg bg-secondary/50 ${
-                      result.isRolling ? 'animate-pulse' : ''
-                    }`}
-                  >
-                    <div className={`w-10 h-10 relative ${result.isRolling ? 'animate-spin' : ''}`}>
-                      {getDiceShape(result.sides)}
-                      <span 
-                        className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${
-                          result.sides === 4 ? 'pt-2' : ''
-                        } ${
-                          result.sides === 20 || result.sides === 6 
-                            ? 'text-primary-foreground' 
-                            : 'text-foreground'
-                        }`}
-                      >
-                        {result.result}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <span className="text-sm font-medium text-card-foreground">
-                        d{result.sides}
-                      </span>
-                      <span className="text-muted-foreground mx-2">→</span>
-                      <span 
-                        className={`text-lg font-bold ${
-                          result.result === result.sides 
-                            ? 'text-token-green' 
-                            : result.result === 1 
-                            ? 'text-destructive' 
-                            : 'text-primary'
-                        }`}
-                      >
-                        {result.result}
-                      </span>
-                      {result.result === result.sides && !result.isRolling && (
-                        <span className="ml-2 text-xs text-token-green">¡Crítico!</span>
-                      )}
-                      {result.result === 1 && !result.isRolling && (
-                        <span className="ml-2 text-xs text-destructive">¡Pifia!</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {/* Dice buttons */}
+            <div className="grid grid-cols-6 gap-2 mb-4">
+              {diceTypes.map(({ sides, label, color }) => (
+                <button
+                  key={sides}
+                  onClick={() => rollDice(sides)}
+                  className={`aspect-square rounded-lg ${color} hover:opacity-80 active:scale-95 transition-all flex items-center justify-center text-xs font-bold text-foreground shadow-md`}
+                  title={`Lanzar ${label}`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-          )}
+
+            {/* Results */}
+            {results.length > 0 && (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                <p className="text-xs text-muted-foreground font-medium">Resultados:</p>
+                <div className="space-y-2">
+                  {results.map((result) => (
+                    <div
+                      key={result.id}
+                      className={`flex items-center gap-3 p-2 rounded-lg bg-secondary/50 ${
+                        result.isRolling ? 'animate-pulse' : ''
+                      }`}
+                    >
+                      <div className={`w-10 h-10 relative ${result.isRolling ? 'animate-spin' : ''}`}>
+                        {getDiceShape(result.sides)}
+                        <span 
+                          className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${
+                            result.sides === 4 ? 'pt-2' : ''
+                          } ${
+                            result.sides === 20 || result.sides === 6 
+                              ? 'text-primary-foreground' 
+                              : 'text-foreground'
+                          }`}
+                        >
+                          {result.result}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-card-foreground">
+                          d{result.sides}
+                        </span>
+                        <span className="text-muted-foreground mx-2">→</span>
+                        <span 
+                          className={`text-lg font-bold ${
+                            result.result === result.sides 
+                              ? 'text-token-green' 
+                              : result.result === 1 
+                              ? 'text-destructive' 
+                              : 'text-primary'
+                          }`}
+                        >
+                          {result.result}
+                        </span>
+                        {result.result === result.sides && !result.isRolling && (
+                          <span className="ml-2 text-xs text-token-green">¡Crítico!</span>
+                        )}
+                        {result.result === 1 && !result.isRolling && (
+                          <span className="ml-2 text-xs text-destructive">¡Pifia!</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -221,18 +221,50 @@ export const MapViewer = () => {
     toast.success('Todos los tokens eliminados');
   };
 
+  const animateToToken = (token: TokenData) => {
+    if (!zoomFunctionsRef.current || !mapContainerRef.current) return;
+    
+    const { setTransform } = zoomFunctionsRef.current;
+    const mapRect = mapContainerRef.current.getBoundingClientRect();
+    
+    // Calculate token position in pixels
+    const tokenX = (token.x / 100) * mapRect.width;
+    const tokenY = (token.y / 100) * mapRect.height;
+    
+    // Calculate center offset
+    const viewportWidth = mapRect.width;
+    const viewportHeight = mapRect.height;
+    
+    // Set zoom to 1.5 and center on token with smooth animation
+    const targetScale = 1.5;
+    const offsetX = -(tokenX * targetScale) + (viewportWidth / 2);
+    const offsetY = -(tokenY * targetScale) + (viewportHeight / 2);
+    
+    setTransform(offsetX, offsetY, targetScale);
+    setZoomLevel(targetScale);
+  };
+
   const handleNextTurn = () => {
     if (combatOrder.length === 0) return;
-    setCurrentTurnIndex((prev) => (prev + 1) % combatOrder.length);
-    const nextToken = combatOrder[(currentTurnIndex + 1) % combatOrder.length];
+    const nextIndex = (currentTurnIndex + 1) % combatOrder.length;
+    setCurrentTurnIndex(nextIndex);
+    const nextToken = combatOrder[nextIndex];
     if (nextToken) {
       toast.success(`Turno de ${nextToken.name}`);
+      // Animate to the next token
+      setTimeout(() => animateToToken(nextToken), 100);
     }
   };
 
   const handlePrevTurn = () => {
     if (combatOrder.length === 0) return;
-    setCurrentTurnIndex((prev) => (prev - 1 + combatOrder.length) % combatOrder.length);
+    const prevIndex = (currentTurnIndex - 1 + combatOrder.length) % combatOrder.length;
+    setCurrentTurnIndex(prevIndex);
+    const prevToken = combatOrder[prevIndex];
+    if (prevToken) {
+      // Animate to the previous token
+      setTimeout(() => animateToToken(prevToken), 100);
+    }
   };
 
   const handleStartCombat = () => {
@@ -328,7 +360,7 @@ export const MapViewer = () => {
             />
             
             {/* Grid overlay */}
-            {showGrid && !cinemaMode && (
+            {showGrid && (
               <svg
                 className="absolute inset-0 pointer-events-none"
                 style={{
