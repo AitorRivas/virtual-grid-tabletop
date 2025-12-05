@@ -129,7 +129,7 @@ export const TokenToolbar = ({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tokens" className="flex-1 flex flex-col m-0 data-[state=active]:flex-1">
+        <TabsContent value="tokens" className="flex-1 flex flex-col m-0 overflow-hidden data-[state=active]:flex-1">
           <div className="p-4 border-b border-border">
             {/* Add token button */}
             <Button
