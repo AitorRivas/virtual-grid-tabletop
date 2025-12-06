@@ -29,6 +29,7 @@ export interface TokenData {
   conditions: string[];
   hpMax: number;
   hpCurrent: number;
+  imageUrl?: string;
 }
 
 export const MapViewer = () => {
@@ -336,6 +337,7 @@ export const MapViewer = () => {
       conditions: [],
       hpMax: monster.hit_points,
       hpCurrent: monster.hit_points,
+      imageUrl: monster.image_url || undefined,
     };
     setTokens([...tokens, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
@@ -421,6 +423,7 @@ export const MapViewer = () => {
               <Token
                 key={token.id}
                 {...token}
+                imageUrl={token.imageUrl}
                 isSelected={selectedToken === token.id}
                 isCurrentTurn={combatMode && token.id === currentTurnTokenId}
                 combatMode={combatMode}
@@ -639,7 +642,7 @@ export const MapViewer = () => {
                   value={[newTokenSize]}
                   onValueChange={(value) => setNewTokenSize(value[0])}
                   min={20}
-                  max={200}
+                  max={400}
                   step={5}
                   className="w-full"
                 />

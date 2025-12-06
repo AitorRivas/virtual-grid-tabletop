@@ -105,6 +105,7 @@ export type Database = {
           dexterity: number
           hit_points: number
           id: string
+          image_url: string | null
           intelligence: number
           name: string
           notes: string | null
@@ -127,6 +128,7 @@ export type Database = {
           dexterity?: number
           hit_points?: number
           id?: string
+          image_url?: string | null
           intelligence?: number
           name: string
           notes?: string | null
@@ -149,6 +151,7 @@ export type Database = {
           dexterity?: number
           hit_points?: number
           id?: string
+          image_url?: string | null
           intelligence?: number
           name?: string
           notes?: string | null
