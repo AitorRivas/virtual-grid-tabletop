@@ -13,6 +13,8 @@ interface TokenProps {
   size: number;
   status: TokenStatus;
   conditions: string[];
+  hpMax: number;
+  hpCurrent: number;
   isSelected: boolean;
   isCurrentTurn: boolean;
   combatMode: boolean;
@@ -36,7 +38,7 @@ const colorClasses: Record<TokenColor, string> = {
 };
 
 export const Token = ({ 
-  id, x, y, color, name, size, status, conditions: tokenConditions, isSelected, isCurrentTurn, combatMode,
+  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, isSelected, isCurrentTurn, combatMode,
   onMove, onClick, onDelete, onMarkDead, mapContainerRef 
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -199,6 +201,30 @@ export const Token = ({
                 </TooltipContent>
               </Tooltip>
             )}
+          </div>
+        )}
+        
+        {/* HP Bar underneath the token */}
+        {hpMax > 0 && status === 'active' && (
+          <div 
+            className="absolute left-1/2 -translate-x-1/2 rounded-full overflow-hidden border border-foreground/30"
+            style={{
+              bottom: -8,
+              width: size * 0.8,
+              height: Math.max(4, size * 0.08),
+            }}
+          >
+            <div 
+              className="h-full transition-all duration-300"
+              style={{ 
+                width: `${Math.max(0, Math.min(100, (hpCurrent / hpMax) * 100))}%`,
+                backgroundColor: hpCurrent / hpMax > 0.5 
+                  ? 'hsl(142, 76%, 36%)' 
+                  : hpCurrent / hpMax > 0.25 
+                  ? 'hsl(45, 93%, 47%)'
+                  : 'hsl(0, 84%, 60%)'
+              }}
+            />
           </div>
         )}
         

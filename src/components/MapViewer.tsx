@@ -27,6 +27,8 @@ export interface TokenData {
   initiative: number;
   status: TokenStatus;
   conditions: string[];
+  hpMax: number;
+  hpCurrent: number;
 }
 
 export const MapViewer = () => {
@@ -124,6 +126,8 @@ export const MapViewer = () => {
       initiative: 0,
       status: 'active',
       conditions: [],
+      hpMax: 10,
+      hpCurrent: 10,
     };
 
     setTokens([...tokens, newToken]);
@@ -195,6 +199,15 @@ export const MapViewer = () => {
     ));
   };
 
+  const handleHpChange = (id: string, hpCurrent: number, hpMax: number) => {
+    setTokens(tokens.map(token => {
+      if (token.id !== id) return token;
+      const newHpCurrent = Math.max(0, Math.min(hpCurrent, hpMax));
+      const newStatus = newHpCurrent <= 0 ? 'dead' : token.status === 'dead' ? 'active' : token.status;
+      return { ...token, hpCurrent: newHpCurrent, hpMax, status: newStatus };
+    }));
+  };
+
   const handleToggleCondition = (tokenId: string, conditionId: string) => {
     setTokens(tokens.map(token => {
       if (token.id !== tokenId) return token;
@@ -225,20 +238,31 @@ export const MapViewer = () => {
     if (!zoomFunctionsRef.current || !mapContainerRef.current) return;
     
     const { setTransform } = zoomFunctionsRef.current;
-    const mapRect = mapContainerRef.current.getBoundingClientRect();
+    const container = mapContainerRef.current;
+    const parent = container.parentElement?.parentElement?.parentElement;
+    if (!parent) return;
     
-    // Calculate token position in pixels
-    const tokenX = (token.x / 100) * mapRect.width;
-    const tokenY = (token.y / 100) * mapRect.height;
+    // Get the actual image dimensions
+    const img = container.querySelector('img');
+    if (!img) return;
     
-    // Calculate center offset
-    const viewportWidth = mapRect.width;
-    const viewportHeight = mapRect.height;
+    const imgWidth = img.naturalWidth;
+    const imgHeight = img.naturalHeight;
     
-    // Set zoom to 1.5 and center on token with smooth animation
-    const targetScale = 1.5;
-    const offsetX = -(tokenX * targetScale) + (viewportWidth / 2);
-    const offsetY = -(tokenY * targetScale) + (viewportHeight / 2);
+    // Get viewport dimensions
+    const viewportWidth = parent.clientWidth;
+    const viewportHeight = parent.clientHeight;
+    
+    // Calculate token position in actual image pixels
+    const tokenX = (token.x / 100) * imgWidth;
+    const tokenY = (token.y / 100) * imgHeight;
+    
+    // Gentle zoom level
+    const targetScale = 1.2;
+    
+    // Calculate offset to center the token
+    const offsetX = (viewportWidth / 2) - (tokenX * targetScale);
+    const offsetY = (viewportHeight / 2) - (tokenY * targetScale);
     
     setTransform(offsetX, offsetY, targetScale);
     setZoomLevel(targetScale);
@@ -292,6 +316,8 @@ export const MapViewer = () => {
       initiative: getModifier(character.dexterity) + character.initiative_bonus,
       status: 'active',
       conditions: [],
+      hpMax: character.hit_points_max,
+      hpCurrent: character.hit_points_current ?? character.hit_points_max,
     };
     setTokens([...tokens, newToken]);
     toast.success(`${character.name} añadido al mapa`);
@@ -308,6 +334,8 @@ export const MapViewer = () => {
       initiative: getModifier(monster.dexterity),
       status: 'active',
       conditions: [],
+      hpMax: monster.hit_points,
+      hpCurrent: monster.hit_points,
     };
     setTokens([...tokens, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
@@ -486,6 +514,7 @@ export const MapViewer = () => {
             onStatusChange={handleStatusChange}
             onTokenSizeChange={handleTokenSizeChange}
             onToggleCondition={handleToggleCondition}
+            onHpChange={handleHpChange}
             combatMode={combatMode}
             currentTurnTokenId={currentTurnTokenId}
             combatOrder={combatOrder}

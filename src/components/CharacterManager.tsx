@@ -225,7 +225,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         value={[charForm.token_size]}
                         onValueChange={(v) => setCharForm({ ...charForm, token_size: v[0] })}
                         min={20}
-                        max={200}
+                        max={400}
                         step={5}
                       />
                     </div>
@@ -385,7 +385,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         value={[monsterForm.token_size]}
                         onValueChange={(v) => setMonsterForm({ ...monsterForm, token_size: v[0] })}
                         min={20}
-                        max={200}
+                        max={400}
                         step={5}
                       />
                     </div>
