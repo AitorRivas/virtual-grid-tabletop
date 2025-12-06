@@ -15,6 +15,7 @@ interface TokenProps {
   conditions: string[];
   hpMax: number;
   hpCurrent: number;
+  imageUrl?: string;
   isSelected: boolean;
   isCurrentTurn: boolean;
   combatMode: boolean;
@@ -38,7 +39,7 @@ const colorClasses: Record<TokenColor, string> = {
 };
 
 export const Token = ({ 
-  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, isSelected, isCurrentTurn, combatMode,
+  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, isSelected, isCurrentTurn, combatMode,
   onMove, onClick, onDelete, onMarkDead, mapContainerRef 
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -108,6 +109,14 @@ export const Token = ({
   // Show max 5 icons around the token (6th position for +X indicator)
   const visibleConditions = activeConditionsData.slice(0, 5);
   const hasMoreConditions = activeConditionsData.length > 5;
+
+  // Calculate HP percentage for the bar
+  const hpPercentage = Math.max(0, Math.min(100, (hpCurrent / hpMax) * 100));
+  const hpColor = hpCurrent / hpMax > 0.5 
+    ? 'hsl(142, 76%, 36%)' 
+    : hpCurrent / hpMax > 0.25 
+    ? 'hsl(45, 93%, 47%)'
+    : 'hsl(0, 84%, 60%)';
 
   return (
     <TooltipProvider>
@@ -204,35 +213,11 @@ export const Token = ({
           </div>
         )}
         
-        {/* HP Bar underneath the token */}
-        {hpMax > 0 && status === 'active' && (
-          <div 
-            className="absolute left-1/2 -translate-x-1/2 rounded-full overflow-hidden border border-foreground/30"
-            style={{
-              bottom: -8,
-              width: size * 0.8,
-              height: Math.max(4, size * 0.08),
-            }}
-          >
-            <div 
-              className="h-full transition-all duration-300"
-              style={{ 
-                width: `${Math.max(0, Math.min(100, (hpCurrent / hpMax) * 100))}%`,
-                backgroundColor: hpCurrent / hpMax > 0.5 
-                  ? 'hsl(142, 76%, 36%)' 
-                  : hpCurrent / hpMax > 0.25 
-                  ? 'hsl(45, 93%, 47%)'
-                  : 'hsl(0, 84%, 60%)'
-              }}
-            />
-          </div>
-        )}
-        
         {/* Token circle */}
         <div
-          className={`w-full h-full rounded-full ${colorClasses[displayColor]} border-2 ${
+          className={`w-full h-full rounded-full ${!imageUrl ? colorClasses[displayColor] : ''} border-2 ${
             isSelected ? 'border-primary' : 'border-foreground/30'
-          } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative`}
+          } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative overflow-hidden`}
           style={{
             boxShadow: isSelected 
               ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
@@ -242,28 +227,70 @@ export const Token = ({
             fontSize: size * 0.4,
           }}
         >
-          {isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()}
+          {imageUrl ? (
+            <>
+              <img 
+                src={imageUrl} 
+                alt={name}
+                className="w-full h-full object-cover rounded-full"
+                draggable={false}
+              />
+              {isDead && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full">
+                  <Skull className="w-1/2 h-1/2 text-white" />
+                </div>
+              )}
+            </>
+          ) : (
+            isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()
+          )}
         </div>
         
-        {/* Token name label */}
+        {/* HP Bar underneath the token */}
+        {hpMax > 0 && status === 'active' && (
+          <div 
+            className="absolute left-1/2 -translate-x-1/2 rounded-full overflow-hidden border border-foreground/30 bg-secondary"
+            style={{
+              top: size + 4,
+              width: size * 0.8,
+              height: Math.max(4, size * 0.08),
+            }}
+          >
+            <div 
+              className="h-full transition-all duration-300"
+              style={{ 
+                width: `${hpPercentage}%`,
+                backgroundColor: hpColor
+              }}
+            />
+          </div>
+        )}
+        
+        {/* Token name label - positioned below HP bar */}
         <div
-          className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-card/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold text-card-foreground border border-border pointer-events-none"
-          style={{ fontSize: Math.max(10, size * 0.2) }}
+          className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-card/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold text-card-foreground border border-border pointer-events-none"
+          style={{ 
+            top: hpMax > 0 && status === 'active' ? size + Math.max(4, size * 0.08) + 8 : size + 4,
+            fontSize: Math.max(10, size * 0.2) 
+          }}
         >
           {name}
           {isDead && ' 💀'}
           {isInactive && ' ⏸️'}
         </div>
 
-        {/* Quick action buttons */}
+        {/* Quick action buttons - positioned well above the token */}
         {showActions && status === 'active' && (
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-1">
+          <div 
+            className="absolute left-1/2 -translate-x-1/2 flex gap-1 z-[110]"
+            style={{ top: -32 }}
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onMarkDead();
               }}
-              className="p-1 bg-gray-700 hover:bg-gray-600 rounded text-white transition-colors"
+              className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded text-white transition-colors shadow-lg"
               title="Marcar como muerto"
             >
               <Skull className="w-4 h-4" />
@@ -273,7 +300,7 @@ export const Token = ({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="p-1 bg-destructive hover:bg-destructive/80 rounded text-destructive-foreground transition-colors"
+              className="p-1.5 bg-destructive hover:bg-destructive/80 rounded text-destructive-foreground transition-colors shadow-lg"
               title="Eliminar token"
             >
               <Trash2 className="w-4 h-4" />

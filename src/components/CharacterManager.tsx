@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, User, Skull, Shield, Heart, Zap } from 'lucide-react';
+import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Image } from 'lucide-react';
 
 const TOKEN_COLORS: TokenColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'black'];
 
@@ -70,6 +70,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     speed: 30,
     token_color: 'red' as TokenColor,
     token_size: 50,
+    image_url: '',
     notes: ''
   });
 
@@ -87,12 +88,15 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
   const handleCreateMonster = async () => {
     if (!monsterForm.name.trim()) return;
-    await createMonster(monsterForm);
+    await createMonster({
+      ...monsterForm,
+      image_url: monsterForm.image_url.trim() || null
+    });
     setShowNewMonster(false);
     setMonsterForm({
       name: '', type: 'Beast', size: 'medium', challenge_rating: '1',
       strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10,
-      armor_class: 10, hit_points: 10, speed: 30, token_color: 'red', token_size: 50, notes: ''
+      armor_class: 10, hit_points: 10, speed: 30, token_color: 'red', token_size: 50, image_url: '', notes: ''
     });
   };
 
@@ -367,7 +371,17 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                   <Label className="text-sm font-semibold mb-2 block">Token</Label>
                   <div className="space-y-2">
                     <div>
-                      <Label className="text-xs">Color</Label>
+                      <Label className="text-xs flex items-center gap-1"><Image className="w-3 h-3" /> URL de imagen (opcional)</Label>
+                      <Input 
+                        value={monsterForm.image_url} 
+                        onChange={(e) => setMonsterForm({ ...monsterForm, image_url: e.target.value })}
+                        placeholder="https://ejemplo.com/imagen.png"
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Si no se proporciona, se usará el color del token</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Color (usado si no hay imagen)</Label>
                       <div className="flex gap-1 mt-1">
                         {TOKEN_COLORS.map(color => (
                           <button
@@ -408,10 +422,18 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                   <div key={monster.id} className="p-3 bg-muted/50 rounded-lg border border-border">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div
-                          className="w-6 h-6 rounded-full border-2 border-foreground/30"
-                          style={{ backgroundColor: monster.token_color === 'black' ? '#1a1a1a' : monster.token_color }}
-                        />
+                        {monster.image_url ? (
+                          <img 
+                            src={monster.image_url} 
+                            alt={monster.name}
+                            className="w-6 h-6 rounded-full border-2 border-foreground/30 object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-6 h-6 rounded-full border-2 border-foreground/30"
+                            style={{ backgroundColor: monster.token_color === 'black' ? '#1a1a1a' : monster.token_color }}
+                          />
+                        )}
                         <span className="font-semibold text-sm">{monster.name}</span>
                       </div>
                       <div className="flex gap-1">
