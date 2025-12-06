@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Swords, ChevronLeft, ChevronRight, Skull, RotateCcw, Ruler, Sparkles, ChevronDown, ChevronUp, LogIn, LogOut, Database } from 'lucide-react';
+import { Plus, Trash2, Users, Swords, ChevronLeft, ChevronRight, Skull, RotateCcw, Ruler, Sparkles, ChevronDown, ChevronUp, LogIn, LogOut, Database, Heart } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
@@ -29,6 +29,7 @@ interface TokenToolbarProps {
   onStatusChange: (id: string, status: TokenStatus) => void;
   onTokenSizeChange: (id: string, size: number) => void;
   onToggleCondition: (tokenId: string, conditionId: string) => void;
+  onHpChange: (id: string, hpCurrent: number, hpMax: number) => void;
   combatMode: boolean;
   currentTurnTokenId: string | null;
   combatOrder: TokenData[];
@@ -68,6 +69,7 @@ export const TokenToolbar = ({
   onStatusChange,
   onTokenSizeChange,
   onToggleCondition,
+  onHpChange,
   combatMode,
   currentTurnTokenId,
   combatOrder,
@@ -171,7 +173,7 @@ export const TokenToolbar = ({
                 value={[defaultTokenSize]}
                 onValueChange={(value) => onDefaultTokenSizeChange(value[0])}
                 min={20}
-                max={200}
+                max={400}
                 step={5}
                 className="w-full"
               />
@@ -330,6 +332,45 @@ export const TokenToolbar = ({
                             </Button>
                           </div>
 
+                          {/* HP Bar */}
+                          <div className="mb-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Heart className="w-3 h-3 text-destructive" />
+                              <div className="flex items-center gap-1 flex-1">
+                                <Input
+                                  type="number"
+                                  value={token.hpCurrent}
+                                  onChange={(e) => onHpChange(token.id, parseInt(e.target.value) || 0, token.hpMax)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="h-6 w-14 text-xs text-center bg-background"
+                                  min={0}
+                                />
+                                <span className="text-xs text-muted-foreground">/</span>
+                                <Input
+                                  type="number"
+                                  value={token.hpMax}
+                                  onChange={(e) => onHpChange(token.id, token.hpCurrent, parseInt(e.target.value) || 1)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="h-6 w-14 text-xs text-center bg-background"
+                                  min={1}
+                                />
+                              </div>
+                            </div>
+                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-green-500 transition-all duration-300"
+                                style={{ 
+                                  width: `${Math.max(0, Math.min(100, (token.hpCurrent / token.hpMax) * 100))}%`,
+                                  backgroundColor: token.hpCurrent / token.hpMax > 0.5 
+                                    ? 'hsl(142, 76%, 36%)' 
+                                    : token.hpCurrent / token.hpMax > 0.25 
+                                    ? 'hsl(45, 93%, 47%)'
+                                    : 'hsl(0, 84%, 60%)'
+                                }}
+                              />
+                            </div>
+                          </div>
+
                           {token.conditions.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-2">
                               {token.conditions.slice(0, 4).map(condId => {
@@ -429,7 +470,7 @@ export const TokenToolbar = ({
                                 onValueChange={(value) => onTokenSizeChange(token.id, value[0])}
                                 onClick={(e) => e.stopPropagation()}
                                 min={20}
-                                max={200}
+                                max={400}
                                 step={5}
                                 className="w-full mt-1"
                               />

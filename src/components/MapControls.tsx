@@ -74,7 +74,7 @@ export const MapControls = ({
                     value={[gridSize]}
                     onValueChange={(values) => onGridSizeChange(values[0])}
                     min={20}
-                    max={100}
+                    max={400}
                     step={5}
                     className="w-32"
                   />
