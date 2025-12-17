@@ -12,6 +12,8 @@ interface SessionData {
   gridLineWidth: number;
   combatMode: boolean;
   currentTurnIndex: number;
+  fogEnabled: boolean;
+  fogData: string | null;
 }
 
 const defaultSession: SessionData = {
@@ -23,6 +25,8 @@ const defaultSession: SessionData = {
   gridLineWidth: 1,
   combatMode: false,
   currentTurnIndex: 0,
+  fogEnabled: false,
+  fogData: null,
 };
 
 export const useSessionStorage = () => {

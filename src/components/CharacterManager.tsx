@@ -29,10 +29,34 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   const { monsters, loading: loadingMonsters, createMonster, deleteMonster } = useMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
   const [showNewMonster, setShowNewMonster] = useState(false);
-  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [charImageInputMode, setCharImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [monsterImageInputMode, setMonsterImageInputMode] = useState<'upload' | 'url'>('upload');
+  const charFileInputRef = useRef<HTMLInputElement>(null);
+  const monsterFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCharImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen es muy grande. Máximo 5MB.');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, sube una imagen válida.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCharForm({ ...charForm, image_url: e.target?.result as string });
+      toast.success('Imagen cargada');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleMonsterImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -54,10 +78,17 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     reader.readAsDataURL(file);
   };
 
-  const clearImage = () => {
+  const clearCharImage = () => {
+    setCharForm({ ...charForm, image_url: '' });
+    if (charFileInputRef.current) {
+      charFileInputRef.current.value = '';
+    }
+  };
+
+  const clearMonsterImage = () => {
     setMonsterForm({ ...monsterForm, image_url: '' });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (monsterFileInputRef.current) {
+      monsterFileInputRef.current.value = '';
     }
   };
 
@@ -82,6 +113,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     initiative_bonus: 0,
     token_color: 'blue' as TokenColor,
     token_size: 50,
+    image_url: '',
     notes: ''
   });
 
@@ -108,13 +140,16 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
   const handleCreateCharacter = async () => {
     if (!charForm.name.trim()) return;
-    await createCharacter(charForm);
+    await createCharacter({
+      ...charForm,
+      image_url: charForm.image_url.trim() || null
+    });
     setShowNewCharacter(false);
     setCharForm({
       name: '', race: 'Human', class: 'Fighter', level: 1, background: '', alignment: 'True Neutral',
       strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10,
       armor_class: 10, hit_points_max: 10, hit_points_current: 10, speed: 30, initiative_bonus: 0,
-      token_color: 'blue', token_size: 50, notes: ''
+      token_color: 'blue', token_size: 50, image_url: '', notes: ''
     });
   };
 
@@ -241,9 +276,86 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
                 <div className="border-t pt-3">
                   <Label className="text-sm font-semibold mb-2 block">Token</Label>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    {/* Image input */}
                     <div>
-                      <Label className="text-xs">Color</Label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label className="text-xs">Imagen (opcional)</Label>
+                        <div className="flex gap-1 ml-auto">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={charImageInputMode === 'upload' ? 'default' : 'outline'}
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setCharImageInputMode('upload')}
+                          >
+                            <Upload className="w-3 h-3 mr-1" />
+                            Subir
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={charImageInputMode === 'url' ? 'default' : 'outline'}
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setCharImageInputMode('url')}
+                          >
+                            <Link className="w-3 h-3 mr-1" />
+                            URL
+                          </Button>
+                        </div>
+                      </div>
+
+                      {charImageInputMode === 'upload' ? (
+                        <div className="space-y-2">
+                          <input
+                            ref={charFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleCharImageUpload}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-2"
+                            onClick={() => charFileInputRef.current?.click()}
+                          >
+                            <Upload className="w-4 h-4" />
+                            Seleccionar imagen
+                          </Button>
+                        </div>
+                      ) : (
+                        <Input 
+                          value={charForm.image_url.startsWith('data:') ? '' : charForm.image_url} 
+                          onChange={(e) => setCharForm({ ...charForm, image_url: e.target.value })}
+                          placeholder="https://ejemplo.com/imagen.png"
+                        />
+                      )}
+
+                      {/* Image preview */}
+                      {charForm.image_url && (
+                        <div className="relative inline-block mt-2">
+                          <img 
+                            src={charForm.image_url} 
+                            alt="Vista previa" 
+                            className="w-16 h-16 rounded-full object-cover border-2 border-border"
+                          />
+                          <button
+                            type="button"
+                            onClick={clearCharImage}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-muted-foreground mt-1">Si no hay imagen, se usará el color del token</p>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">Color (usado si no hay imagen)</Label>
                       <div className="flex gap-1 mt-1">
                         {TOKEN_COLORS.map(color => (
                           <button
@@ -284,10 +396,18 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                   <div key={char.id} className="p-3 bg-muted/50 rounded-lg border border-border">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div
-                          className="w-6 h-6 rounded-full border-2 border-foreground/30"
-                          style={{ backgroundColor: char.token_color === 'black' ? '#1a1a1a' : char.token_color }}
-                        />
+                        {char.image_url ? (
+                          <img 
+                            src={char.image_url} 
+                            alt={char.name}
+                            className="w-6 h-6 rounded-full border-2 border-foreground/30 object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-6 h-6 rounded-full border-2 border-foreground/30"
+                            style={{ backgroundColor: char.token_color === 'black' ? '#1a1a1a' : char.token_color }}
+                          />
+                        )}
                         <span className="font-semibold text-sm">{char.name}</span>
                       </div>
                       <div className="flex gap-1">
@@ -410,9 +530,9 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                           <Button
                             type="button"
                             size="sm"
-                            variant={imageInputMode === 'upload' ? 'default' : 'outline'}
+                            variant={monsterImageInputMode === 'upload' ? 'default' : 'outline'}
                             className="h-6 px-2 text-xs"
-                            onClick={() => setImageInputMode('upload')}
+                            onClick={() => setMonsterImageInputMode('upload')}
                           >
                             <Upload className="w-3 h-3 mr-1" />
                             Subir
@@ -420,9 +540,9 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                           <Button
                             type="button"
                             size="sm"
-                            variant={imageInputMode === 'url' ? 'default' : 'outline'}
+                            variant={monsterImageInputMode === 'url' ? 'default' : 'outline'}
                             className="h-6 px-2 text-xs"
-                            onClick={() => setImageInputMode('url')}
+                            onClick={() => setMonsterImageInputMode('url')}
                           >
                             <Link className="w-3 h-3 mr-1" />
                             URL
@@ -430,13 +550,13 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         </div>
                       </div>
 
-                      {imageInputMode === 'upload' ? (
+                      {monsterImageInputMode === 'upload' ? (
                         <div className="space-y-2">
                           <input
-                            ref={fileInputRef}
+                            ref={monsterFileInputRef}
                             type="file"
                             accept="image/*"
-                            onChange={handleImageUpload}
+                            onChange={handleMonsterImageUpload}
                             className="hidden"
                           />
                           <Button
@@ -444,7 +564,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                             variant="outline"
                             size="sm"
                             className="w-full gap-2"
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => monsterFileInputRef.current?.click()}
                           >
                             <Upload className="w-4 h-4" />
                             Seleccionar imagen
@@ -468,7 +588,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                           />
                           <button
                             type="button"
-                            onClick={clearImage}
+                            onClick={clearMonsterImage}
                             className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
                           >
                             <X className="w-3 h-3" />

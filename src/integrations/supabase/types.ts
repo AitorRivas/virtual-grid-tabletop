@@ -27,6 +27,7 @@ export type Database = {
           hit_points_current: number | null
           hit_points_max: number
           id: string
+          image_url: string | null
           initiative_bonus: number
           intelligence: number
           level: number
@@ -53,6 +54,7 @@ export type Database = {
           hit_points_current?: number | null
           hit_points_max?: number
           id?: string
+          image_url?: string | null
           initiative_bonus?: number
           intelligence?: number
           level?: number
@@ -79,6 +81,7 @@ export type Database = {
           hit_points_current?: number | null
           hit_points_max?: number
           id?: string
+          image_url?: string | null
           initiative_bonus?: number
           intelligence?: number
           level?: number
