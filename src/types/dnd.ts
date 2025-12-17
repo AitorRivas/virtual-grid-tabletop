@@ -23,6 +23,7 @@ export interface Character {
   initiative_bonus: number;
   token_color: TokenColor;
   token_size: number;
+  image_url: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

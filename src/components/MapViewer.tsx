@@ -7,6 +7,7 @@ import { TokenToolbar } from './TokenToolbar';
 import { DiceRoller } from './DiceRoller';
 import { TurnTracker } from './TurnTracker';
 import { AmbientPlayer } from './AmbientPlayer';
+import { FogOfWar } from './FogOfWar';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -43,6 +44,8 @@ export const MapViewer = () => {
     gridLineWidth: savedGridLineWidth,
     combatMode: savedCombatMode,
     currentTurnIndex: savedCurrentTurnIndex,
+    fogEnabled: savedFogEnabled,
+    fogData: savedFogData,
     isLoaded,
     updateSession,
     clearSession,
@@ -70,6 +73,13 @@ export const MapViewer = () => {
   const [combatMode, setCombatMode] = useState(false);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
 
+  // Fog of war state
+  const [fogEnabled, setFogEnabled] = useState(false);
+  const [fogEditMode, setFogEditMode] = useState(false);
+  const [fogBrushSize, setFogBrushSize] = useState(50);
+  const [fogData, setFogData] = useState<string | null>(null);
+  const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
+
   // Load saved session on mount
   useEffect(() => {
     if (isLoaded) {
@@ -81,6 +91,8 @@ export const MapViewer = () => {
       setGridLineWidth(savedGridLineWidth);
       setCombatMode(savedCombatMode);
       setCurrentTurnIndex(savedCurrentTurnIndex);
+      setFogEnabled(savedFogEnabled);
+      setFogData(savedFogData);
       if (savedMapImage) {
         toast.success('Sesión restaurada');
       }
@@ -99,9 +111,11 @@ export const MapViewer = () => {
         gridLineWidth,
         combatMode,
         currentTurnIndex,
+        fogEnabled,
+        fogData,
       });
     }
-  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, isLoaded, updateSession]);
+  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, fogEnabled, fogData, isLoaded, updateSession]);
   
   // Store zoom functions
   const zoomFunctionsRef = useRef<{
@@ -377,6 +391,7 @@ export const MapViewer = () => {
       conditions: [],
       hpMax: character.hit_points_max,
       hpCurrent: character.hit_points_current ?? character.hit_points_max,
+      imageUrl: character.image_url || undefined,
     };
     setTokens([...tokens, newToken]);
     toast.success(`${character.name} añadido al mapa`);
@@ -436,7 +451,7 @@ export const MapViewer = () => {
           <div
             ref={mapContainerRef}
             className="relative"
-            style={{ cursor: isAddingToken ? 'crosshair' : 'grab' }}
+            style={{ cursor: fogEditMode ? 'crosshair' : isAddingToken ? 'crosshair' : 'grab' }}
             onClick={handleMapClick}
           >
             <img
@@ -445,6 +460,10 @@ export const MapViewer = () => {
               className="block select-none pointer-events-none"
               style={{ maxWidth: 'none', maxHeight: 'none' }}
               draggable={false}
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                setMapDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+              }}
             />
             
             {/* Grid overlay */}
@@ -474,6 +493,18 @@ export const MapViewer = () => {
                 </defs>
                 <rect width="100%" height="100%" fill="url(#grid)" />
               </svg>
+            )}
+
+            {/* Fog of War layer */}
+            {fogEnabled && mapDimensions.width > 0 && (
+              <FogOfWar
+                width={mapDimensions.width}
+                height={mapDimensions.height}
+                enabled={fogEditMode}
+                brushSize={fogBrushSize}
+                fogData={fogData}
+                onFogChange={setFogData}
+              />
             )}
 
             {/* Tokens */}
@@ -618,6 +649,13 @@ export const MapViewer = () => {
               cinemaMode={cinemaMode}
               onToggleCinemaMode={() => setCinemaMode(!cinemaMode)}
               onClearSession={handleClearSession}
+              fogEnabled={fogEnabled}
+              onToggleFog={() => setFogEnabled(!fogEnabled)}
+              fogEditMode={fogEditMode}
+              onToggleFogEditMode={() => setFogEditMode(!fogEditMode)}
+              fogBrushSize={fogBrushSize}
+              onFogBrushSizeChange={setFogBrushSize}
+              onResetFog={() => setFogData(null)}
             />
 
             {/* Map area */}

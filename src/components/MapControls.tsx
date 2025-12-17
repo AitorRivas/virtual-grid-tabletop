@@ -1,4 +1,4 @@
-import { Upload, Grid3x3, Minus, Plus, ZoomIn, Film, Trash2 } from 'lucide-react';
+import { Upload, Grid3x3, Minus, Plus, ZoomIn, Film, Trash2, Cloud, Eraser, RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -19,6 +19,14 @@ interface MapControlsProps {
   cinemaMode?: boolean;
   onToggleCinemaMode?: () => void;
   onClearSession?: () => void;
+  // Fog of war props
+  fogEnabled?: boolean;
+  onToggleFog?: () => void;
+  fogEditMode?: boolean;
+  onToggleFogEditMode?: () => void;
+  fogBrushSize?: number;
+  onFogBrushSizeChange?: (size: number) => void;
+  onResetFog?: () => void;
 }
 
 export const MapControls = ({
@@ -37,10 +45,17 @@ export const MapControls = ({
   cinemaMode,
   onToggleCinemaMode,
   onClearSession,
+  fogEnabled,
+  onToggleFog,
+  fogEditMode,
+  onToggleFogEditMode,
+  fogBrushSize,
+  onFogBrushSizeChange,
+  onResetFog,
 }: MapControlsProps) => {
   return (
     <div className="bg-toolbar-bg border-b border-border p-4">
-      <div className="flex items-center gap-4 max-w-7xl mx-auto">
+      <div className="flex items-center gap-4 max-w-7xl mx-auto flex-wrap">
         <Button
           onClick={() => {
             console.log('Upload button clicked');
@@ -116,6 +131,64 @@ export const MapControls = ({
                     {gridLineWidth}px
                   </span>
                 </div>
+              </>
+            )}
+
+            <div className="h-6 w-px bg-border" />
+
+            {/* Fog of War Controls */}
+            {onToggleFog && (
+              <Button
+                onClick={onToggleFog}
+                variant={fogEnabled ? "default" : "secondary"}
+                size="sm"
+                className="gap-2"
+              >
+                <Cloud className="w-4 h-4" />
+                Niebla
+              </Button>
+            )}
+
+            {fogEnabled && onToggleFogEditMode && (
+              <>
+                <Button
+                  onClick={onToggleFogEditMode}
+                  variant={fogEditMode ? "default" : "secondary"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Eraser className="w-4 h-4" />
+                  {fogEditMode ? 'Dejar de borrar' : 'Borrar niebla'}
+                </Button>
+
+                {fogEditMode && fogBrushSize !== undefined && onFogBrushSizeChange && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground">Pincel:</Label>
+                    <Slider
+                      value={[fogBrushSize]}
+                      onValueChange={(values) => onFogBrushSizeChange(values[0])}
+                      min={20}
+                      max={200}
+                      step={10}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground min-w-[3rem]">
+                      {fogBrushSize}px
+                    </span>
+                  </div>
+                )}
+
+                {onResetFog && (
+                  <Button
+                    onClick={onResetFog}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Reiniciar
+                  </Button>
+                )}
               </>
             )}
 
