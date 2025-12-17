@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useMonsters } from '@/hooks/useMonsters';
 import { 
@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Image } from 'lucide-react';
+import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 const TOKEN_COLORS: TokenColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'black'];
 
@@ -28,6 +29,37 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   const { monsters, loading: loadingMonsters, createMonster, deleteMonster } = useMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
   const [showNewMonster, setShowNewMonster] = useState(false);
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen es muy grande. Máximo 5MB.');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, sube una imagen válida.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setMonsterForm({ ...monsterForm, image_url: e.target?.result as string });
+      toast.success('Imagen cargada');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setMonsterForm({ ...monsterForm, image_url: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // New character form state
   const [charForm, setCharForm] = useState({
@@ -369,23 +401,91 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
                 <div className="border-t pt-3">
                   <Label className="text-sm font-semibold mb-2 block">Token</Label>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    {/* Image input */}
                     <div>
-                      <Label className="text-xs flex items-center gap-1"><Image className="w-3 h-3" /> URL de imagen (opcional)</Label>
-                      <Input 
-                        value={monsterForm.image_url} 
-                        onChange={(e) => setMonsterForm({ ...monsterForm, image_url: e.target.value })}
-                        placeholder="https://ejemplo.com/imagen.png"
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">Si no se proporciona, se usará el color del token</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label className="text-xs">Imagen (opcional)</Label>
+                        <div className="flex gap-1 ml-auto">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={imageInputMode === 'upload' ? 'default' : 'outline'}
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setImageInputMode('upload')}
+                          >
+                            <Upload className="w-3 h-3 mr-1" />
+                            Subir
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={imageInputMode === 'url' ? 'default' : 'outline'}
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setImageInputMode('url')}
+                          >
+                            <Link className="w-3 h-3 mr-1" />
+                            URL
+                          </Button>
+                        </div>
+                      </div>
+
+                      {imageInputMode === 'upload' ? (
+                        <div className="space-y-2">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-2"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Upload className="w-4 h-4" />
+                            Seleccionar imagen
+                          </Button>
+                        </div>
+                      ) : (
+                        <Input 
+                          value={monsterForm.image_url.startsWith('data:') ? '' : monsterForm.image_url} 
+                          onChange={(e) => setMonsterForm({ ...monsterForm, image_url: e.target.value })}
+                          placeholder="https://ejemplo.com/imagen.png"
+                        />
+                      )}
+
+                      {/* Image preview */}
+                      {monsterForm.image_url && (
+                        <div className="relative inline-block mt-2">
+                          <img 
+                            src={monsterForm.image_url} 
+                            alt="Vista previa" 
+                            className="w-16 h-16 rounded-full object-cover border-2 border-border"
+                          />
+                          <button
+                            type="button"
+                            onClick={clearImage}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-muted-foreground mt-1">Si no hay imagen, se usará el color del token</p>
                     </div>
+
                     <div>
                       <Label className="text-xs">Color (usado si no hay imagen)</Label>
                       <div className="flex gap-1 mt-1">
                         {TOKEN_COLORS.map(color => (
                           <button
                             key={color}
+                            type="button"
                             onClick={() => setMonsterForm({ ...monsterForm, token_color: color })}
                             className={`w-6 h-6 rounded-full border-2 ${monsterForm.token_color === color ? 'border-foreground' : 'border-transparent'}`}
                             style={{ backgroundColor: color === 'black' ? '#1a1a1a' : color }}
