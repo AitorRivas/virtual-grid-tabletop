@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
 import { Token } from './Token';
@@ -13,6 +13,7 @@ import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X } from 'lucide-react';
+import { useSessionStorage } from '@/hooks/useSessionStorage';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
@@ -33,6 +34,20 @@ export interface TokenData {
 }
 
 export const MapViewer = () => {
+  const { 
+    mapImage: savedMapImage,
+    tokens: savedTokens,
+    showGrid: savedShowGrid,
+    gridSize: savedGridSize,
+    gridColor: savedGridColor,
+    gridLineWidth: savedGridLineWidth,
+    combatMode: savedCombatMode,
+    currentTurnIndex: savedCurrentTurnIndex,
+    isLoaded,
+    updateSession,
+    clearSession,
+  } = useSessionStorage();
+
   const [mapImage, setMapImage] = useState<string | null>(null);
   const [tokens, setTokens] = useState<TokenData[]>([]);
   const [showGrid, setShowGrid] = useState(true);
@@ -51,15 +66,48 @@ export const MapViewer = () => {
   // Cinema mode state
   const [cinemaMode, setCinemaMode] = useState(false);
   
+  // Combat mode state
+  const [combatMode, setCombatMode] = useState(false);
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
+
+  // Load saved session on mount
+  useEffect(() => {
+    if (isLoaded) {
+      setMapImage(savedMapImage);
+      setTokens(savedTokens);
+      setShowGrid(savedShowGrid);
+      setGridSize(savedGridSize);
+      setGridColor(savedGridColor);
+      setGridLineWidth(savedGridLineWidth);
+      setCombatMode(savedCombatMode);
+      setCurrentTurnIndex(savedCurrentTurnIndex);
+      if (savedMapImage) {
+        toast.success('Sesión restaurada');
+      }
+    }
+  }, [isLoaded]);
+
+  // Save session when state changes
+  useEffect(() => {
+    if (isLoaded) {
+      updateSession({
+        mapImage,
+        tokens,
+        showGrid,
+        gridSize,
+        gridColor,
+        gridLineWidth,
+        combatMode,
+        currentTurnIndex,
+      });
+    }
+  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, isLoaded, updateSession]);
+  
   // Store zoom functions
   const zoomFunctionsRef = useRef<{
     setTransform: (x: number, y: number, scale: number) => void;
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
-  
-  // Combat mode state
-  const [combatMode, setCombatMode] = useState(false);
-  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -233,6 +281,16 @@ export const MapViewer = () => {
     setSelectedToken(null);
     setCurrentTurnIndex(0);
     toast.success('Todos los tokens eliminados');
+  };
+
+  const handleClearSession = () => {
+    setMapImage(null);
+    setTokens([]);
+    setSelectedToken(null);
+    setCurrentTurnIndex(0);
+    setCombatMode(false);
+    clearSession();
+    toast.success('Sesión limpiada');
   };
 
   const animateToToken = (token: TokenData) => {
@@ -559,6 +617,7 @@ export const MapViewer = () => {
               hasMap={!!mapImage}
               cinemaMode={cinemaMode}
               onToggleCinemaMode={() => setCinemaMode(!cinemaMode)}
+              onClearSession={handleClearSession}
             />
 
             {/* Map area */}

@@ -1,4 +1,4 @@
-import { Upload, Grid3x3, Minus, Plus, ZoomIn, Film } from 'lucide-react';
+import { Upload, Grid3x3, Minus, Plus, ZoomIn, Film, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -18,6 +18,7 @@ interface MapControlsProps {
   hasMap: boolean;
   cinemaMode?: boolean;
   onToggleCinemaMode?: () => void;
+  onClearSession?: () => void;
 }
 
 export const MapControls = ({
@@ -35,6 +36,7 @@ export const MapControls = ({
   hasMap,
   cinemaMode,
   onToggleCinemaMode,
+  onClearSession,
 }: MapControlsProps) => {
   return (
     <div className="bg-toolbar-bg border-b border-border p-4">
@@ -148,6 +150,22 @@ export const MapControls = ({
                     >
                       <Film className="w-4 h-4" />
                       Modo Cine
+                    </Button>
+                  </>
+                )}
+                
+                {onClearSession && (
+                  <>
+                    <div className="h-6 w-px bg-border" />
+                    
+                    <Button
+                      onClick={onClearSession}
+                      variant="destructive"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Nueva sesión
                     </Button>
                   </>
                 )}
