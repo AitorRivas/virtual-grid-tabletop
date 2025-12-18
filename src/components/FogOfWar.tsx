@@ -29,22 +29,27 @@ export const FogOfWar = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Reset composite operation to default
+    ctx.globalCompositeOperation = 'source-over';
+
     if (fogData) {
       // Restore from saved data
       const img = new Image();
       img.onload = () => {
+        ctx.globalCompositeOperation = 'source-over';
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0);
       };
       img.src = fogData;
     } else {
       // Fill with black fog
+      ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
       // Save initial state
       onFogChange(canvas.toDataURL());
     }
-  }, [width, height]);
+  }, [width, height, fogData]);
 
   // Handle brush size changes by updating cursor style
   useEffect(() => {
