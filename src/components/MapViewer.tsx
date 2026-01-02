@@ -13,7 +13,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
-import { Film, X } from 'lucide-react';
+import { Film, X, Upload } from 'lucide-react';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
@@ -64,7 +64,9 @@ export const MapViewer = () => {
   const [newTokenColor, setNewTokenColor] = useState<TokenColor>('red');
   const [newTokenName, setNewTokenName] = useState('');
   const [newTokenSize, setNewTokenSize] = useState(50);
+  const [newTokenImage, setNewTokenImage] = useState<string | undefined>(undefined);
   const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
+  const tokenImageInputRef = useRef<HTMLInputElement>(null);
   
   // Cinema mode state
   const [cinemaMode, setCinemaMode] = useState(false);
@@ -191,17 +193,36 @@ export const MapViewer = () => {
       conditions: [],
       hpMax: 10,
       hpCurrent: 10,
+      imageUrl: newTokenImage,
     };
 
     setTokens([...tokens, newToken]);
     setPendingTokenPosition(null);
     setNewTokenName('');
+    setNewTokenImage(undefined);
     toast.success('Token añadido');
   };
 
   const cancelAddToken = () => {
     setPendingTokenPosition(null);
     setNewTokenName('');
+    setNewTokenImage(undefined);
+  };
+
+  const handleTokenImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, sube una imagen válida');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setNewTokenImage(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleTokenMove = (id: string, x: number, y: number) => {
@@ -729,6 +750,46 @@ export const MapViewer = () => {
                     if (e.key === 'Escape') cancelAddToken();
                   }}
                 />
+              </div>
+
+              {/* Image upload */}
+              <div>
+                <label className="text-sm font-medium text-card-foreground mb-2 block">
+                  Imagen (opcional)
+                </label>
+                <input
+                  ref={tokenImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleTokenImageUpload}
+                  className="hidden"
+                />
+                {newTokenImage ? (
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={newTokenImage} 
+                      alt="Token preview" 
+                      className="w-12 h-12 rounded-full object-cover border-2 border-border"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setNewTokenImage(undefined)}
+                    >
+                      Quitar
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => tokenImageInputRef.current?.click()}
+                    className="w-full gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Subir imagen
+                  </Button>
+                )}
               </div>
               
               <div>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal } from 'lucide-react';
+import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal, Flame, Wind } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { toast } from 'sonner';
@@ -11,20 +11,50 @@ interface Track {
   url: string;
 }
 
+interface AudioChannel {
+  tracks: Track[];
+  currentTrack: Track | null;
+  isPlaying: boolean;
+  volume: number;
+  isMuted: boolean;
+  isLooping: boolean;
+  currentTime: number;
+  duration: number;
+}
+
 const DEFAULT_POSITION = { x: window.innerWidth - 72, y: window.innerHeight - 136 };
 
 export const AmbientPlayer = () => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isLooping, setIsLooping] = useState(true);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Channel 1: Music
+  const [channel1, setChannel1] = useState<AudioChannel>({
+    tracks: [],
+    currentTrack: null,
+    isPlaying: false,
+    volume: 50,
+    isMuted: false,
+    isLooping: true,
+    currentTime: 0,
+    duration: 0,
+  });
+  
+  // Channel 2: Ambient sounds
+  const [channel2, setChannel2] = useState<AudioChannel>({
+    tracks: [],
+    currentTrack: null,
+    isPlaying: false,
+    volume: 50,
+    isMuted: false,
+    isLooping: true,
+    currentTime: 0,
+    duration: 0,
+  });
+  
+  const [activeChannel, setActiveChannel] = useState<1 | 2>(1);
+  
+  const audioRef1 = useRef<HTMLAudioElement | null>(null);
+  const audioRef2 = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { position, isDragging, dragRef, handleMouseDown, resetPosition } = useDraggable({
@@ -38,26 +68,60 @@ export const AmbientPlayer = () => {
     }
   }, [isExpanded, resetPosition]);
 
+  // Channel 1 audio effects
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume / 100;
+    if (audioRef1.current) {
+      audioRef1.current.volume = channel1.isMuted ? 0 : channel1.volume / 100;
     }
-  }, [volume, isMuted]);
+  }, [channel1.volume, channel1.isMuted]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.loop = isLooping;
+    if (audioRef1.current) {
+      audioRef1.current.loop = channel1.isLooping;
     }
-  }, [isLooping]);
+  }, [channel1.isLooping]);
 
-  // Update current time
+  // Channel 2 audio effects
   useEffect(() => {
-    const audio = audioRef.current;
+    if (audioRef2.current) {
+      audioRef2.current.volume = channel2.isMuted ? 0 : channel2.volume / 100;
+    }
+  }, [channel2.volume, channel2.isMuted]);
+
+  useEffect(() => {
+    if (audioRef2.current) {
+      audioRef2.current.loop = channel2.isLooping;
+    }
+  }, [channel2.isLooping]);
+
+  // Update current time for channel 1
+  useEffect(() => {
+    const audio = audioRef1.current;
     if (!audio) return;
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleDurationChange = () => setDuration(audio.duration || 0);
-    const handleLoadedMetadata = () => setDuration(audio.duration || 0);
+    const handleTimeUpdate = () => setChannel1(prev => ({ ...prev, currentTime: audio.currentTime }));
+    const handleDurationChange = () => setChannel1(prev => ({ ...prev, duration: audio.duration || 0 }));
+    const handleLoadedMetadata = () => setChannel1(prev => ({ ...prev, duration: audio.duration || 0 }));
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('durationchange', handleDurationChange);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('durationchange', handleDurationChange);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, []);
+
+  // Update current time for channel 2
+  useEffect(() => {
+    const audio = audioRef2.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => setChannel2(prev => ({ ...prev, currentTime: audio.currentTime }));
+    const handleDurationChange = () => setChannel2(prev => ({ ...prev, duration: audio.duration || 0 }));
+    const handleLoadedMetadata = () => setChannel2(prev => ({ ...prev, duration: audio.duration || 0 }));
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('durationchange', handleDurationChange);
@@ -86,52 +150,76 @@ export const AmbientPlayer = () => {
       url,
     };
 
-    setTracks([...tracks, newTrack]);
+    if (activeChannel === 1) {
+      setChannel1(prev => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
+    } else {
+      setChannel2(prev => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
+    }
     toast.success('Audio añadido');
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const playTrack = (track: Track) => {
-    if (currentTrack?.id === track.id && isPlaying) {
-      // Pause current track
+  const playTrack = (track: Track, channelNum: 1 | 2) => {
+    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
+    const channel = channelNum === 1 ? channel1 : channel2;
+    const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
+
+    if (channel.currentTrack?.id === track.id && channel.isPlaying) {
       audioRef.current?.pause();
-      setIsPlaying(false);
+      setChannel(prev => ({ ...prev, isPlaying: false }));
     } else {
-      // Play new track
       if (audioRef.current) {
         audioRef.current.src = track.url;
         audioRef.current.play();
       }
-      setCurrentTrack(track);
-      setIsPlaying(true);
+      setChannel(prev => ({ ...prev, currentTrack: track, isPlaying: true }));
     }
   };
 
-  const togglePlayPause = () => {
-    if (!currentTrack) return;
+  const togglePlayPause = (channelNum: 1 | 2) => {
+    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
+    const channel = channelNum === 1 ? channel1 : channel2;
+    const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
+
+    if (!channel.currentTrack) return;
     
-    if (isPlaying) {
+    if (channel.isPlaying) {
       audioRef.current?.pause();
     } else {
       audioRef.current?.play();
     }
-    setIsPlaying(!isPlaying);
+    setChannel(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
   };
 
-  const stopPlayback = () => {
+  const stopPlayback = (channelNum: 1 | 2) => {
+    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
+    const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    setIsPlaying(false);
-    setCurrentTrack(null);
-    setCurrentTime(0);
-    setDuration(0);
+    setChannel(prev => ({ 
+      ...prev, 
+      isPlaying: false, 
+      currentTrack: null, 
+      currentTime: 0, 
+      duration: 0 
+    }));
   };
 
-  const handleSeek = (value: number[]) => {
-    if (audioRef.current && duration > 0) {
+  const handleSeek = (value: number[], channelNum: 1 | 2) => {
+    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
+    const channel = channelNum === 1 ? channel1 : channel2;
+    const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
+
+    if (audioRef.current && channel.duration > 0) {
       audioRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
+      setChannel(prev => ({ ...prev, currentTime: value[0] }));
     }
   };
 
@@ -142,22 +230,155 @@ export const AmbientPlayer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const removeTrack = (trackId: string) => {
-    if (currentTrack?.id === trackId) {
-      stopPlayback();
+  const removeTrack = (trackId: string, channelNum: 1 | 2) => {
+    const channel = channelNum === 1 ? channel1 : channel2;
+    
+    if (channel.currentTrack?.id === trackId) {
+      stopPlayback(channelNum);
     }
-    const track = tracks.find(t => t.id === trackId);
+    const track = channel.tracks.find(t => t.id === trackId);
     if (track?.url) {
       URL.revokeObjectURL(track.url);
     }
-    setTracks(tracks.filter(t => t.id !== trackId));
+    
+    if (channelNum === 1) {
+      setChannel1(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
+    } else {
+      setChannel2(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
+    }
+  };
+
+  const renderChannelControls = (channelNum: 1 | 2) => {
+    const channel = channelNum === 1 ? channel1 : channel2;
+    const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
+
+    return (
+      <div className="space-y-3">
+        {/* Current track info */}
+        {channel.currentTrack && (
+          <div className="p-2 bg-secondary/50 rounded-lg">
+            <p className="text-sm text-foreground truncate mb-2">{channel.currentTrack.name}</p>
+            
+            {/* Progress bar */}
+            <div className="mb-2">
+              <Slider
+                value={[channel.currentTime]}
+                onValueChange={(v) => handleSeek(v, channelNum)}
+                max={channel.duration || 100}
+                step={0.1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>{formatTime(channel.currentTime)}</span>
+                <span>{formatTime(channel.duration)}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => togglePlayPause(channelNum)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                {channel.isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </Button>
+              <Button
+                onClick={() => stopPlayback(channelNum)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={() => setChannel(prev => ({ ...prev, isLooping: !prev.isLooping }))}
+                variant={channel.isLooping ? 'default' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+              >
+                <Repeat className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Volume control */}
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setChannel(prev => ({ ...prev, isMuted: !prev.isMuted }))}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+          >
+            {channel.isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </Button>
+          <Slider
+            value={[channel.volume]}
+            onValueChange={(v) => setChannel(prev => ({ ...prev, volume: v[0] }))}
+            max={100}
+            step={5}
+            className="flex-1"
+          />
+          <span className="text-xs text-muted-foreground w-8">{channel.volume}%</span>
+        </div>
+
+        {/* Track list */}
+        {channel.tracks.length > 0 && (
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {channel.tracks.map((track) => (
+              <div
+                key={track.id}
+                className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                  channel.currentTrack?.id === track.id 
+                    ? 'bg-primary/20 border border-primary/50' 
+                    : 'bg-secondary/30 hover:bg-secondary/50'
+                }`}
+              >
+                <Button
+                  onClick={() => playTrack(track, channelNum)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                >
+                  {channel.currentTrack?.id === track.id && channel.isPlaying 
+                    ? <Pause className="w-3 h-3" /> 
+                    : <Play className="w-3 h-3" />
+                  }
+                </Button>
+                <span className="flex-1 text-sm truncate">{track.name}</span>
+                <Button
+                  onClick={() => removeTrack(track.id, channelNum)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 hover:text-destructive"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {channel.tracks.length === 0 && !channel.currentTrack && (
+          <p className="text-center text-xs text-muted-foreground py-2">
+            Sin pistas
+          </p>
+        )}
+      </div>
+    );
   };
 
   return (
     <>
       <audio 
-        ref={audioRef} 
-        onEnded={() => !isLooping && setIsPlaying(false)}
+        ref={audioRef1} 
+        onEnded={() => !channel1.isLooping && setChannel1(prev => ({ ...prev, isPlaying: false }))}
+        onError={() => toast.error('Error al reproducir el audio')}
+      />
+      <audio 
+        ref={audioRef2} 
+        onEnded={() => !channel2.isLooping && setChannel2(prev => ({ ...prev, isPlaying: false }))}
         onError={() => toast.error('Error al reproducir el audio')}
       />
       
@@ -185,7 +406,7 @@ export const AmbientPlayer = () => {
             onClick={() => setIsExpanded(true)}
             variant="secondary"
             size="icon"
-            className={`w-12 h-12 rounded-full shadow-lg ${isPlaying ? 'animate-pulse bg-primary' : ''}`}
+            className={`w-12 h-12 rounded-full shadow-lg ${(channel1.isPlaying || channel2.isPlaying) ? 'animate-pulse bg-primary' : ''}`}
           >
             <Music className="w-5 h-5" />
           </Button>
@@ -193,7 +414,7 @@ export const AmbientPlayer = () => {
 
         {/* Expanded player */}
         {isExpanded && (
-          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-xl w-72">
+          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-xl w-80">
             {/* Draggable header */}
             <div 
               className={`flex items-center justify-between p-3 border-b border-border select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
@@ -215,73 +436,28 @@ export const AmbientPlayer = () => {
             </div>
 
             <div className="p-4">
-              {/* Current track info */}
-              {currentTrack && (
-                <div className="mb-4 p-2 bg-secondary/50 rounded-lg">
-                  <p className="text-sm text-foreground truncate mb-2">{currentTrack.name}</p>
-                  
-                  {/* Progress bar */}
-                  <div className="mb-2">
-                    <Slider
-                      value={[currentTime]}
-                      onValueChange={handleSeek}
-                      max={duration || 100}
-                      step={0.1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{formatTime(currentTime)}</span>
-                      <span>{formatTime(duration)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={togglePlayPause}
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                    >
-                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </Button>
-                    <Button
-                      onClick={stopPlayback}
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={() => setIsLooping(!isLooping)}
-                      variant={isLooping ? 'default' : 'ghost'}
-                      size="icon"
-                      className="h-8 w-8"
-                    >
-                      <Repeat className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Volume control */}
-              <div className="flex items-center gap-2 mb-4">
+              {/* Channel tabs */}
+              <div className="flex gap-2 mb-4">
                 <Button
-                  onClick={() => setIsMuted(!isMuted)}
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                  onClick={() => setActiveChannel(1)}
+                  variant={activeChannel === 1 ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 gap-2"
                 >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  <Music className="w-4 h-4" />
+                  Música
+                  {channel1.isPlaying && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
                 </Button>
-                <Slider
-                  value={[volume]}
-                  onValueChange={(v) => setVolume(v[0])}
-                  max={100}
-                  step={5}
-                  className="flex-1"
-                />
-                <span className="text-xs text-muted-foreground w-8">{volume}%</span>
+                <Button
+                  onClick={() => setActiveChannel(2)}
+                  variant={activeChannel === 2 ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 gap-2"
+                >
+                  <Wind className="w-4 h-4" />
+                  Ambiente
+                  {channel2.isPlaying && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
+                </Button>
               </div>
 
               {/* Upload button */}
@@ -292,52 +468,11 @@ export const AmbientPlayer = () => {
                 className="w-full mb-4 gap-2"
               >
                 <Upload className="w-4 h-4" />
-                Añadir audio
+                Añadir a {activeChannel === 1 ? 'Música' : 'Ambiente'}
               </Button>
 
-              {/* Track list */}
-              {tracks.length > 0 && (
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  <p className="text-xs text-muted-foreground mb-2">Mis pistas:</p>
-                  {tracks.map((track) => (
-                    <div
-                      key={track.id}
-                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                        currentTrack?.id === track.id 
-                          ? 'bg-primary/20 border border-primary/50' 
-                          : 'bg-secondary/30 hover:bg-secondary/50'
-                      }`}
-                    >
-                      <Button
-                        onClick={() => playTrack(track)}
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                      >
-                        {currentTrack?.id === track.id && isPlaying 
-                          ? <Pause className="w-3 h-3" /> 
-                          : <Play className="w-3 h-3" />
-                        }
-                      </Button>
-                      <span className="flex-1 text-sm truncate">{track.name}</span>
-                      <Button
-                        onClick={() => removeTrack(track.id)}
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:text-destructive"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {tracks.length === 0 && (
-                <p className="text-center text-xs text-muted-foreground py-4">
-                  Sube archivos de audio para ambientar tus partidas
-                </p>
-              )}
+              {/* Active channel controls */}
+              {activeChannel === 1 ? renderChannelControls(1) : renderChannelControls(2)}
             </div>
           </div>
         )}
