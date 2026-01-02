@@ -1,7 +1,13 @@
-import { Upload, Grid3x3, Minus, Plus, ZoomIn, Film, Trash2, Cloud, Eraser, RotateCcw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, Grid3x3, Minus, Plus, ZoomIn, Film, Trash2, Cloud, Eraser, RotateCcw, Shield, LogOut, Key } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Input } from './ui/input';
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface MapControlsProps {
   showGrid: boolean;
@@ -53,9 +59,119 @@ export const MapControls = ({
   onFogBrushSizeChange,
   onResetFog,
 }: MapControlsProps) => {
+  const navigate = useNavigate();
+  const { isAdmin, signOut, updatePassword, profile } = useAuth();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error('Por favor, completa todos los campos');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+    
+    setLoading(true);
+    const { error } = await updatePassword(newPassword);
+    setLoading(false);
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Contraseña actualizada correctamente');
+      setChangePasswordOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
   return (
     <div className="bg-toolbar-bg border-b border-border p-4">
       <div className="flex items-center gap-4 max-w-7xl mx-auto flex-wrap">
+        {/* User info */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{profile?.username}</span>
+          {isAdmin && <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">Admin</span>}
+        </div>
+
+        {isAdmin && (
+          <Button
+            onClick={() => navigate('/admin')}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Shield className="w-4 h-4" />
+            Panel Admin
+          </Button>
+        )}
+
+        <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Key className="w-4 h-4" />
+              Contraseña
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cambiar contraseña</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nueva contraseña</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <Button onClick={handleChangePassword} className="w-full" disabled={loading}>
+                {loading ? 'Cambiando...' : 'Cambiar contraseña'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Button
+          onClick={handleSignOut}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Salir
+        </Button>
+
+        <div className="h-6 w-px bg-border" />
         <Button
           onClick={() => {
             console.log('Upload button clicked');
