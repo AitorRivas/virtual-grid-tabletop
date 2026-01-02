@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 
 interface FogOfWarProps {
   width: number;
@@ -18,19 +18,25 @@ export const FogOfWar = ({
   onFogChange 
 }: FogOfWarProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const isInitializedRef = useRef(false);
 
   // Initialize or restore fog
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || width === 0 || height === 0) return;
     
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     // Reset composite operation to default
     ctx.globalCompositeOperation = 'source-over';
+
+    if (fogData && isInitializedRef.current) {
+      // Already initialized, skip
+      return;
+    }
 
     if (fogData) {
       // Restore from saved data
@@ -38,7 +44,8 @@ export const FogOfWar = ({
       img.onload = () => {
         ctx.globalCompositeOperation = 'source-over';
         ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, width, height);
+        isInitializedRef.current = true;
       };
       img.src = fogData;
     } else {
@@ -46,10 +53,28 @@ export const FogOfWar = ({
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
+      isInitializedRef.current = true;
       // Save initial state
-      onFogChange(canvas.toDataURL());
+      onFogChange(canvas.toDataURL('image/png', 0.8));
     }
-  }, [width, height, fogData]);
+  }, [width, height]);
+
+  // Reset when fogData becomes null (reset button)
+  useEffect(() => {
+    if (fogData === null && isInitializedRef.current) {
+      const canvas = canvasRef.current;
+      if (!canvas || width === 0 || height === 0) return;
+      
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return;
+
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+      ctx.fillRect(0, 0, width, height);
+      onFogChange(canvas.toDataURL('image/png', 0.8));
+    }
+  }, [fogData, width, height, onFogChange]);
 
   // Handle brush size changes by updating cursor style
   useEffect(() => {
@@ -58,37 +83,7 @@ export const FogOfWar = ({
     canvas.style.cursor = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="${brushSize}" height="${brushSize}" viewBox="0 0 ${brushSize} ${brushSize}"><circle cx="${brushSize/2}" cy="${brushSize/2}" r="${brushSize/2 - 1}" fill="none" stroke="white" stroke-width="2"/></svg>') ${brushSize/2} ${brushSize/2}, crosshair`;
   }, [brushSize, enabled]);
 
-  const eraseAt = useCallback((x: number, y: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-  }, [brushSize]);
-
-  const drawLine = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.lineWidth = brushSize;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.stroke();
-  }, [brushSize]);
-
-  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getCanvasCoordinates = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     
@@ -100,55 +95,79 @@ export const FogOfWar = ({
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY
     };
-  };
+  }, []);
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const eraseAt = useCallback((x: number, y: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }, [brushSize]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!enabled) return;
+    e.preventDefault();
     e.stopPropagation();
     
     const coords = getCanvasCoordinates(e);
     if (!coords) return;
     
-    setIsDrawing(true);
+    isDrawingRef.current = true;
     lastPointRef.current = coords;
     eraseAt(coords.x, coords.y);
-  };
+  }, [enabled, getCanvasCoordinates, eraseAt]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!enabled || !isDrawing) return;
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!enabled || !isDrawingRef.current) return;
+    e.preventDefault();
     e.stopPropagation();
     
     const coords = getCanvasCoordinates(e);
     if (!coords) return;
     
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    // Draw line from last point to current point
     if (lastPointRef.current) {
-      drawLine(lastPointRef.current, coords);
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineWidth = brushSize;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
+      ctx.lineTo(coords.x, coords.y);
+      ctx.stroke();
     }
+    
     lastPointRef.current = coords;
-  };
+  }, [enabled, brushSize, getCanvasCoordinates]);
 
-  const handleMouseUp = () => {
-    if (isDrawing) {
-      setIsDrawing(false);
-      lastPointRef.current = null;
-      // Save fog state
-      const canvas = canvasRef.current;
-      if (canvas) {
-        onFogChange(canvas.toDataURL());
-      }
+  const saveFogState = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas && isDrawingRef.current) {
+      onFogChange(canvas.toDataURL('image/png', 0.8));
     }
-  };
+    isDrawingRef.current = false;
+    lastPointRef.current = null;
+  }, [onFogChange]);
 
-  const handleMouseLeave = () => {
-    if (isDrawing) {
-      setIsDrawing(false);
-      lastPointRef.current = null;
-      const canvas = canvasRef.current;
-      if (canvas) {
-        onFogChange(canvas.toDataURL());
-      }
-    }
-  };
+  const handleMouseUp = useCallback(() => {
+    saveFogState();
+  }, [saveFogState]);
+
+  const handleMouseLeave = useCallback(() => {
+    saveFogState();
+  }, [saveFogState]);
 
   return (
     <canvas

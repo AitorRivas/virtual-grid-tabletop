@@ -7,13 +7,16 @@ interface Position {
 
 interface UseDraggableOptions {
   defaultPosition: Position;
+  dragThreshold?: number; // Minimum pixels before drag starts
 }
 
-export const useDraggable = ({ defaultPosition }: UseDraggableOptions) => {
+export const useDraggable = ({ defaultPosition, dragThreshold = 5 }: UseDraggableOptions) => {
   const [position, setPosition] = useState<Position>(defaultPosition);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<HTMLDivElement>(null);
   const offsetRef = useRef<Position>({ x: 0, y: 0 });
+  const startPosRef = useRef<Position>({ x: 0, y: 0 });
+  const hasDraggedRef = useRef(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (dragRef.current) {
@@ -22,6 +25,11 @@ export const useDraggable = ({ defaultPosition }: UseDraggableOptions) => {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
       };
+      startPosRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+      };
+      hasDraggedRef.current = false;
       setIsDragging(true);
     }
   }, []);
@@ -29,18 +37,34 @@ export const useDraggable = ({ defaultPosition }: UseDraggableOptions) => {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
     
+    // Check if we've moved enough to consider it a drag
+    const deltaX = Math.abs(e.clientX - startPosRef.current.x);
+    const deltaY = Math.abs(e.clientY - startPosRef.current.y);
+    
+    if (!hasDraggedRef.current && deltaX < dragThreshold && deltaY < dragThreshold) {
+      return; // Not a real drag yet
+    }
+    
+    hasDraggedRef.current = true;
+    
     const newX = e.clientX - offsetRef.current.x;
     const newY = e.clientY - offsetRef.current.y;
     
-    // Clamp to viewport
-    const maxX = window.innerWidth - (dragRef.current?.offsetWidth || 0);
-    const maxY = window.innerHeight - (dragRef.current?.offsetHeight || 0);
+    // Clamp to viewport with margin
+    const elementWidth = dragRef.current?.offsetWidth || 0;
+    const elementHeight = dragRef.current?.offsetHeight || 0;
+    const margin = 20; // Keep at least 20px visible
+    
+    const maxX = window.innerWidth - margin;
+    const maxY = window.innerHeight - margin;
+    const minX = margin - elementWidth;
+    const minY = margin - elementHeight;
     
     setPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY)),
+      x: Math.max(minX, Math.min(newX, maxX)),
+      y: Math.max(minY, Math.min(newY, maxY)),
     });
-  }, [isDragging]);
+  }, [isDragging, dragThreshold]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
