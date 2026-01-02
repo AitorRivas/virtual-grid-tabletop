@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Slider } from '@/components/ui/slider';
 import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { SharedImagePicker } from './SharedImagePicker';
 
 const TOKEN_COLORS: TokenColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'black'];
 
@@ -322,8 +323,13 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                             onClick={() => charFileInputRef.current?.click()}
                           >
                             <Upload className="w-4 h-4" />
-                            Seleccionar imagen
+                            Subir imagen
                           </Button>
+                          <SharedImagePicker 
+                            category="hero" 
+                            onSelect={(img) => setCharForm({ ...charForm, image_url: img })}
+                            selectedImage={charForm.image_url}
+                          />
                         </div>
                       ) : (
                         <Input 
