@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Sword, Shield, Key } from 'lucide-react';
+import { Loader2, Sword, Shield, Key, LogOut } from 'lucide-react';
 
 export default function Auth() {
   const [username, setUsername] = useState('');
@@ -17,7 +17,7 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const { signIn, signUp, updatePassword, user, isApproved, isAdmin, loading: authLoading } = useAuth();
+  const { signIn, signUp, signOut, updatePassword, user, isApproved, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -169,6 +169,10 @@ export default function Auth() {
                 </form>
               </DialogContent>
             </Dialog>
+            <Button variant="ghost" className="w-full" onClick={signOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Cerrar sesión
+            </Button>
           </CardContent>
         </Card>
       </div>
