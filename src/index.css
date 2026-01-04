@@ -8,97 +8,90 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 15% 8%;
-    --foreground: 40 80% 90%;
+    --background: 220 20% 7%;
+    --foreground: 40 80% 92%;
 
-    --card: 220 15% 12%;
-    --card-foreground: 40 80% 90%;
+    --card: 220 18% 11%;
+    --card-foreground: 40 80% 92%;
 
-    --popover: 220 15% 10%;
-    --popover-foreground: 40 80% 90%;
+    --popover: 220 20% 9%;
+    --popover-foreground: 40 80% 92%;
 
-    --primary: 40 85% 60%;
-    --primary-foreground: 220 20% 10%;
+    --primary: 38 90% 55%;
+    --primary-foreground: 220 25% 8%;
 
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 40 80% 90%;
+    --secondary: 220 18% 15%;
+    --secondary-foreground: 40 70% 85%;
 
-    --muted: 220 15% 16%;
-    --muted-foreground: 40 20% 60%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 40 15% 55%;
 
-    --accent: 35 90% 50%;
-    --accent-foreground: 220 20% 10%;
+    --accent: 32 95% 48%;
+    --accent-foreground: 220 25% 8%;
 
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 40 80% 90%;
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 40 80% 95%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 18%;
-    --ring: 40 85% 60%;
+    --border: 220 15% 18%;
+    --input: 220 18% 14%;
+    --ring: 38 90% 55%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
     
     /* Custom tokens for RPG board */
-    --board-bg: 220 15% 6%;
-    --grid-line: 40 30% 35%;
-    --toolbar-bg: 220 15% 10%;
-    --token-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --board-bg: 220 22% 5%;
+    --grid-line: 40 25% 30%;
+    --toolbar-bg: 220 18% 9%;
+    --token-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
     
-    /* Token colors */
-    --token-red: 0 75% 60%;
-    --token-blue: 210 75% 60%;
-    --token-green: 120 60% 50%;
-    --token-yellow: 50 90% 60%;
-    --token-purple: 270 65% 65%;
-    --token-orange: 25 85% 60%;
-    --token-pink: 330 70% 65%;
-    --token-cyan: 180 70% 55%;
+    /* Token colors - More vibrant */
+    --token-red: 0 78% 58%;
+    --token-blue: 210 85% 58%;
+    --token-green: 142 72% 48%;
+    --token-yellow: 48 95% 55%;
+    --token-purple: 270 70% 62%;
+    --token-orange: 25 90% 55%;
+    --token-pink: 330 75% 62%;
+    --token-cyan: 185 75% 52%;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 18% 10%;
+    --sidebar-foreground: 40 80% 92%;
+    --sidebar-primary: 38 90% 55%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 18% 15%;
+    --sidebar-accent-foreground: 40 80% 92%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 38 90% 55%;
   }
 
   .dark {
-    --background: 220 15% 8%;
-    --foreground: 40 80% 90%;
+    --background: 220 20% 7%;
+    --foreground: 40 80% 92%;
 
-    --card: 220 15% 12%;
-    --card-foreground: 40 80% 90%;
+    --card: 220 18% 11%;
+    --card-foreground: 40 80% 92%;
 
-    --popover: 220 15% 10%;
-    --popover-foreground: 40 80% 90%;
+    --popover: 220 20% 9%;
+    --popover-foreground: 40 80% 92%;
 
-    --primary: 40 85% 60%;
-    --primary-foreground: 220 20% 10%;
+    --primary: 38 90% 55%;
+    --primary-foreground: 220 25% 8%;
 
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 40 80% 90%;
+    --secondary: 220 18% 15%;
+    --secondary-foreground: 40 70% 85%;
 
-    --muted: 220 15% 16%;
-    --muted-foreground: 40 20% 60%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 40 15% 55%;
 
-    --accent: 35 90% 50%;
-    --accent-foreground: 220 20% 10%;
+    --accent: 32 95% 48%;
+    --accent-foreground: 220 25% 8%;
 
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 40 80% 90%;
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 40 80% 95%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 18%;
-    --ring: 40 85% 60%;
+    --border: 220 15% 18%;
+    --input: 220 18% 14%;
+    --ring: 38 90% 55%;
   }
 }
 
@@ -108,6 +101,31 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
   }
 }
