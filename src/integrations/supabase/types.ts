@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       characters: {
         Row: {
+          actions: Json | null
           alignment: string | null
           armor_class: number
           background: string | null
@@ -24,6 +25,8 @@ export type Database = {
           constitution: number
           created_at: string
           dexterity: number
+          equipment: Json | null
+          features: Json | null
           hit_points_current: number | null
           hit_points_max: number
           id: string
@@ -31,11 +34,20 @@ export type Database = {
           initiative_bonus: number
           intelligence: number
           level: number
+          multiclass: Json | null
           name: string
           notes: string | null
+          proficiencies: Json | null
+          proficiency_bonus: number | null
           race: string
+          resistances: Json | null
+          senses: Json | null
           speed: number
+          speeds: Json | null
+          spell_ability: string | null
+          spells: Json | null
           strength: number
+          subclass: string | null
           token_color: Database["public"]["Enums"]["token_color"]
           token_size: number
           updated_at: string
@@ -43,6 +55,7 @@ export type Database = {
           wisdom: number
         }
         Insert: {
+          actions?: Json | null
           alignment?: string | null
           armor_class?: number
           background?: string | null
@@ -51,6 +64,8 @@ export type Database = {
           constitution?: number
           created_at?: string
           dexterity?: number
+          equipment?: Json | null
+          features?: Json | null
           hit_points_current?: number | null
           hit_points_max?: number
           id?: string
@@ -58,11 +73,20 @@ export type Database = {
           initiative_bonus?: number
           intelligence?: number
           level?: number
+          multiclass?: Json | null
           name: string
           notes?: string | null
+          proficiencies?: Json | null
+          proficiency_bonus?: number | null
           race?: string
+          resistances?: Json | null
+          senses?: Json | null
           speed?: number
+          speeds?: Json | null
+          spell_ability?: string | null
+          spells?: Json | null
           strength?: number
+          subclass?: string | null
           token_color?: Database["public"]["Enums"]["token_color"]
           token_size?: number
           updated_at?: string
@@ -70,6 +94,7 @@ export type Database = {
           wisdom?: number
         }
         Update: {
+          actions?: Json | null
           alignment?: string | null
           armor_class?: number
           background?: string | null
@@ -78,6 +103,8 @@ export type Database = {
           constitution?: number
           created_at?: string
           dexterity?: number
+          equipment?: Json | null
+          features?: Json | null
           hit_points_current?: number | null
           hit_points_max?: number
           id?: string
@@ -85,11 +112,20 @@ export type Database = {
           initiative_bonus?: number
           intelligence?: number
           level?: number
+          multiclass?: Json | null
           name?: string
           notes?: string | null
+          proficiencies?: Json | null
+          proficiency_bonus?: number | null
           race?: string
+          resistances?: Json | null
+          senses?: Json | null
           speed?: number
+          speeds?: Json | null
+          spell_ability?: string | null
+          spells?: Json | null
           strength?: number
+          subclass?: string | null
           token_color?: Database["public"]["Enums"]["token_color"]
           token_size?: number
           updated_at?: string
@@ -100,72 +136,123 @@ export type Database = {
       }
       monsters: {
         Row: {
+          actions: Json | null
+          alignment: string | null
           armor_class: number
+          bonus_actions: Json | null
           challenge_rating: string
           charisma: number
           constitution: number
           created_at: string
           dexterity: number
+          hit_dice: string | null
           hit_points: number
           id: string
           image_url: string | null
+          immunities: Json | null
           intelligence: number
+          lair_actions: Json | null
+          languages: Json | null
+          legendary_actions: Json | null
           name: string
           notes: string | null
+          proficiency_bonus: number | null
+          reactions: Json | null
+          resistances: Json | null
+          saves: Json | null
+          senses: Json | null
           size: Database["public"]["Enums"]["creature_size"]
+          skills: Json | null
           speed: number
+          speeds: Json | null
           strength: number
           token_color: Database["public"]["Enums"]["token_color"]
           token_size: number
+          traits: Json | null
           type: string
           updated_at: string
           user_id: string
+          vulnerabilities: Json | null
           wisdom: number
         }
         Insert: {
+          actions?: Json | null
+          alignment?: string | null
           armor_class?: number
+          bonus_actions?: Json | null
           challenge_rating?: string
           charisma?: number
           constitution?: number
           created_at?: string
           dexterity?: number
+          hit_dice?: string | null
           hit_points?: number
           id?: string
           image_url?: string | null
+          immunities?: Json | null
           intelligence?: number
+          lair_actions?: Json | null
+          languages?: Json | null
+          legendary_actions?: Json | null
           name: string
           notes?: string | null
+          proficiency_bonus?: number | null
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
           size?: Database["public"]["Enums"]["creature_size"]
+          skills?: Json | null
           speed?: number
+          speeds?: Json | null
           strength?: number
           token_color?: Database["public"]["Enums"]["token_color"]
           token_size?: number
+          traits?: Json | null
           type?: string
           updated_at?: string
           user_id: string
+          vulnerabilities?: Json | null
           wisdom?: number
         }
         Update: {
+          actions?: Json | null
+          alignment?: string | null
           armor_class?: number
+          bonus_actions?: Json | null
           challenge_rating?: string
           charisma?: number
           constitution?: number
           created_at?: string
           dexterity?: number
+          hit_dice?: string | null
           hit_points?: number
           id?: string
           image_url?: string | null
+          immunities?: Json | null
           intelligence?: number
+          lair_actions?: Json | null
+          languages?: Json | null
+          legendary_actions?: Json | null
           name?: string
           notes?: string | null
+          proficiency_bonus?: number | null
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
           size?: Database["public"]["Enums"]["creature_size"]
+          skills?: Json | null
           speed?: number
+          speeds?: Json | null
           strength?: number
           token_color?: Database["public"]["Enums"]["token_color"]
           token_size?: number
+          traits?: Json | null
           type?: string
           updated_at?: string
           user_id?: string
+          vulnerabilities?: Json | null
           wisdom?: number
         }
         Relationships: []

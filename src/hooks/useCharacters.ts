@@ -2,7 +2,22 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Character, TokenColor } from '@/types/dnd';
+import { ExtendedCharacter, CharacterProficiencies, CharacterAction, EquipmentItem, Feature, Speeds, Senses, Resistances, CharacterSpells, MulticlassEntry } from '@/types/dnd5e';
 import { toast } from 'sonner';
+
+// Helper to parse JSON fields safely
+const parseCharacterFromDB = (data: any): ExtendedCharacter => ({
+  ...data,
+  equipment: Array.isArray(data.equipment) ? data.equipment : [],
+  proficiencies: data.proficiencies || { saves: [], skills: [], expertise: [], weapons: [], armor: [], tools: [], languages: [] },
+  features: Array.isArray(data.features) ? data.features : [],
+  actions: Array.isArray(data.actions) ? data.actions : [],
+  spells: data.spells || { slots: {}, known: [], prepared: [] },
+  speeds: data.speeds || { walk: data.speed || 30 },
+  senses: data.senses || { passive_perception: 10 },
+  resistances: data.resistances || { damage: [], conditions: [] },
+  multiclass: Array.isArray(data.multiclass) ? data.multiclass : [],
+});
 
 export const useCharacters = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -25,7 +40,7 @@ export const useCharacters = () => {
       toast.error('Error al cargar personajes');
       console.error(error);
     } else {
-      setCharacters(data as Character[]);
+      setCharacters((data || []).map(parseCharacterFromDB) as any);
     }
     setLoading(false);
   };
