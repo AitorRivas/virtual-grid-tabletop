@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dices, GripHorizontal } from 'lucide-react';
 import { Button } from './ui/button';
 import { useDraggable } from '@/hooks/useDraggable';
@@ -25,17 +25,25 @@ interface DiceResult {
   isRolling: boolean;
 }
 
-const DEFAULT_POSITION = { x: window.innerWidth - 72, y: window.innerHeight - 72 };
+const PANEL_WIDTH = 288; // w-72 = 18rem = 288px
+const PANEL_HEIGHT = 320; // approximate height
 
 export const DiceRoller = () => {
   const [results, setResults] = useState<DiceResult[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   
+  // Calculate safe position when expanding
+  const getDefaultPosition = useCallback(() => {
+    const x = Math.max(16, Math.min(window.innerWidth - PANEL_WIDTH - 16, window.innerWidth - PANEL_WIDTH - 16));
+    const y = Math.max(16, Math.min(window.innerHeight - PANEL_HEIGHT - 16, window.innerHeight - PANEL_HEIGHT - 100));
+    return { x, y };
+  }, []);
+  
   const { position, isDragging, dragRef, handleMouseDown, resetPosition } = useDraggable({
-    defaultPosition: DEFAULT_POSITION,
+    defaultPosition: getDefaultPosition(),
   });
 
-  // Reset position when minimized
+  // Reset to safe position when minimized
   useEffect(() => {
     if (!isExpanded) {
       resetPosition();
