@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal, Flame, Wind } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal, Wind } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { toast } from 'sonner';
@@ -22,7 +22,8 @@ interface AudioChannel {
   duration: number;
 }
 
-const DEFAULT_POSITION = { x: window.innerWidth - 72, y: window.innerHeight - 136 };
+const PANEL_WIDTH = 320; // w-80 = 20rem = 320px
+const PANEL_HEIGHT = 450; // approximate height
 
 export const AmbientPlayer = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -57,11 +58,18 @@ export const AmbientPlayer = () => {
   const audioRef2 = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Calculate safe position when expanding
+  const getDefaultPosition = useCallback(() => {
+    const x = Math.max(16, window.innerWidth - PANEL_WIDTH - 16);
+    const y = Math.max(16, window.innerHeight - PANEL_HEIGHT - 100);
+    return { x, y };
+  }, []);
+  
   const { position, isDragging, dragRef, handleMouseDown, resetPosition } = useDraggable({
-    defaultPosition: DEFAULT_POSITION,
+    defaultPosition: getDefaultPosition(),
   });
 
-  // Reset position when minimized
+  // Reset to safe position when minimized
   useEffect(() => {
     if (!isExpanded) {
       resetPosition();
