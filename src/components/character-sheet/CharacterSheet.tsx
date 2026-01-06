@@ -12,6 +12,7 @@ import { CombatPanel } from './CombatPanel';
 import { ActionsPanel } from './ActionsPanel';
 import { EquipmentPanel } from './EquipmentPanel';
 import { FeaturesPanel } from './FeaturesPanel';
+import { SpellsPanel } from './SpellsPanel';
 import { 
   ExtendedCharacter, 
   CharacterProficiencies, 
@@ -145,7 +146,7 @@ export const CharacterSheet = ({
           />
 
           <Tabs defaultValue="abilities" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="abilities" className="text-xs gap-1">
                 <User className="w-3 h-3" />
                 <span className="hidden sm:inline">Atributos</span>
@@ -161,6 +162,10 @@ export const CharacterSheet = ({
               <TabsTrigger value="equipment" className="text-xs gap-1">
                 <Package className="w-3 h-3" />
                 <span className="hidden sm:inline">Equipo</span>
+              </TabsTrigger>
+              <TabsTrigger value="spells" className="text-xs gap-1">
+                <BookOpen className="w-3 h-3" />
+                <span className="hidden sm:inline">Hechizos</span>
               </TabsTrigger>
               <TabsTrigger value="features" className="text-xs gap-1">
                 <Sparkles className="w-3 h-3" />
@@ -261,6 +266,21 @@ export const CharacterSheet = ({
                 }}
                 proficiencyBonus={profBonus}
                 onChange={(equipment) => updateCharacter('equipment', equipment)}
+                readOnly={readOnly}
+              />
+            </TabsContent>
+
+            <TabsContent value="spells" className="mt-4">
+              <SpellsPanel
+                spells={character.spells}
+                spellAbility={character.spell_ability}
+                abilities={{
+                  intelligence: character.intelligence,
+                  wisdom: character.wisdom,
+                  charisma: character.charisma,
+                }}
+                proficiencyBonus={profBonus}
+                onChange={(spells) => updateCharacter('spells', spells)}
                 readOnly={readOnly}
               />
             </TabsContent>
