@@ -6,6 +6,7 @@ import {
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
   getRaceLabel, getClassLabel, getMonsterTypeLabel, getCreatureSizeLabel
 } from '@/types/dnd';
+import { ExtendedCharacter } from '@/types/dnd5e';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,9 +15,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X } from 'lucide-react';
+import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { SharedImagePicker } from './SharedImagePicker';
+import { CharacterSheet } from './character-sheet';
 
 const TOKEN_COLORS: TokenColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'black'];
 
@@ -26,10 +28,11 @@ interface CharacterManagerProps {
 }
 
 export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: CharacterManagerProps) => {
-  const { characters, loading: loadingChars, createCharacter, deleteCharacter } = useCharacters();
+  const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter } = useCharacters();
   const { monsters, loading: loadingMonsters, createMonster, deleteMonster } = useMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
   const [showNewMonster, setShowNewMonster] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<ExtendedCharacter | null>(null);
   const [charImageInputMode, setCharImageInputMode] = useState<'upload' | 'url'>('upload');
   const [monsterImageInputMode, setMonsterImageInputMode] = useState<'upload' | 'url'>('upload');
   const charFileInputRef = useRef<HTMLInputElement>(null);
@@ -399,36 +402,62 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             ) : (
               <div className="space-y-2">
                 {characters.map(char => (
-                  <div key={char.id} className="p-3 bg-muted/50 rounded-lg border border-border">
+                  <div key={char.id} className="p-3 bg-muted/50 rounded-lg border border-border hover:border-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                      <button 
+                        className="flex items-center gap-2 text-left flex-1 min-w-0"
+                        onClick={() => setSelectedCharacter(char as ExtendedCharacter)}
+                      >
                         {char.image_url ? (
                           <img 
                             src={char.image_url} 
                             alt={char.name}
-                            className="w-6 h-6 rounded-full border-2 border-foreground/30 object-cover"
+                            className="w-8 h-8 rounded-full border-2 border-foreground/30 object-cover flex-shrink-0"
                           />
                         ) : (
                           <div
-                            className="w-6 h-6 rounded-full border-2 border-foreground/30"
+                            className="w-8 h-8 rounded-full border-2 border-foreground/30 flex-shrink-0"
                             style={{ backgroundColor: char.token_color === 'black' ? '#1a1a1a' : char.token_color }}
                           />
                         )}
-                        <span className="font-semibold text-sm">{char.name}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onAddCharacterToMap(char)}>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-sm block truncate">{char.name}</span>
+                          <span className="text-xs text-muted-foreground block">
+                            {getRaceLabel(char.race)} {getClassLabel(char.class)} Nv.{char.level}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7" 
+                          title="Ver ficha"
+                          onClick={() => setSelectedCharacter(char as ExtendedCharacter)}
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7" 
+                          title="Añadir al mapa"
+                          onClick={() => onAddCharacterToMap(char)}
+                        >
                           <Plus className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteCharacter(char.id)}>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-destructive" 
+                          title="Eliminar"
+                          onClick={() => deleteCharacter(char.id)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {getRaceLabel(char.race)} {getClassLabel(char.class)} Nv.{char.level}
-                    </div>
-                    <div className="flex gap-3 mt-1 text-xs">
+                    <div className="flex gap-3 text-xs">
                       <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> CA {char.armor_class}</span>
                       <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> PG {char.hit_points_max}</span>
                       <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {char.speed}ft</span>
@@ -438,6 +467,26 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
               </div>
             )}
           </ScrollArea>
+
+          {/* Character Sheet Dialog */}
+          <Dialog open={!!selectedCharacter} onOpenChange={(open) => !open && setSelectedCharacter(null)}>
+            <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden">
+              {selectedCharacter && (
+                <CharacterSheet
+                  character={selectedCharacter}
+                  onSave={async (char) => {
+                    const success = await updateCharacter(char.id, char as Partial<Character>);
+                    if (success) {
+                      setSelectedCharacter(null);
+                    }
+                    return success;
+                  }}
+                  onClose={() => setSelectedCharacter(null)}
+                  initialReadOnly={true}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="monsters" className="space-y-3">
