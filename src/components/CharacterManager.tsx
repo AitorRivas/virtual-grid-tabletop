@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { useCharacters } from '@/hooks/useCharacters';
-import { useMonsters } from '@/hooks/useMonsters';
+import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { 
   Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS, 
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
   getRaceLabel, getClassLabel, getMonsterTypeLabel, getCreatureSizeLabel
 } from '@/types/dnd';
-import { ExtendedCharacter } from '@/types/dnd5e';
+import { ExtendedCharacter, ExtendedMonster } from '@/types/dnd5e';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,10 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X, FileText } from 'lucide-react';
+import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X, FileText, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { SharedImagePicker } from './SharedImagePicker';
 import { CharacterSheet } from './character-sheet';
+import { MonsterSheet } from './monster-sheet';
 
 const TOKEN_COLORS: TokenColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'black'];
 
@@ -28,11 +29,12 @@ interface CharacterManagerProps {
 }
 
 export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: CharacterManagerProps) => {
-  const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter } = useCharacters();
-  const { monsters, loading: loadingMonsters, createMonster, deleteMonster } = useMonsters();
+  const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter, cloneCharacter } = useCharacters();
+  const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster } = useExtendedMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
   const [showNewMonster, setShowNewMonster] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<ExtendedCharacter | null>(null);
+  const [selectedMonster, setSelectedMonster] = useState<ExtendedMonster | null>(null);
   const [charImageInputMode, setCharImageInputMode] = useState<'upload' | 'url'>('upload');
   const [monsterImageInputMode, setMonsterImageInputMode] = useState<'upload' | 'url'>('upload');
   const charFileInputRef = useRef<HTMLInputElement>(null);
@@ -161,8 +163,25 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     if (!monsterForm.name.trim()) return;
     await createMonster({
       ...monsterForm,
+      alignment: null,
+      proficiency_bonus: 2,
+      hit_dice: null,
+      speeds: { walk: monsterForm.speed },
+      senses: { passive_perception: 10 },
+      languages: [],
+      resistances: { damage: [], conditions: [] },
+      immunities: { damage: [], conditions: [] },
+      vulnerabilities: [],
+      saves: [],
+      skills: [],
+      traits: [],
+      actions: [],
+      bonus_actions: [],
+      reactions: [],
+      legendary_actions: { count: 0, actions: [] },
+      lair_actions: [],
       image_url: monsterForm.image_url.trim() || null
-    });
+    } as any);
     setShowNewMonster(false);
     setMonsterForm({
       name: '', type: 'Beast', size: 'medium', challenge_rating: '1',
@@ -441,6 +460,15 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                           size="icon" 
                           variant="ghost" 
                           className="h-7 w-7" 
+                          title="Clonar"
+                          onClick={() => cloneCharacter(char as ExtendedCharacter)}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7" 
                           title="Añadir al mapa"
                           onClick={() => onAddCharacterToMap(char)}
                         >
@@ -694,9 +722,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             ) : (
               <div className="space-y-2">
                 {monsters.map(monster => (
-                  <div key={monster.id} className="p-3 bg-muted/50 rounded-lg border border-border">
+                  <div key={monster.id} className="p-3 bg-muted/50 rounded-lg border border-border hover:border-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                      <button 
+                        className="flex items-center gap-2 text-left flex-1 min-w-0"
+                        onClick={() => setSelectedMonster(monster)}
+                      >
                         {monster.image_url ? (
                           <img 
                             src={monster.image_url} 
@@ -709,13 +740,43 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                             style={{ backgroundColor: monster.token_color === 'black' ? '#1a1a1a' : monster.token_color }}
                           />
                         )}
-                        <span className="font-semibold text-sm">{monster.name}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onAddMonsterToMap(monster)}>
+                        <span className="font-semibold text-sm truncate">{monster.name}</span>
+                      </button>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7" 
+                          title="Ver ficha"
+                          onClick={() => setSelectedMonster(monster)}
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7" 
+                          title="Clonar"
+                          onClick={() => cloneMonster(monster)}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7" 
+                          title="Añadir al mapa"
+                          onClick={() => onAddMonsterToMap(monster as any)}
+                        >
                           <Plus className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMonster(monster.id)}>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-destructive" 
+                          title="Eliminar"
+                          onClick={() => deleteMonster(monster.id)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -733,6 +794,26 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
               </div>
             )}
           </ScrollArea>
+
+          {/* Monster Sheet Dialog */}
+          <Dialog open={!!selectedMonster} onOpenChange={(open) => !open && setSelectedMonster(null)}>
+            <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden">
+              {selectedMonster && (
+                <MonsterSheet
+                  monster={selectedMonster}
+                  onSave={async (m) => {
+                    const success = await updateMonster(m.id, m);
+                    if (success) {
+                      setSelectedMonster(null);
+                    }
+                    return success;
+                  }}
+                  onClose={() => setSelectedMonster(null)}
+                  initialReadOnly={true}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
       </Tabs>
     </div>

@@ -103,5 +103,14 @@ export const useCharacters = () => {
     return true;
   };
 
-  return { characters, loading, createCharacter, updateCharacter, deleteCharacter, refetch: fetchCharacters };
+  const cloneCharacter = async (character: ExtendedCharacter) => {
+    const { id, user_id, created_at, updated_at, ...rest } = character;
+    const cloned = await createCharacter({
+      ...rest,
+      name: `${character.name} (copia)`
+    } as any);
+    return cloned;
+  };
+
+  return { characters, loading, createCharacter, updateCharacter, deleteCharacter, cloneCharacter, refetch: fetchCharacters };
 };
