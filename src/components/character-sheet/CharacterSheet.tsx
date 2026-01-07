@@ -229,7 +229,7 @@ export const CharacterSheet = ({
                         <SelectValue placeholder="Sin hechizos" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin hechizos</SelectItem>
+                        <SelectItem value="none">Sin hechizos</SelectItem>
                         {SAVES.map(s => (
                           <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                         ))}

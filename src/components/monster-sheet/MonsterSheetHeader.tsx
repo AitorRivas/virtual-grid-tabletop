@@ -102,7 +102,7 @@ export const MonsterSheetHeader = ({ monster, onChange, readOnly }: MonsterSheet
               <SelectValue placeholder="Sin alineamiento" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Sin alineamiento</SelectItem>
+              <SelectItem value="none">Sin alineamiento</SelectItem>
               {(ALIGNMENTS as AlignmentOption[]).map(a => (
                 <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
               ))}
