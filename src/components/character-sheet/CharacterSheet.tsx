@@ -1,11 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Swords, Package, Sparkles, BookOpen, Edit, Eye, Save, X } from 'lucide-react';
+import { User, Swords, Package, Sparkles, BookOpen, Edit, Save, X, Download, Upload, Bookmark } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { CharacterSheetHeader } from './CharacterSheetHeader';
 import { AbilityScoresPanel } from './AbilityScoresPanel';
 import { CombatPanel } from './CombatPanel';
@@ -13,6 +15,8 @@ import { ActionsPanel } from './ActionsPanel';
 import { EquipmentPanel } from './EquipmentPanel';
 import { FeaturesPanel } from './FeaturesPanel';
 import { SpellsPanel } from './SpellsPanel';
+import { toast } from 'sonner';
+import { getModifier } from '@/types/dnd';
 import { 
   ExtendedCharacter, 
   CharacterProficiencies, 
@@ -23,9 +27,11 @@ import {
   Senses,
   Resistances,
   CharacterSpells,
-  SAVES
+  SAVES,
+  calculateAC
 } from '@/types/dnd5e';
 import { getProficiencyBonus } from '@/types/dnd5e';
+import { useTemplates } from '@/hooks/useTemplates';
 
 interface CharacterSheetProps {
   character: ExtendedCharacter;
@@ -44,6 +50,28 @@ export const CharacterSheet = ({
   const [readOnly, setReadOnly] = useState(initialReadOnly);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  
+  const { createCharacterTemplate } = useTemplates();
+
+  const profBonus = useMemo(() => getProficiencyBonus(character.level), [character.level]);
+  const dexMod = useMemo(() => getModifier(character.dexterity), [character.dexterity]);
+
+  // Auto-calculate AC when equipment changes
+  const calculatedAC = useMemo(() => {
+    return calculateAC(dexMod, character.equipment);
+  }, [dexMod, character.equipment]);
+
+  // Sync AC when equipment changes (but allow manual override in edit mode)
+  useEffect(() => {
+    if (!readOnly && character.equipment.some(e => e.equipped && (e.type === 'armor' || e.type === 'shield'))) {
+      if (character.armor_class !== calculatedAC) {
+        setCharacter(prev => ({ ...prev, armor_class: calculatedAC }));
+        setHasChanges(true);
+      }
+    }
+  }, [calculatedAC, readOnly]);
 
   const updateCharacter = <K extends keyof ExtendedCharacter>(
     key: K, 
@@ -74,7 +102,50 @@ export const CharacterSheet = ({
     setReadOnly(true);
   };
 
-  const profBonus = useMemo(() => getProficiencyBonus(character.level), [character.level]);
+  // Export character as JSON
+  const handleExport = () => {
+    const exportData = {
+      ...character,
+      id: undefined, // Remove ID for import
+      user_id: undefined,
+      created_at: undefined,
+      updated_at: undefined,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${character.name.replace(/\s+/g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Personaje exportado');
+  };
+
+  // Import character from JSON
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        // Merge imported data with current character (keeping ID and user_id)
+        setCharacter(prev => ({
+          ...prev,
+          ...data,
+          id: prev.id,
+          user_id: prev.user_id,
+        }));
+        setHasChanges(true);
+        toast.success('Datos importados correctamente');
+      } catch (err) {
+        toast.error('Error al importar: archivo JSON inválido');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -100,7 +171,60 @@ export const CharacterSheet = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Save as Template */}
+          <Dialog open={showSaveTemplate} onOpenChange={setShowSaveTemplate}>
+            <DialogTrigger asChild>
+              <Button size="icon" variant="ghost" title="Guardar como plantilla">
+                <Bookmark className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Guardar como Plantilla</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Nombre de la plantilla</Label>
+                  <Input
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="Ej: Guerrero nivel 5"
+                  />
+                </div>
+                <Button 
+                  onClick={() => {
+                    if (templateName.trim()) {
+                      createCharacterTemplate(templateName, character);
+                      toast.success('Plantilla guardada');
+                      setShowSaveTemplate(false);
+                      setTemplateName('');
+                    }
+                  }} 
+                  className="w-full"
+                >
+                  Guardar
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Export/Import */}
+          <Button size="icon" variant="ghost" onClick={handleExport} title="Exportar JSON">
+            <Download className="w-4 h-4" />
+          </Button>
+          <label title="Importar JSON">
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <Button size="icon" variant="ghost" asChild>
+              <span><Upload className="w-4 h-4" /></span>
+            </Button>
+          </label>
+          
           {readOnly ? (
             <Button size="sm" variant="outline" onClick={() => setReadOnly(false)}>
               <Edit className="w-4 h-4 mr-1" />
