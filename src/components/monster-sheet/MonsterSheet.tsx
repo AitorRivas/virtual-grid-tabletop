@@ -5,7 +5,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload } from 'lucide-react';
+import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload, Bookmark } from 'lucide-react';
+import { useTemplates } from '@/hooks/useTemplates';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MonsterSheetHeader } from './MonsterSheetHeader';
 import { TraitsPanel } from './TraitsPanel';
 import { MonsterActionsPanel } from './MonsterActionsPanel';
@@ -39,6 +41,9 @@ export const MonsterSheet = ({
   const [readOnly, setReadOnly] = useState(initialReadOnly);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const { createMonsterTemplate } = useTemplates();
 
   const updateMonster = <K extends keyof ExtendedMonster>(
     key: K, 
@@ -149,7 +154,10 @@ export const MonsterSheet = ({
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {/* Export/Import */}
+          {/* Export/Import/Template */}
+          <Button size="icon" variant="ghost" onClick={() => setShowSaveTemplate(true)} title="Guardar como plantilla">
+            <Bookmark className="w-4 h-4" />
+          </Button>
           <Button size="icon" variant="ghost" onClick={handleExport} title="Exportar JSON">
             <Download className="w-4 h-4" />
           </Button>
@@ -356,6 +364,41 @@ export const MonsterSheet = ({
           </div>
         </div>
       </ScrollArea>
+
+      {/* Save as Template Dialog */}
+      <Dialog open={showSaveTemplate} onOpenChange={setShowSaveTemplate}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Guardar como Plantilla</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nombre de la plantilla</Label>
+              <Input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder={`Ej: ${monster.name} base`}
+              />
+            </div>
+            <Button 
+              onClick={() => {
+                if (templateName.trim()) {
+                  createMonsterTemplate(templateName, monster);
+                  toast.success('Plantilla guardada');
+                  setShowSaveTemplate(false);
+                  setTemplateName('');
+                } else {
+                  toast.error('Ingresa un nombre');
+                }
+              }} 
+              className="w-full"
+            >
+              <Bookmark className="w-4 h-4 mr-1" />
+              Guardar Plantilla
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

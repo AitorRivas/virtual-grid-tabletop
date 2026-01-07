@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { SharedImagePicker } from './SharedImagePicker';
 import { CharacterSheet } from './character-sheet';
 import { MonsterSheet } from './monster-sheet';
+import { TemplateManager } from './TemplateManager';
 
 const TOKEN_COLORS: TokenColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan', 'black'];
 
@@ -205,8 +206,61 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     </div>
   );
 
+  // Handle applying templates
+  const handleApplyCharacterTemplate = (data: Partial<ExtendedCharacter>) => {
+    setCharForm(prev => ({
+      ...prev,
+      name: data.name || prev.name,
+      race: data.race || prev.race,
+      class: data.class || prev.class,
+      level: data.level || prev.level,
+      background: data.background || prev.background,
+      alignment: data.alignment || prev.alignment,
+      strength: data.strength || prev.strength,
+      dexterity: data.dexterity || prev.dexterity,
+      constitution: data.constitution || prev.constitution,
+      intelligence: data.intelligence || prev.intelligence,
+      wisdom: data.wisdom || prev.wisdom,
+      charisma: data.charisma || prev.charisma,
+      armor_class: data.armor_class || prev.armor_class,
+      hit_points_max: data.hit_points_max || prev.hit_points_max,
+      speed: data.speed || prev.speed,
+    }));
+    setShowNewCharacter(true);
+    toast.success('Plantilla aplicada al formulario');
+  };
+
+  const handleApplyMonsterTemplate = (data: Partial<ExtendedMonster>) => {
+    setMonsterForm(prev => ({
+      ...prev,
+      name: data.name || prev.name,
+      type: data.type || prev.type,
+      size: (data.size as CreatureSize) || prev.size,
+      challenge_rating: data.challenge_rating || prev.challenge_rating,
+      strength: data.strength || prev.strength,
+      dexterity: data.dexterity || prev.dexterity,
+      constitution: data.constitution || prev.constitution,
+      intelligence: data.intelligence || prev.intelligence,
+      wisdom: data.wisdom || prev.wisdom,
+      charisma: data.charisma || prev.charisma,
+      armor_class: data.armor_class || prev.armor_class,
+      hit_points: data.hit_points || prev.hit_points,
+      speed: data.speed || prev.speed,
+    }));
+    setShowNewMonster(true);
+    toast.success('Plantilla aplicada al formulario');
+  };
+
   return (
     <div className="p-4 space-y-4">
+      {/* Template Manager Button */}
+      <TemplateManager
+        onApplyCharacterTemplate={handleApplyCharacterTemplate}
+        onApplyMonsterTemplate={handleApplyMonsterTemplate}
+        currentCharacter={selectedCharacter}
+        currentMonster={selectedMonster}
+      />
+
       <Tabs defaultValue="characters" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="characters" className="gap-1">
