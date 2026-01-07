@@ -5,12 +5,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Swords, Shield, Star, Edit, Save, X } from 'lucide-react';
+import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload } from 'lucide-react';
 import { MonsterSheetHeader } from './MonsterSheetHeader';
 import { TraitsPanel } from './TraitsPanel';
 import { MonsterActionsPanel } from './MonsterActionsPanel';
 import { ResistancesPanel } from './ResistancesPanel';
 import { AbilityScoresPanel } from '@/components/character-sheet/AbilityScoresPanel';
+import { toast } from 'sonner';
 import { 
   ExtendedMonster, 
   CharacterProficiencies, 
@@ -68,6 +69,50 @@ export const MonsterSheet = ({
     setReadOnly(true);
   };
 
+  // Export monster as JSON
+  const handleExport = () => {
+    const exportData = {
+      ...monster,
+      id: undefined,
+      user_id: undefined,
+      created_at: undefined,
+      updated_at: undefined,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${monster.name.replace(/\s+/g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Monstruo exportado');
+  };
+
+  // Import monster from JSON
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        setMonster(prev => ({
+          ...prev,
+          ...data,
+          id: prev.id,
+          user_id: prev.user_id,
+        }));
+        setHasChanges(true);
+        toast.success('Datos importados correctamente');
+      } catch (err) {
+        toast.error('Error al importar: archivo JSON inválido');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
   // Convert monster saves/skills to proficiencies format for AbilityScoresPanel
   const proficiencies: CharacterProficiencies = useMemo(() => ({
     saves: monster.saves.map(s => s.ability),
@@ -103,7 +148,23 @@ export const MonsterSheet = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Export/Import */}
+          <Button size="icon" variant="ghost" onClick={handleExport} title="Exportar JSON">
+            <Download className="w-4 h-4" />
+          </Button>
+          <label title="Importar JSON">
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <Button size="icon" variant="ghost" asChild>
+              <span><Upload className="w-4 h-4" /></span>
+            </Button>
+          </label>
+
           {readOnly ? (
             <Button size="sm" variant="outline" onClick={() => setReadOnly(false)}>
               <Edit className="w-4 h-4 mr-1" />
