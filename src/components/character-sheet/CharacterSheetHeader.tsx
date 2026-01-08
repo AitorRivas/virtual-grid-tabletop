@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { DND_RACES, DND_CLASSES, ALIGNMENTS, getRaceLabel, getClassLabel } from '@/types/dnd';
 import { getProficiencyBonus } from '@/types/dnd5e';
 
@@ -14,6 +15,7 @@ interface CharacterSheetHeaderProps {
     background: string | null;
     alignment: string | null;
     proficiency_bonus: number;
+    token_size: number;
   };
   onChange: (updates: Partial<CharacterSheetHeaderProps['character']>) => void;
   readOnly?: boolean;
@@ -21,7 +23,9 @@ interface CharacterSheetHeaderProps {
 
 export const CharacterSheetHeader = ({ character, onChange, readOnly = false }: CharacterSheetHeaderProps) => {
   const profBonus = getProficiencyBonus(character.level);
-  
+
+  const cellsFromTokenSize = Math.max(1, Math.min(4, Math.round((character.token_size || 100) / 100)));
+
   return (
     <div className="space-y-4">
       {/* Name and Level */}
@@ -45,9 +49,9 @@ export const CharacterSheetHeader = ({ character, onChange, readOnly = false }: 
             value={character.level}
             onChange={(e) => {
               const level = parseInt(e.target.value) || 1;
-              onChange({ 
-                level, 
-                proficiency_bonus: getProficiencyBonus(level) 
+              onChange({
+                level,
+                proficiency_bonus: getProficiencyBonus(level),
               });
             }}
             className="text-center font-bold"
@@ -136,6 +140,23 @@ export const CharacterSheetHeader = ({ character, onChange, readOnly = false }: 
           </Select>
         )}
       </div>
+
+      {/* Token size */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground">Tamaño del token</Label>
+          <span className="text-xs text-muted-foreground">{cellsFromTokenSize}x{cellsFromTokenSize} · base {character.token_size || 100}px</span>
+        </div>
+        <Slider
+          value={[character.token_size || 100]}
+          onValueChange={(v) => onChange({ token_size: v[0] })}
+          min={50}
+          max={400}
+          step={50}
+          disabled={readOnly}
+        />
+      </div>
     </div>
   );
 };
+
