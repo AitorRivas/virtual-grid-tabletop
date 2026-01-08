@@ -130,7 +130,7 @@ export const MonsterSheet = ({
   }), [monster.saves, monster.skills, monster.languages]);
 
   return (
-    <div className="flex flex-col h-full max-h-full overflow-hidden">
+    <div className="flex flex-col h-full max-h-full min-h-0 overflow-hidden">
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-card/50">
         <div className="flex items-center gap-2">
@@ -198,10 +198,20 @@ export const MonsterSheet = ({
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-6">
           {/* Header Section */}
           <MonsterSheetHeader
+            monster={{
+              name: monster.name,
+              type: monster.type,
+              size: monster.size,
+              alignment: monster.alignment,
+              challenge_rating: monster.challenge_rating,
+              proficiency_bonus: monster.proficiency_bonus,
+              hit_dice: monster.hit_dice,
+            }}
+
             monster={{
               name: monster.name,
               type: monster.type,

@@ -18,8 +18,9 @@ import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X, Upload } from 'lucide-react';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
-import { GridConfig, CellState, getTokenSizeFromCreatureSize } from '@/lib/gridEngine/types';
+import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
+
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
@@ -489,15 +490,19 @@ export const MapViewer = () => {
   };
 
   const handleAddCharacterToMap = (character: Character) => {
-    // Characters are medium by default, use stored token_size or default 100px
-    const tokenSize = character.token_size > 0 ? character.token_size : 100;
+    // Treat token_size as a "base" size (100px = 1 cell) and convert to cells.
+    // Legacy characters often have 50px saved; that still maps to 1 cell.
+    const baseTokenSize = character.token_size > 0 ? character.token_size : 100;
+    const sizeInCells = Math.max(1, Math.min(4, Math.round(baseTokenSize / 100)));
+    const tokenSizePx = sizeInCells * gridSize;
+
     const newToken: TokenData = {
       id: `char-${Date.now()}`,
       x: 50, // Center of map
       y: 50,
       color: character.token_color,
       name: character.name,
-      size: tokenSize,
+      size: tokenSizePx,
       initiative: getModifier(character.dexterity) + character.initiative_bonus,
       status: 'active',
       conditions: [],
@@ -506,22 +511,24 @@ export const MapViewer = () => {
       imageUrl: character.image_url || undefined,
       speedFeet: character.speed,
       movementRemaining: character.speed,
-      sizeInCells: 1, // Characters are typically medium (1 cell)
+      sizeInCells,
     };
     setTokens([...tokens, newToken]);
     toast.success(`${character.name} añadido al mapa`);
   };
 
   const handleAddMonsterToMap = (monster: Monster) => {
-    // Calculate token size based on creature size
-    const tokenSize = getTokenSizeFromCreatureSize(monster.size);
+    // Creature size determines how many grid cells it occupies.
+    const sizeInCells = CREATURE_SIZE_CELLS[monster.size] ?? 1;
+    const tokenSizePx = sizeInCells * gridSize;
+
     const newToken: TokenData = {
       id: `monster-${Date.now()}`,
       x: 50,
       y: 50,
       color: monster.token_color,
       name: monster.name,
-      size: tokenSize,
+      size: tokenSizePx,
       initiative: getModifier(monster.dexterity),
       status: 'active',
       conditions: [],
@@ -530,7 +537,7 @@ export const MapViewer = () => {
       imageUrl: monster.image_url || undefined,
       speedFeet: monster.speed,
       movementRemaining: monster.speed,
-      sizeInCells: tokenSize >= 200 ? Math.ceil(tokenSize / 100) : 1,
+      sizeInCells,
     };
     setTokens([...tokens, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
@@ -601,6 +608,7 @@ export const MapViewer = () => {
                     width={gridSize}
                     height={gridSize}
                     patternUnits="userSpaceOnUse"
+                    patternTransform={`translate(${gridOffsetX} ${gridOffsetY})`}
                   >
                     <path
                       d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
