@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Swords, ChevronLeft, ChevronRight, Skull, RotateCcw, Ruler, Sparkles, ChevronDown, ChevronUp, Database, Heart, MinusCircle, PlusCircle } from 'lucide-react';
+import { Plus, Trash2, Users, Swords, ChevronLeft, ChevronRight, Skull, RotateCcw, RotateCw, Ruler, Sparkles, ChevronDown, ChevronUp, Database, Heart, MinusCircle, PlusCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
@@ -27,6 +27,7 @@ interface TokenToolbarProps {
   onInitiativeChange: (id: string, initiative: number) => void;
   onStatusChange: (id: string, status: TokenStatus) => void;
   onTokenSizeChange: (id: string, size: number) => void;
+  onTokenRotationChange: (id: string, rotation: number) => void;
   onToggleCondition: (tokenId: string, conditionId: string) => void;
   onHpChange: (id: string, hpCurrent: number, hpMax: number) => void;
   combatMode: boolean;
@@ -67,6 +68,7 @@ export const TokenToolbar = ({
   onInitiativeChange,
   onStatusChange,
   onTokenSizeChange,
+  onTokenRotationChange,
   onToggleCondition,
   onHpChange,
   combatMode,
@@ -465,6 +467,40 @@ export const TokenToolbar = ({
                                 max={400}
                                 step={5}
                               />
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] text-muted-foreground flex items-center gap-1 mb-1">
+                                <RotateCw className="w-3 h-3" />
+                                Rotación: {token.rotation || 0}°
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={(e) => { e.stopPropagation(); onTokenRotationChange(token.id, ((token.rotation || 0) - 45 + 360) % 360); }}
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                </Button>
+                                <Slider
+                                  value={[token.rotation || 0]}
+                                  onValueChange={(value) => onTokenRotationChange(token.id, value[0])}
+                                  onClick={(e) => e.stopPropagation()}
+                                  min={0}
+                                  max={359}
+                                  step={15}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={(e) => { e.stopPropagation(); onTokenRotationChange(token.id, ((token.rotation || 0) + 45) % 360); }}
+                                >
+                                  <RotateCw className="w-3 h-3" />
+                                </Button>
+                              </div>
                             </div>
 
                             <div>
