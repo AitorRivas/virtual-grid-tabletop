@@ -32,6 +32,7 @@ export interface TokenData {
   hpMax: number;
   hpCurrent: number;
   imageUrl?: string;
+  rotation?: number;
 }
 
 export const MapViewer = () => {
@@ -234,6 +235,12 @@ export const MapViewer = () => {
     
     setTokens(tokens.map(token => 
       token.id === id ? { ...token, x, y } : token
+    ));
+  };
+
+  const handleTokenRotation = (id: string, rotation: number) => {
+    setTokens(tokens.map(token => 
+      token.id === id ? { ...token, rotation } : token
     ));
   };
 
@@ -534,6 +541,7 @@ export const MapViewer = () => {
                 key={token.id}
                 {...token}
                 imageUrl={token.imageUrl}
+                rotation={token.rotation}
                 isSelected={selectedToken === token.id}
                 isCurrentTurn={combatMode && token.id === currentTurnTokenId}
                 combatMode={combatMode}
@@ -541,6 +549,7 @@ export const MapViewer = () => {
                 onClick={() => setSelectedToken(token.id)}
                 onDelete={() => handleDeleteToken(token.id)}
                 onMarkDead={() => handleStatusChange(token.id, 'dead')}
+                onRotate={handleTokenRotation}
                 mapContainerRef={mapContainerRef}
               />
             ))}
@@ -626,6 +635,7 @@ export const MapViewer = () => {
             onInitiativeChange={handleInitiativeChange}
             onStatusChange={handleStatusChange}
             onTokenSizeChange={handleTokenSizeChange}
+            onTokenRotationChange={handleTokenRotation}
             onToggleCondition={handleToggleCondition}
             onHpChange={handleHpChange}
             combatMode={combatMode}

@@ -92,6 +92,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (username: string, password: string) => {
+    // First verify the username exists with exact case match
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .single();
+    
+    if (!profileData) {
+      return { error: new Error('Usuario o contraseña incorrectos') };
+    }
+    
     // Convert username to internal email format
     const email = `${username.toLowerCase()}@dnd-tabletop.internal`;
     const { error } = await supabase.auth.signInWithPassword({ email, password });

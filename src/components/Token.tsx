@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Skull } from 'lucide-react';
+import { Trash2, Skull, RotateCw, RotateCcw } from 'lucide-react';
 import { TokenColor, TokenStatus } from './MapViewer';
 import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -16,6 +16,7 @@ interface TokenProps {
   hpMax: number;
   hpCurrent: number;
   imageUrl?: string;
+  rotation?: number;
   isSelected: boolean;
   isCurrentTurn: boolean;
   combatMode: boolean;
@@ -23,6 +24,7 @@ interface TokenProps {
   onClick: () => void;
   onDelete: () => void;
   onMarkDead: () => void;
+  onRotate: (id: string, rotation: number) => void;
   mapContainerRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -39,8 +41,8 @@ const colorClasses: Record<TokenColor, string> = {
 };
 
 export const Token = ({ 
-  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, isSelected, isCurrentTurn, combatMode,
-  onMove, onClick, onDelete, onMarkDead, mapContainerRef 
+  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected, isCurrentTurn, combatMode,
+  onMove, onClick, onDelete, onMarkDead, onRotate, mapContainerRef 
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, tokenX: 0, tokenY: 0 });
@@ -225,6 +227,7 @@ export const Token = ({
               ? '0 0 15px hsl(var(--primary) / 0.6)' 
               : 'var(--token-shadow)',
             fontSize: size * 0.4,
+            transform: `rotate(${rotation}deg)`,
           }}
         >
           {imageUrl ? (
@@ -237,7 +240,7 @@ export const Token = ({
               />
               {isDead && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full">
-                  <Skull className="w-1/2 h-1/2 text-white" />
+                  <Skull className="w-1/2 h-1/2 text-white" style={{ transform: `rotate(-${rotation}deg)` }} />
                 </div>
               )}
             </>
@@ -285,6 +288,26 @@ export const Token = ({
             className="absolute left-1/2 -translate-x-1/2 flex gap-1 z-[110]"
             style={{ top: -32 }}
           >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRotate(id, (rotation - 45 + 360) % 360);
+              }}
+              className="p-1.5 bg-secondary hover:bg-secondary/80 rounded text-secondary-foreground transition-colors shadow-lg"
+              title="Rotar izquierda"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRotate(id, (rotation + 45) % 360);
+              }}
+              className="p-1.5 bg-secondary hover:bg-secondary/80 rounded text-secondary-foreground transition-colors shadow-lg"
+              title="Rotar derecha"
+            >
+              <RotateCw className="w-4 h-4" />
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
