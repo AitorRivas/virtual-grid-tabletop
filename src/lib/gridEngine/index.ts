@@ -7,6 +7,11 @@
 
 // Types
 export * from './types';
+export { 
+  CREATURE_SIZE_CELLS, 
+  CREATURE_SIZE_PIXELS, 
+  getTokenSizeFromCreatureSize 
+} from './types';
 
 // Movement calculations
 export {
