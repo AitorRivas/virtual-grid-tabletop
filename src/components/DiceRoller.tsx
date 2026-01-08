@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Dices, GripHorizontal } from 'lucide-react';
 import { Button } from './ui/button';
 import { useDraggable } from '@/hooks/useDraggable';
@@ -32,23 +32,26 @@ export const DiceRoller = () => {
   const [results, setResults] = useState<DiceResult[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Calculate safe position when expanding
-  const getDefaultPosition = useCallback(() => {
-    const x = Math.max(16, Math.min(window.innerWidth - PANEL_WIDTH - 16, window.innerWidth - PANEL_WIDTH - 16));
-    const y = Math.max(16, Math.min(window.innerHeight - PANEL_HEIGHT - 16, window.innerHeight - PANEL_HEIGHT - 100));
+  // Calculate safe position when expanding - memoized to avoid recreating on every render
+  const defaultPosition = useMemo(() => {
+    const x = Math.max(16, window.innerWidth - PANEL_WIDTH - 16);
+    const y = Math.max(16, window.innerHeight - PANEL_HEIGHT - 100);
     return { x, y };
   }, []);
   
   const { position, isDragging, dragRef, handleMouseDown, resetPosition } = useDraggable({
-    defaultPosition: getDefaultPosition(),
+    defaultPosition,
   });
 
   // Reset to safe position when minimized
-  useEffect(() => {
-    if (!isExpanded) {
-      resetPosition();
-    }
-  }, [isExpanded, resetPosition]);
+  const handleCollapse = useCallback(() => {
+    setIsExpanded(false);
+  }, []);
+
+  const handleExpand = useCallback(() => {
+    resetPosition();
+    setIsExpanded(true);
+  }, [resetPosition]);
 
   const rollDice = (sides: number) => {
     const id = Date.now();
@@ -169,7 +172,7 @@ export const DiceRoller = () => {
       {/* Toggle button */}
       {!isExpanded && (
         <Button
-          onClick={() => setIsExpanded(true)}
+          onClick={handleExpand}
           className="rounded-full w-14 h-14 shadow-lg bg-primary hover:bg-primary/90"
           size="icon"
         >
@@ -191,7 +194,7 @@ export const DiceRoller = () => {
               <h3 className="font-bold text-card-foreground">Lanzar Dados</h3>
             </div>
             <Button
-              onClick={() => setIsExpanded(false)}
+              onClick={handleCollapse}
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0"

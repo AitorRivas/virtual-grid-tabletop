@@ -96,8 +96,7 @@ export const MapViewer = () => {
   const [fogData, setFogData] = useState<string | null>(null);
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
 
-  // Grid engine state
-  const [gridCellSize, setGridCellSize] = useState(50);
+  // Grid engine state - uses gridSize as the single source of truth for cell size
   const [gridOffsetX, setGridOffsetX] = useState(0);
   const [gridOffsetY, setGridOffsetY] = useState(0);
   const [cellStates, setCellStates] = useState<Record<string, CellState>>({});
@@ -106,16 +105,16 @@ export const MapViewer = () => {
   const [showMovementOverlay, setShowMovementOverlay] = useState(true);
   const [isCalibrating, setIsCalibrating] = useState(false);
 
-  // Grid config memoized
+  // Grid config memoized - uses gridSize for both visual grid and movement engine
   const gridConfig = useMemo((): GridConfig => ({
     type: showGrid ? 'square' : 'none',
-    cellSize: gridCellSize,
+    cellSize: gridSize, // Use gridSize as the single source of truth
     offsetX: gridOffsetX,
     offsetY: gridOffsetY,
     mapWidth: mapDimensions.width,
     mapHeight: mapDimensions.height,
     feetPerCell: 5,
-  }), [showGrid, gridCellSize, gridOffsetX, gridOffsetY, mapDimensions]);
+  }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
 
   // Load saved session on mount
   useEffect(() => {
@@ -130,7 +129,10 @@ export const MapViewer = () => {
       setCurrentTurnIndex(savedCurrentTurnIndex);
       setFogEnabled(savedFogEnabled);
       setFogData(savedFogData);
-      setGridCellSize(savedGridCellSize);
+      // Use savedGridCellSize to update gridSize (they're now unified)
+      if (savedGridCellSize > 0) {
+        setGridSize(savedGridCellSize);
+      }
       setGridOffsetX(savedGridOffsetX);
       setGridOffsetY(savedGridOffsetY);
       setCellStates(savedCellStates);
@@ -154,13 +156,13 @@ export const MapViewer = () => {
         currentTurnIndex,
         fogEnabled,
         fogData,
-        gridCellSize,
+        gridCellSize: gridSize, // Save gridSize as gridCellSize for compatibility
         gridOffsetX,
         gridOffsetY,
         cellStates,
       });
     }
-  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, fogEnabled, fogData, gridCellSize, gridOffsetX, gridOffsetY, cellStates, isLoaded, updateSession]);
+  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, fogEnabled, fogData, gridOffsetX, gridOffsetY, cellStates, isLoaded, updateSession]);
   
   // Store zoom functions
   const zoomFunctionsRef = useRef<{
@@ -444,8 +446,7 @@ export const MapViewer = () => {
 
   // Handle grid calibration complete
   const handleCalibrationComplete = (cellSize: number, offsetX: number, offsetY: number) => {
-    setGridCellSize(cellSize);
-    setGridSize(cellSize); // Sync visual grid
+    setGridSize(cellSize); // Update gridSize (unified with gridCellSize)
     setGridOffsetX(offsetX);
     setGridOffsetY(offsetY);
     setIsCalibrating(false);

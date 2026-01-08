@@ -17,6 +17,12 @@ export const useDraggable = ({ defaultPosition, dragThreshold = 5 }: UseDraggabl
   const offsetRef = useRef<Position>({ x: 0, y: 0 });
   const startPosRef = useRef<Position>({ x: 0, y: 0 });
   const hasDraggedRef = useRef(false);
+  const defaultPosRef = useRef<Position>(defaultPosition);
+
+  // Update ref when defaultPosition changes, but don't trigger re-renders
+  useEffect(() => {
+    defaultPosRef.current = defaultPosition;
+  }, [defaultPosition]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (dragRef.current) {
@@ -81,9 +87,10 @@ export const useDraggable = ({ defaultPosition, dragThreshold = 5 }: UseDraggabl
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  // resetPosition now uses the ref to avoid dependency on defaultPosition
   const resetPosition = useCallback(() => {
-    setPosition(defaultPosition);
-  }, [defaultPosition]);
+    setPosition(defaultPosRef.current);
+  }, []);
 
   return {
     position,
