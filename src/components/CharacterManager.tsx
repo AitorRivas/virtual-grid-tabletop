@@ -119,7 +119,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     speed: 30,
     initiative_bonus: 0,
     token_color: 'blue' as TokenColor,
-    token_size: 50,
+    token_size: 100, // Default 100px for medium creatures
     image_url: '',
     notes: ''
   });
@@ -140,7 +140,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     hit_points: 10,
     speed: 30,
     token_color: 'red' as TokenColor,
-    token_size: 50,
+    token_size: 100, // Default 100px for medium creatures
     image_url: '',
     notes: ''
   });
@@ -156,7 +156,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
       name: '', race: 'Human', class: 'Fighter', level: 1, background: '', alignment: 'True Neutral',
       strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10,
       armor_class: 10, hit_points_max: 10, hit_points_current: 10, speed: 30, initiative_bonus: 0,
-      token_color: 'blue', token_size: 50, image_url: '', notes: ''
+      token_color: 'blue', token_size: 100, image_url: '', notes: ''
     });
   };
 
@@ -187,7 +187,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     setMonsterForm({
       name: '', type: 'Beast', size: 'medium', challenge_rating: '1',
       strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10,
-      armor_class: 10, hit_points: 10, speed: 30, token_color: 'red', token_size: 50, image_url: '', notes: ''
+      armor_class: 10, hit_points: 10, speed: 30, token_color: 'red', token_size: 100, image_url: '', notes: ''
     });
   };
 

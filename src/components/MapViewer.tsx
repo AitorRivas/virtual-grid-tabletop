@@ -18,7 +18,7 @@ import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X, Upload } from 'lucide-react';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
-import { GridConfig, CellState } from '@/lib/gridEngine/types';
+import { GridConfig, CellState, getTokenSizeFromCreatureSize } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
@@ -488,38 +488,48 @@ export const MapViewer = () => {
   };
 
   const handleAddCharacterToMap = (character: Character) => {
+    // Characters are medium by default, use stored token_size or default 100px
+    const tokenSize = character.token_size > 0 ? character.token_size : 100;
     const newToken: TokenData = {
       id: `char-${Date.now()}`,
       x: 50, // Center of map
       y: 50,
       color: character.token_color,
       name: character.name,
-      size: character.token_size,
+      size: tokenSize,
       initiative: getModifier(character.dexterity) + character.initiative_bonus,
       status: 'active',
       conditions: [],
       hpMax: character.hit_points_max,
-      hpCurrent: character.hit_points_current ?? character.hit_points_max,
+      hpCurrent: character.hit_points_max, // Always start with max HP when adding to map
       imageUrl: character.image_url || undefined,
+      speedFeet: character.speed,
+      movementRemaining: character.speed,
+      sizeInCells: 1, // Characters are typically medium (1 cell)
     };
     setTokens([...tokens, newToken]);
     toast.success(`${character.name} añadido al mapa`);
   };
 
   const handleAddMonsterToMap = (monster: Monster) => {
+    // Calculate token size based on creature size
+    const tokenSize = getTokenSizeFromCreatureSize(monster.size);
     const newToken: TokenData = {
       id: `monster-${Date.now()}`,
       x: 50,
       y: 50,
       color: monster.token_color,
       name: monster.name,
-      size: monster.token_size,
+      size: tokenSize,
       initiative: getModifier(monster.dexterity),
       status: 'active',
       conditions: [],
       hpMax: monster.hit_points,
-      hpCurrent: monster.hit_points,
+      hpCurrent: monster.hit_points, // Always start with max HP when adding to map
       imageUrl: monster.image_url || undefined,
+      speedFeet: monster.speed,
+      movementRemaining: monster.speed,
+      sizeInCells: tokenSize >= 200 ? Math.ceil(tokenSize / 100) : 1,
     };
     setTokens([...tokens, newToken]);
     toast.success(`${monster.name} añadido al mapa`);

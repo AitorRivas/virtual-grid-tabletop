@@ -51,6 +51,21 @@ export const CREATURE_SIZE_CELLS: Record<CreatureSize, number> = {
   gargantuan: 4,
 };
 
+/** Default token size in pixels for each creature size (base 100px for medium) */
+export const CREATURE_SIZE_PIXELS: Record<CreatureSize, number> = {
+  tiny: 50,
+  small: 75,
+  medium: 100,
+  large: 200,
+  huge: 300,
+  gargantuan: 400,
+};
+
+/** Get token size in pixels based on creature size */
+export const getTokenSizeFromCreatureSize = (size: CreatureSize): number => {
+  return CREATURE_SIZE_PIXELS[size] || 100;
+};
+
 export interface GridTokenData {
   id: string;
   /** Cell X coordinate (origin cell for multi-cell tokens) */
