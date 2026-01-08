@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
 import { Token } from './Token';
@@ -8,6 +8,9 @@ import { DiceRoller } from './DiceRoller';
 import { TurnTracker } from './TurnTracker';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FogOfWar } from './FogOfWar';
+import { MovementOverlay } from './MovementOverlay';
+import { CellStateOverlay } from './CellStateOverlay';
+import { GridCalibrator } from './GridCalibrator';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -15,6 +18,8 @@ import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X, Upload } from 'lucide-react';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
+import { GridConfig, CellState } from '@/lib/gridEngine/types';
+import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
@@ -33,6 +38,10 @@ export interface TokenData {
   hpCurrent: number;
   imageUrl?: string;
   rotation?: number;
+  // Grid engine properties
+  speedFeet?: number;
+  movementRemaining?: number;
+  sizeInCells?: number;
 }
 
 export const MapViewer = () => {
@@ -47,6 +56,10 @@ export const MapViewer = () => {
     currentTurnIndex: savedCurrentTurnIndex,
     fogEnabled: savedFogEnabled,
     fogData: savedFogData,
+    gridCellSize: savedGridCellSize,
+    gridOffsetX: savedGridOffsetX,
+    gridOffsetY: savedGridOffsetY,
+    cellStates: savedCellStates,
     isLoaded,
     updateSession,
     clearSession,
@@ -83,6 +96,27 @@ export const MapViewer = () => {
   const [fogData, setFogData] = useState<string | null>(null);
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
 
+  // Grid engine state
+  const [gridCellSize, setGridCellSize] = useState(50);
+  const [gridOffsetX, setGridOffsetX] = useState(0);
+  const [gridOffsetY, setGridOffsetY] = useState(0);
+  const [cellStates, setCellStates] = useState<Record<string, CellState>>({});
+  const [cellEditMode, setCellEditMode] = useState(false);
+  const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
+  const [showMovementOverlay, setShowMovementOverlay] = useState(true);
+  const [isCalibrating, setIsCalibrating] = useState(false);
+
+  // Grid config memoized
+  const gridConfig = useMemo((): GridConfig => ({
+    type: showGrid ? 'square' : 'none',
+    cellSize: gridCellSize,
+    offsetX: gridOffsetX,
+    offsetY: gridOffsetY,
+    mapWidth: mapDimensions.width,
+    mapHeight: mapDimensions.height,
+    feetPerCell: 5,
+  }), [showGrid, gridCellSize, gridOffsetX, gridOffsetY, mapDimensions]);
+
   // Load saved session on mount
   useEffect(() => {
     if (isLoaded) {
@@ -96,6 +130,10 @@ export const MapViewer = () => {
       setCurrentTurnIndex(savedCurrentTurnIndex);
       setFogEnabled(savedFogEnabled);
       setFogData(savedFogData);
+      setGridCellSize(savedGridCellSize);
+      setGridOffsetX(savedGridOffsetX);
+      setGridOffsetY(savedGridOffsetY);
+      setCellStates(savedCellStates);
       if (savedMapImage) {
         toast.success('Sesión restaurada');
       }
@@ -116,9 +154,13 @@ export const MapViewer = () => {
         currentTurnIndex,
         fogEnabled,
         fogData,
+        gridCellSize,
+        gridOffsetX,
+        gridOffsetY,
+        cellStates,
       });
     }
-  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, fogEnabled, fogData, isLoaded, updateSession]);
+  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, fogEnabled, fogData, gridCellSize, gridOffsetX, gridOffsetY, cellStates, isLoaded, updateSession]);
   
   // Store zoom functions
   const zoomFunctionsRef = useRef<{
@@ -375,10 +417,49 @@ export const MapViewer = () => {
     setCurrentTurnIndex(nextIndex);
     const nextToken = combatOrder[nextIndex];
     if (nextToken) {
+      // Reset movement for the token starting its turn
+      setTokens(prev => prev.map(t => 
+        t.id === nextToken.id 
+          ? { ...t, movementRemaining: t.speedFeet || 30 }
+          : t
+      ));
       toast.success(`Turno de ${nextToken.name}`);
-      // Animate to the next token
       setTimeout(() => animateToToken(nextToken), 100);
     }
+  };
+
+  // Handle cell state painting
+  const handleCellStateClick = (cellX: number, cellY: number) => {
+    const key = `${cellX},${cellY}`;
+    setCellStates(prev => {
+      const current = prev[key] || 'free';
+      if (cellBrushState === current) {
+        // Toggle off
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [key]: cellBrushState };
+    });
+  };
+
+  // Handle grid calibration complete
+  const handleCalibrationComplete = (cellSize: number, offsetX: number, offsetY: number) => {
+    setGridCellSize(cellSize);
+    setGridSize(cellSize); // Sync visual grid
+    setGridOffsetX(offsetX);
+    setGridOffsetY(offsetY);
+    setIsCalibrating(false);
+    toast.success(`Cuadrícula calibrada: ${cellSize}px por celda`);
+  };
+
+  // Handle movement to cell
+  const handleMoveToCell = (tokenId: string, cellX: number, cellY: number, costFeet: number) => {
+    const { percentX, percentY } = cellToPercent(cellX, cellY, gridConfig);
+    setTokens(prev => prev.map(t => 
+      t.id === tokenId 
+        ? { ...t, x: percentX, y: percentY, movementRemaining: (t.movementRemaining || 30) - costFeet }
+        : t
+    ));
   };
 
   const handlePrevTurn = () => {
@@ -522,6 +603,36 @@ export const MapViewer = () => {
                 <rect width="100%" height="100%" fill="url(#grid)" />
               </svg>
             )}
+
+            {/* Cell state overlay (blocked/difficult terrain) */}
+            {mapDimensions.width > 0 && (
+              <CellStateOverlay
+                gridConfig={gridConfig}
+                cellStates={cellStates}
+                editMode={cellEditMode}
+                brushState={cellBrushState}
+                onCellClick={handleCellStateClick}
+              />
+            )}
+
+            {/* Movement overlay for current token */}
+            {combatMode && currentTurnTokenId && mapDimensions.width > 0 && showMovementOverlay && (() => {
+              const currentToken = tokens.find(t => t.id === currentTurnTokenId);
+              if (!currentToken) return null;
+              const { cellX, cellY } = percentToCell(currentToken.x, currentToken.y, gridConfig);
+              return (
+                <MovementOverlay
+                  gridConfig={gridConfig}
+                  cellStates={cellStates}
+                  tokenCellX={cellX}
+                  tokenCellY={cellY}
+                  tokenSizeInCells={currentToken.sizeInCells || 1}
+                  movementRemaining={currentToken.movementRemaining || currentToken.speedFeet || 30}
+                  visible={true}
+                  onCellClick={(cx, cy, cost) => handleMoveToCell(currentTurnTokenId, cx, cy, cost)}
+                />
+              );
+            })()}
 
             {/* Fog of War layer */}
             {fogEnabled && mapDimensions.width > 0 && (
