@@ -92,21 +92,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (username: string, password: string) => {
-    // First verify the username exists with exact case match
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .single();
+    // Convert username to internal email format
+    const email = `${username.toLowerCase()}@dnd-tabletop.internal`;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
-    if (!profileData) {
+    if (error) {
+      return { error };
+    }
+    
+    // Verify the username case matches exactly
+    const storedUsername = data.user?.user_metadata?.username;
+    if (storedUsername && storedUsername !== username) {
+      await supabase.auth.signOut();
       return { error: new Error('Usuario o contraseña incorrectos') };
     }
     
-    // Convert username to internal email format
-    const email = `${username.toLowerCase()}@dnd-tabletop.internal`;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    return { error: null };
   };
 
   const signUp = async (username: string, password: string) => {
