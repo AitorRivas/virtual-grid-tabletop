@@ -211,16 +211,6 @@ export const MonsterSheet = ({
               proficiency_bonus: monster.proficiency_bonus,
               hit_dice: monster.hit_dice,
             }}
-
-            monster={{
-              name: monster.name,
-              type: monster.type,
-              size: monster.size,
-              alignment: monster.alignment,
-              challenge_rating: monster.challenge_rating,
-              proficiency_bonus: monster.proficiency_bonus,
-              hit_dice: monster.hit_dice,
-            }}
             onChange={(updates) => updateMultiple(updates as Partial<ExtendedMonster>)}
             readOnly={readOnly}
           />
