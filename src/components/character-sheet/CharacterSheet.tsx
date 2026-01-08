@@ -148,7 +148,7 @@ export const CharacterSheet = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-full overflow-hidden">
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-card/50">
         <div className="flex items-center gap-2">
@@ -233,7 +233,6 @@ export const CharacterSheet = ({
           ) : (
             <>
               <Button size="sm" variant="ghost" onClick={handleCancel}>
-                <X className="w-4 h-4 mr-1" />
                 Cancelar
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving || !hasChanges}>
@@ -243,7 +242,7 @@ export const CharacterSheet = ({
             </>
           )}
           {onClose && (
-            <Button size="icon" variant="ghost" onClick={onClose}>
+            <Button size="icon" variant="ghost" onClick={onClose} title="Cerrar">
               <X className="w-4 h-4" />
             </Button>
           )}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TokenData } from '@/components/MapViewer';
+import { CellState } from '@/lib/gridEngine/types';
 
 const STORAGE_KEY = 'dnd-session';
 
@@ -14,6 +15,11 @@ interface SessionData {
   currentTurnIndex: number;
   fogEnabled: boolean;
   fogData: string | null;
+  // Grid engine data
+  gridCellSize: number;
+  gridOffsetX: number;
+  gridOffsetY: number;
+  cellStates: Record<string, CellState>;
 }
 
 const defaultSession: SessionData = {
@@ -27,6 +33,11 @@ const defaultSession: SessionData = {
   currentTurnIndex: 0,
   fogEnabled: false,
   fogData: null,
+  // Grid engine defaults
+  gridCellSize: 50,
+  gridOffsetX: 0,
+  gridOffsetY: 0,
+  cellStates: {},
 };
 
 export const useSessionStorage = () => {
