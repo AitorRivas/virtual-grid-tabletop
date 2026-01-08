@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Trash2, Skull, RotateCw, RotateCcw } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Trash2, Skull } from 'lucide-react';
 import { TokenColor, TokenStatus } from './MapViewer';
 import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -45,9 +45,34 @@ export const Token = ({
   onMove, onClick, onDelete, onMarkDead, onRotate, mapContainerRef 
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, tokenX: 0, tokenY: 0 });
+  const [rotationStart, setRotationStart] = useState({ angle: 0, rotation: 0 });
   const [showActions, setShowActions] = useState(false);
   const tokenRef = useRef<HTMLDivElement>(null);
+
+  // Calculate angle from center of token to mouse position
+  const calculateAngle = useCallback((clientX: number, clientY: number) => {
+    if (!tokenRef.current) return 0;
+    const rect = tokenRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    return Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+  }, []);
+
+  // Check if mouse is on the edge of the token (for rotation)
+  const isOnEdge = useCallback((clientX: number, clientY: number) => {
+    if (!tokenRef.current) return false;
+    const rect = tokenRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const radius = rect.width / 2;
+    const distance = Math.sqrt(
+      Math.pow(clientX - centerX, 2) + Math.pow(clientY - centerY, 2)
+    );
+    // Consider "edge" as the outer 25% of the radius
+    return distance > radius * 0.65 && distance < radius * 1.2;
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -55,9 +80,20 @@ export const Token = ({
     
     if (!mapContainerRef.current) return;
     
-    // Don't allow dragging dead/inactive tokens
+    // Don't allow interactions with dead/inactive tokens
     if (status !== 'active') return;
     
+    // Check if clicking on edge for rotation
+    if (isOnEdge(e.clientX, e.clientY)) {
+      setIsRotating(true);
+      setRotationStart({
+        angle: calculateAngle(e.clientX, e.clientY),
+        rotation: rotation,
+      });
+      return;
+    }
+    
+    // Otherwise, start dragging
     setIsDragging(true);
     setDragStart({
       x: e.clientX,
@@ -69,6 +105,15 @@ export const Token = ({
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      if (isRotating) {
+        const currentAngle = calculateAngle(e.clientX, e.clientY);
+        const angleDiff = currentAngle - rotationStart.angle;
+        let newRotation = (rotationStart.rotation + angleDiff) % 360;
+        if (newRotation < 0) newRotation += 360;
+        onRotate(id, newRotation);
+        return;
+      }
+      
       if (!isDragging || !mapContainerRef.current) return;
       
       const rect = mapContainerRef.current.getBoundingClientRect();
@@ -86,9 +131,10 @@ export const Token = ({
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setIsRotating(false);
     };
 
-    if (isDragging) {
+    if (isDragging || isRotating) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
@@ -97,7 +143,18 @@ export const Token = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragStart, id, onMove, mapContainerRef]);
+  }, [isDragging, isRotating, dragStart, rotationStart, id, onMove, onRotate, mapContainerRef, calculateAngle]);
+
+  // Update cursor based on position
+  const handleMouseMoveForCursor = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (status !== 'active') return;
+    const target = e.currentTarget;
+    if (isOnEdge(e.clientX, e.clientY)) {
+      target.style.cursor = 'grab';
+    } else {
+      target.style.cursor = 'move';
+    }
+  }, [status, isOnEdge]);
 
   const isDead = status === 'dead';
   const isInactive = status === 'inactive';
@@ -124,7 +181,7 @@ export const Token = ({
     <TooltipProvider>
       <div
         ref={tokenRef}
-        className={`absolute ${status === 'active' ? 'cursor-move' : 'cursor-not-allowed'}`}
+        className={`absolute ${status === 'active' ? '' : 'cursor-not-allowed'}`}
         style={{
           left: `${x}%`,
           top: `${y}%`,
@@ -135,9 +192,21 @@ export const Token = ({
           opacity: isDead || isInactive ? 0.5 : 1,
         }}
         onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMoveForCursor}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
       >
+        {/* Rotation indicator ring - shown when selected or rotating */}
+        {status === 'active' && (isSelected || isRotating) && (
+          <div 
+            className="absolute inset-[-4px] rounded-full border-2 border-dashed pointer-events-none transition-opacity"
+            style={{
+              borderColor: 'hsl(var(--primary) / 0.5)',
+              opacity: isRotating ? 1 : 0.5,
+            }}
+          />
+        )}
+
         {/* Current turn indicator */}
         {isCurrentTurn && (
           <div 
@@ -291,26 +360,6 @@ export const Token = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onRotate(id, (rotation - 45 + 360) % 360);
-              }}
-              className="p-1.5 bg-secondary hover:bg-secondary/80 rounded text-secondary-foreground transition-colors shadow-lg"
-              title="Rotar izquierda"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRotate(id, (rotation + 45) % 360);
-              }}
-              className="p-1.5 bg-secondary hover:bg-secondary/80 rounded text-secondary-foreground transition-colors shadow-lg"
-              title="Rotar derecha"
-            >
-              <RotateCw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
                 onMarkDead();
               }}
               className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded text-white transition-colors shadow-lg"
@@ -328,6 +377,15 @@ export const Token = ({
             >
               <Trash2 className="w-4 h-4" />
             </button>
+          </div>
+        )}
+
+        {/* Rotation hint tooltip - shown when hovering on edge */}
+        {isRotating && (
+          <div 
+            className="absolute -top-8 left-1/2 -translate-x-1/2 bg-card/95 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium text-card-foreground border border-border whitespace-nowrap z-[120]"
+          >
+            {Math.round(rotation)}°
           </div>
         )}
       </div>
