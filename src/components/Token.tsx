@@ -18,8 +18,6 @@ interface TokenProps {
   imageUrl?: string;
   rotation?: number;
   isSelected: boolean;
-  isCurrentTurn: boolean;
-  combatMode: boolean;
   onMove: (id: string, x: number, y: number) => void;
   onClick: () => void;
   onDelete: () => void;
@@ -41,7 +39,7 @@ const colorClasses: Record<TokenColor, string> = {
 };
 
 export const Token = ({ 
-  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected, isCurrentTurn, combatMode,
+  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected,
   onMove, onClick, onDelete, onMarkDead, onRotate, mapContainerRef 
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -188,7 +186,7 @@ export const Token = ({
           transform: 'translate(-50%, -50%)',
           width: size,
           height: size,
-          zIndex: isSelected ? 100 : isCurrentTurn ? 90 : 50,
+          zIndex: isSelected ? 100 : 50,
           opacity: isDead || isInactive ? 0.5 : 1,
         }}
         onMouseDown={handleMouseDown}
@@ -203,17 +201,6 @@ export const Token = ({
             style={{
               borderColor: 'hsl(var(--primary) / 0.5)',
               opacity: isRotating ? 1 : 0.5,
-            }}
-          />
-        )}
-
-        {/* Current turn indicator */}
-        {isCurrentTurn && (
-          <div 
-            className="absolute inset-0 rounded-full animate-pulse"
-            style={{
-              border: '3px solid hsl(var(--primary))',
-              boxShadow: '0 0 20px hsl(var(--primary) / 0.5)',
             }}
           />
         )}
@@ -292,8 +279,6 @@ export const Token = ({
           style={{
             boxShadow: isSelected 
               ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
-              : isCurrentTurn 
-              ? '0 0 15px hsl(var(--primary) / 0.6)' 
               : 'var(--token-shadow)',
             fontSize: size * 0.4,
             transform: `rotate(${rotation}deg)`,

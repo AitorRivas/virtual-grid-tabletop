@@ -11,8 +11,6 @@ interface SessionData {
   gridSize: number;
   gridColor: string;
   gridLineWidth: number;
-  combatMode: boolean;
-  currentTurnIndex: number;
   fogEnabled: boolean;
   fogData: string | null;
   // Grid engine data
@@ -29,8 +27,6 @@ const defaultSession: SessionData = {
   gridSize: 50,
   gridColor: '#000000',
   gridLineWidth: 1,
-  combatMode: false,
-  currentTurnIndex: 0,
   fogEnabled: false,
   fogData: null,
   // Grid engine defaults
