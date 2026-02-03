@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Swords, ChevronLeft, ChevronRight, Skull, RotateCcw, RotateCw, Ruler, Sparkles, ChevronDown, ChevronUp, Database, Heart, MinusCircle, PlusCircle } from 'lucide-react';
+import { Plus, Trash2, Users, Skull, RotateCcw, RotateCw, Ruler, Sparkles, ChevronDown, ChevronUp, Database, Heart, MinusCircle, PlusCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
@@ -24,19 +24,11 @@ interface TokenToolbarProps {
   onSelectToken: (id: string) => void;
   onDeleteToken: (id: string) => void;
   onTokenNameChange: (id: string, name: string) => void;
-  onInitiativeChange: (id: string, initiative: number) => void;
   onStatusChange: (id: string, status: TokenStatus) => void;
   onTokenSizeChange: (id: string, size: number) => void;
   onTokenRotationChange: (id: string, rotation: number) => void;
   onToggleCondition: (tokenId: string, conditionId: string) => void;
   onHpChange: (id: string, hpCurrent: number, hpMax: number) => void;
-  combatMode: boolean;
-  currentTurnTokenId: string | null;
-  combatOrder: TokenData[];
-  onStartCombat: () => void;
-  onEndCombat: () => void;
-  onNextTurn: () => void;
-  onPrevTurn: () => void;
   defaultTokenSize: number;
   onDefaultTokenSizeChange: (size: number) => void;
   onAddCharacterToMap: (character: Character) => void;
@@ -65,19 +57,11 @@ export const TokenToolbar = ({
   onSelectToken,
   onDeleteToken,
   onTokenNameChange,
-  onInitiativeChange,
   onStatusChange,
   onTokenSizeChange,
   onTokenRotationChange,
   onToggleCondition,
   onHpChange,
-  combatMode,
-  currentTurnTokenId,
-  combatOrder,
-  onStartCombat,
-  onEndCombat,
-  onNextTurn,
-  onPrevTurn,
   defaultTokenSize,
   onDefaultTokenSizeChange,
   onAddCharacterToMap,
@@ -119,46 +103,6 @@ export const TokenToolbar = ({
         </TabsList>
 
         <TabsContent value="tokens" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden data-[state=active]:flex-1">
-          {/* Combat Mode Section - Compact */}
-          <div className="p-3 border-b border-border/50 bg-gradient-to-r from-destructive/10 to-transparent flex-shrink-0">
-            {!combatMode ? (
-              <Button
-                onClick={onStartCombat}
-                variant="default"
-                size="sm"
-                className="w-full gap-2 bg-destructive hover:bg-destructive/90 h-9"
-                disabled={tokens.filter(t => t.status === 'active').length === 0}
-              >
-                <Swords className="w-4 h-4" />
-                Iniciar Combate
-              </Button>
-            ) : (
-              <div className="space-y-2">
-                {currentTurnTokenId && (
-                  <div className="bg-primary/20 border border-primary/30 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Turno actual</p>
-                    <p className="font-bold text-primary text-sm truncate">
-                      {combatOrder.find(t => t.id === currentTurnTokenId)?.name}
-                    </p>
-                  </div>
-                )}
-                <div className="flex gap-1.5">
-                  <Button onClick={onPrevTurn} variant="secondary" size="sm" className="flex-1 h-8 gap-1">
-                    <ChevronLeft className="w-4 h-4" />
-                    Ant.
-                  </Button>
-                  <Button onClick={onNextTurn} variant="default" size="sm" className="flex-1 h-8 gap-1">
-                    Sig.
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-                <Button onClick={onEndCombat} variant="ghost" size="sm" className="w-full h-7 text-xs text-muted-foreground">
-                  Finalizar Combate
-                </Button>
-              </div>
-            )}
-          </div>
-
           {/* Add Token Section - Collapsible */}
           <Collapsible defaultOpen={tokens.length === 0}>
             <CollapsibleTrigger asChild>
@@ -176,7 +120,6 @@ export const TokenToolbar = ({
                   onClick={onToggleAddToken}
                   variant={isAddingToken ? "default" : "secondary"}
                   className="w-full gap-2 h-9"
-                  disabled={combatMode}
                   size="sm"
                 >
                   <Plus className="w-4 h-4" />
@@ -224,29 +167,6 @@ export const TokenToolbar = ({
           {/* Token list */}
           <ScrollArea className="flex-1 min-h-0">
             <div className="p-2 space-y-1.5">
-              {/* Combat order summary */}
-              {combatMode && combatOrder.length > 0 && (
-                <div className="mb-2 p-2 bg-secondary/30 rounded-lg">
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-                    Orden de iniciativa
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {combatOrder.map((token, index) => (
-                      <span
-                        key={token.id}
-                        className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
-                          token.id === currentTurnTokenId
-                            ? 'bg-primary text-primary-foreground font-bold'
-                            : 'bg-secondary/50 text-muted-foreground'
-                        }`}
-                      >
-                        {index + 1}. {token.name.slice(0, 8)}{token.name.length > 8 ? '…' : ''}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {tokens.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -262,9 +182,7 @@ export const TokenToolbar = ({
                     >
                       <div
                         className={`rounded-lg border transition-all ${
-                          token.id === currentTurnTokenId
-                            ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
-                            : selectedToken === token.id
+                          selectedToken === token.id
                             ? 'border-primary/50 bg-secondary'
                             : token.status !== 'active'
                             ? 'border-border/30 bg-secondary/20 opacity-50'
@@ -394,21 +312,9 @@ export const TokenToolbar = ({
                             </div>
                           )}
 
-                          {/* Initiative and Status row */}
+                          {/* Status row */}
                           <div className="flex items-center gap-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-1">
-                                <label className="text-[10px] text-muted-foreground">Init:</label>
-                                <Input
-                                  type="number"
-                                  value={token.initiative}
-                                  onChange={(e) => onInitiativeChange(token.id, parseInt(e.target.value) || 0)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="h-6 w-12 text-xs bg-background/50 px-1"
-                                  disabled={combatMode}
-                                />
-                              </div>
-                            </div>
+                            <div className="flex-1" />
                             
                             {token.status !== 'active' ? (
                               <Button

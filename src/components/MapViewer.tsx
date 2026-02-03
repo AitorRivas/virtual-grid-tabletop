@@ -5,10 +5,8 @@ import { Token } from './Token';
 import { MapControls } from './MapControls';
 import { TokenToolbar } from './TokenToolbar';
 import { DiceRoller } from './DiceRoller';
-import { TurnTracker } from './TurnTracker';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FogOfWar } from './FogOfWar';
-import { MovementOverlay } from './MovementOverlay';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
 import { toast } from 'sonner';
@@ -41,7 +39,6 @@ export interface TokenData {
   rotation?: number;
   // Grid engine properties
   speedFeet?: number;
-  movementRemaining?: number;
   sizeInCells?: number;
 }
 
@@ -53,8 +50,6 @@ export const MapViewer = () => {
     gridSize: savedGridSize,
     gridColor: savedGridColor,
     gridLineWidth: savedGridLineWidth,
-    combatMode: savedCombatMode,
-    currentTurnIndex: savedCurrentTurnIndex,
     fogEnabled: savedFogEnabled,
     fogData: savedFogData,
     gridCellSize: savedGridCellSize,
@@ -85,10 +80,6 @@ export const MapViewer = () => {
   
   // Cinema mode state
   const [cinemaMode, setCinemaMode] = useState(false);
-  
-  // Combat mode state
-  const [combatMode, setCombatMode] = useState(false);
-  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
 
   // Fog of war state
   const [fogEnabled, setFogEnabled] = useState(false);
@@ -103,13 +94,12 @@ export const MapViewer = () => {
   const [cellStates, setCellStates] = useState<Record<string, CellState>>({});
   const [cellEditMode, setCellEditMode] = useState(false);
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
-  const [showMovementOverlay, setShowMovementOverlay] = useState(true);
   const [isCalibrating, setIsCalibrating] = useState(false);
 
   // Grid config memoized - uses gridSize for both visual grid and movement engine
   const gridConfig = useMemo((): GridConfig => ({
     type: showGrid ? 'square' : 'none',
-    cellSize: gridSize, // Use gridSize as the single source of truth
+    cellSize: gridSize,
     offsetX: gridOffsetX,
     offsetY: gridOffsetY,
     mapWidth: mapDimensions.width,
@@ -126,11 +116,8 @@ export const MapViewer = () => {
       setGridSize(savedGridSize);
       setGridColor(savedGridColor);
       setGridLineWidth(savedGridLineWidth);
-      setCombatMode(savedCombatMode);
-      setCurrentTurnIndex(savedCurrentTurnIndex);
       setFogEnabled(savedFogEnabled);
       setFogData(savedFogData);
-      // Use savedGridCellSize to update gridSize (they're now unified)
       if (savedGridCellSize > 0) {
         setGridSize(savedGridCellSize);
       }
@@ -153,17 +140,15 @@ export const MapViewer = () => {
         gridSize,
         gridColor,
         gridLineWidth,
-        combatMode,
-        currentTurnIndex,
         fogEnabled,
         fogData,
-        gridCellSize: gridSize, // Save gridSize as gridCellSize for compatibility
+        gridCellSize: gridSize,
         gridOffsetX,
         gridOffsetY,
         cellStates,
       });
     }
-  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, combatMode, currentTurnIndex, fogEnabled, fogData, gridOffsetX, gridOffsetY, cellStates, isLoaded, updateSession]);
+  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, fogEnabled, fogData, gridOffsetX, gridOffsetY, cellStates, isLoaded, updateSession]);
   
   // Store zoom functions
   const zoomFunctionsRef = useRef<{
@@ -173,15 +158,6 @@ export const MapViewer = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
-  // Get tokens sorted by initiative (descending) for combat, excluding dead/inactive
-  const combatOrder = [...tokens]
-    .filter(t => t.status === 'active')
-    .sort((a, b) => b.initiative - a.initiative);
-  
-  const currentTurnTokenId = combatMode && combatOrder.length > 0 
-    ? combatOrder[currentTurnIndex % combatOrder.length]?.id 
-    : null;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -272,12 +248,6 @@ export const MapViewer = () => {
   };
 
   const handleTokenMove = (id: string, x: number, y: number) => {
-    // In combat mode, only allow moving the current turn token
-    if (combatMode && id !== currentTurnTokenId) {
-      toast.error('Solo puedes mover el token del turno actual');
-      return;
-    }
-    
     setTokens(tokens.map(token => 
       token.id === id ? { ...token, x, y } : token
     ));
@@ -295,37 +265,13 @@ export const MapViewer = () => {
     ));
   };
 
-  const handleInitiativeChange = (id: string, initiative: number) => {
-    setTokens(tokens.map(token => 
-      token.id === id ? { ...token, initiative } : token
-    ));
-  };
-
   const handleStatusChange = (id: string, status: TokenStatus) => {
-    // Get current token info before changing
-    const wasCurrentTurn = combatMode && id === currentTurnTokenId;
-    
     setTokens(tokens.map(token => 
       token.id === id ? { ...token, status } : token
     ));
     
-    // If we're in combat and the token being marked dead was the current turn,
-    // we need to adjust the index to stay on the same position (which will now be the next token)
-    if (wasCurrentTurn && status !== 'active') {
-      // The combatOrder will recalculate, but the index should stay the same
-      // to point to what was the next token
-      const newCombatOrder = tokens
-        .filter(t => t.id !== id && t.status === 'active')
-        .sort((a, b) => b.initiative - a.initiative);
-      
-      if (newCombatOrder.length > 0) {
-        // Adjust index if it would be out of bounds
-        setCurrentTurnIndex(prev => Math.min(prev, newCombatOrder.length - 1));
-      }
-    }
-    
     if (status !== 'active') {
-      toast.success(status === 'dead' ? 'Token eliminado del combate' : 'Token marcado como inactivo');
+      toast.success(status === 'dead' ? 'Token marcado como muerto' : 'Token marcado como inactivo');
     }
   };
 
@@ -366,7 +312,6 @@ export const MapViewer = () => {
   const handleClearAll = () => {
     setTokens([]);
     setSelectedToken(null);
-    setCurrentTurnIndex(0);
     toast.success('Todos los tokens eliminados');
   };
 
@@ -374,61 +319,8 @@ export const MapViewer = () => {
     setMapImage(null);
     setTokens([]);
     setSelectedToken(null);
-    setCurrentTurnIndex(0);
-    setCombatMode(false);
     clearSession();
     toast.success('Sesión limpiada');
-  };
-
-  const animateToToken = (token: TokenData) => {
-    if (!zoomFunctionsRef.current || !mapContainerRef.current) return;
-    
-    const { setTransform } = zoomFunctionsRef.current;
-    const container = mapContainerRef.current;
-    const parent = container.parentElement?.parentElement?.parentElement;
-    if (!parent) return;
-    
-    // Get the actual image dimensions
-    const img = container.querySelector('img');
-    if (!img) return;
-    
-    const imgWidth = img.naturalWidth;
-    const imgHeight = img.naturalHeight;
-    
-    // Get viewport dimensions
-    const viewportWidth = parent.clientWidth;
-    const viewportHeight = parent.clientHeight;
-    
-    // Calculate token position in actual image pixels
-    const tokenX = (token.x / 100) * imgWidth;
-    const tokenY = (token.y / 100) * imgHeight;
-    
-    // Gentle zoom level
-    const targetScale = 1.2;
-    
-    // Calculate offset to center the token
-    const offsetX = (viewportWidth / 2) - (tokenX * targetScale);
-    const offsetY = (viewportHeight / 2) - (tokenY * targetScale);
-    
-    setTransform(offsetX, offsetY, targetScale);
-    setZoomLevel(targetScale);
-  };
-
-  const handleNextTurn = () => {
-    if (combatOrder.length === 0) return;
-    const nextIndex = (currentTurnIndex + 1) % combatOrder.length;
-    setCurrentTurnIndex(nextIndex);
-    const nextToken = combatOrder[nextIndex];
-    if (nextToken) {
-      // Reset movement for the token starting its turn
-      setTokens(prev => prev.map(t => 
-        t.id === nextToken.id 
-          ? { ...t, movementRemaining: t.speedFeet || 30 }
-          : t
-      ));
-      toast.success(`Turno de ${nextToken.name}`);
-      setTimeout(() => animateToToken(nextToken), 100);
-    }
   };
 
   // Handle cell state painting
@@ -437,7 +329,6 @@ export const MapViewer = () => {
     setCellStates(prev => {
       const current = prev[key] || 'free';
       if (cellBrushState === current) {
-        // Toggle off
         const { [key]: _, ...rest } = prev;
         return rest;
       }
@@ -447,58 +338,21 @@ export const MapViewer = () => {
 
   // Handle grid calibration complete
   const handleCalibrationComplete = (cellSize: number, offsetX: number, offsetY: number) => {
-    setGridSize(cellSize); // Update gridSize (unified with gridCellSize)
+    setGridSize(cellSize);
     setGridOffsetX(offsetX);
     setGridOffsetY(offsetY);
     setIsCalibrating(false);
     toast.success(`Cuadrícula calibrada: ${cellSize}px por celda`);
   };
 
-  // Handle movement to cell
-  const handleMoveToCell = (tokenId: string, cellX: number, cellY: number, costFeet: number) => {
-    const { percentX, percentY } = cellToPercent(cellX, cellY, gridConfig);
-    setTokens(prev => prev.map(t => 
-      t.id === tokenId 
-        ? { ...t, x: percentX, y: percentY, movementRemaining: (t.movementRemaining || 30) - costFeet }
-        : t
-    ));
-  };
-
-  const handlePrevTurn = () => {
-    if (combatOrder.length === 0) return;
-    const prevIndex = (currentTurnIndex - 1 + combatOrder.length) % combatOrder.length;
-    setCurrentTurnIndex(prevIndex);
-    const prevToken = combatOrder[prevIndex];
-    if (prevToken) {
-      // Animate to the previous token
-      setTimeout(() => animateToToken(prevToken), 100);
-    }
-  };
-
-  const handleStartCombat = () => {
-    setCombatMode(true);
-    setCurrentTurnIndex(0);
-    if (combatOrder.length > 0) {
-      toast.success(`¡Combate iniciado! Turno de ${combatOrder[0].name}`);
-    }
-  };
-
-  const handleEndCombat = () => {
-    setCombatMode(false);
-    setCurrentTurnIndex(0);
-    toast.success('Combate finalizado');
-  };
-
   const handleAddCharacterToMap = (character: Character) => {
-    // Treat token_size as a "base" size (100px = 1 cell) and convert to cells.
-    // Legacy characters often have 50px saved; that still maps to 1 cell.
     const baseTokenSize = character.token_size > 0 ? character.token_size : 100;
     const sizeInCells = Math.max(1, Math.min(4, Math.round(baseTokenSize / 100)));
     const tokenSizePx = sizeInCells * gridSize;
 
     const newToken: TokenData = {
       id: `char-${Date.now()}`,
-      x: 50, // Center of map
+      x: 50,
       y: 50,
       color: character.token_color,
       name: character.name,
@@ -507,10 +361,9 @@ export const MapViewer = () => {
       status: 'active',
       conditions: [],
       hpMax: character.hit_points_max,
-      hpCurrent: character.hit_points_max, // Always start with max HP when adding to map
+      hpCurrent: character.hit_points_max,
       imageUrl: character.image_url || undefined,
       speedFeet: character.speed,
-      movementRemaining: character.speed,
       sizeInCells,
     };
     setTokens([...tokens, newToken]);
@@ -518,7 +371,6 @@ export const MapViewer = () => {
   };
 
   const handleAddMonsterToMap = (monster: Monster) => {
-    // Creature size determines how many grid cells it occupies.
     const sizeInCells = CREATURE_SIZE_CELLS[monster.size] ?? 1;
     const tokenSizePx = sizeInCells * gridSize;
 
@@ -533,10 +385,9 @@ export const MapViewer = () => {
       status: 'active',
       conditions: [],
       hpMax: monster.hit_points,
-      hpCurrent: monster.hit_points, // Always start with max HP when adding to map
+      hpCurrent: monster.hit_points,
       imageUrl: monster.image_url || undefined,
       speedFeet: monster.speed,
-      movementRemaining: monster.speed,
       sizeInCells,
     };
     setTokens([...tokens, newToken]);
@@ -634,25 +485,6 @@ export const MapViewer = () => {
               />
             )}
 
-            {/* Movement overlay for current token */}
-            {combatMode && currentTurnTokenId && mapDimensions.width > 0 && showMovementOverlay && (() => {
-              const currentToken = tokens.find(t => t.id === currentTurnTokenId);
-              if (!currentToken) return null;
-              const { cellX, cellY } = percentToCell(currentToken.x, currentToken.y, gridConfig);
-              return (
-                <MovementOverlay
-                  gridConfig={gridConfig}
-                  cellStates={cellStates}
-                  tokenCellX={cellX}
-                  tokenCellY={cellY}
-                  tokenSizeInCells={currentToken.sizeInCells || 1}
-                  movementRemaining={currentToken.movementRemaining || currentToken.speedFeet || 30}
-                  visible={true}
-                  onCellClick={(cx, cy, cost) => handleMoveToCell(currentTurnTokenId, cx, cy, cost)}
-                />
-              );
-            })()}
-
             {/* Fog of War layer */}
             {fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
@@ -673,8 +505,6 @@ export const MapViewer = () => {
                 imageUrl={token.imageUrl}
                 rotation={token.rotation}
                 isSelected={selectedToken === token.id}
-                isCurrentTurn={combatMode && token.id === currentTurnTokenId}
-                combatMode={combatMode}
                 onMove={handleTokenMove}
                 onClick={() => setSelectedToken(token.id)}
                 onDelete={() => handleDeleteToken(token.id)}
@@ -713,18 +543,6 @@ export const MapViewer = () => {
         {/* Map area */}
         <div className="flex-1 relative overflow-hidden bg-black">
           {renderMapContent()}
-          
-          {/* Turn Tracker overlay in cinema mode */}
-          {combatMode && combatOrder.length > 0 && (
-            <div className="absolute top-4 right-4 z-20">
-              <TurnTracker
-                combatOrder={combatOrder}
-                currentTurnTokenId={currentTurnTokenId}
-                onNextTurn={handleNextTurn}
-                onPrevTurn={handlePrevTurn}
-              />
-            </div>
-          )}
         </div>
 
         {/* Bottom black bar */}
@@ -762,19 +580,11 @@ export const MapViewer = () => {
             onSelectToken={setSelectedToken}
             onDeleteToken={handleDeleteToken}
             onTokenNameChange={handleTokenNameChange}
-            onInitiativeChange={handleInitiativeChange}
             onStatusChange={handleStatusChange}
             onTokenSizeChange={handleTokenSizeChange}
             onTokenRotationChange={handleTokenRotation}
             onToggleCondition={handleToggleCondition}
             onHpChange={handleHpChange}
-            combatMode={combatMode}
-            currentTurnTokenId={currentTurnTokenId}
-            combatOrder={combatOrder}
-            onStartCombat={handleStartCombat}
-            onEndCombat={handleEndCombat}
-            onNextTurn={handleNextTurn}
-            onPrevTurn={handlePrevTurn}
             defaultTokenSize={defaultTokenSize}
             onDefaultTokenSizeChange={setDefaultTokenSize}
             onAddCharacterToMap={handleAddCharacterToMap}
@@ -840,21 +650,7 @@ export const MapViewer = () => {
                   </div>
                 </div>
               ) : (
-                <>
-                  {renderMapContent()}
-                  
-                  {/* Turn Tracker overlay */}
-                  {combatMode && combatOrder.length > 0 && (
-                    <div className="absolute top-4 right-4 z-20">
-                      <TurnTracker
-                        combatOrder={combatOrder}
-                        currentTurnTokenId={currentTurnTokenId}
-                        onNextTurn={handleNextTurn}
-                        onPrevTurn={handlePrevTurn}
-                      />
-                    </div>
-                  )}
-                </>
+                renderMapContent()
               )}
             </div>
           </div>
