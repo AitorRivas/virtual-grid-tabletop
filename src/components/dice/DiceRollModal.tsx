@@ -1,10 +1,10 @@
 import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
-import { PerspectiveCamera, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Utility: convert CSS var HSL to a CSS hsl() string for Three.js
@@ -142,7 +142,7 @@ const PhysicsDice = ({ sides, color, onSettled }: PhysicsDiceProps) => {
       angularDamping={0.5}
       position={[0, 3, 0]}
     >
-      <mesh castShadow>
+      <mesh>
         {getGeometry()}
         <meshStandardMaterial color={diceColor} metalness={0.25} roughness={0.45} />
       </mesh>
@@ -163,7 +163,7 @@ const DiceTray = () => {
       <RigidBody type="fixed" position={[0, 0, 0]}>
         <CuboidCollider args={[3, 0.1, 3]} />
       </RigidBody>
-      <mesh receiveShadow position={[0, 0, 0]}>
+      <mesh position={[0, 0, 0]}>
         <boxGeometry args={[6, 0.2, 6]} />
         <meshStandardMaterial color={feltColor} />
       </mesh>
@@ -204,11 +204,6 @@ const ResultOverlay = ({ result, sides, onClose }: ResultOverlayProps) => {
   const isCritical = sides === 20 && result === 20;
   const isFumble = sides === 20 && result === 1;
 
-  useEffect(() => {
-    const timeout = setTimeout(onClose, 1800);
-    return () => clearTimeout(timeout);
-  }, [onClose]);
-
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
       <div
@@ -241,15 +236,25 @@ const ResultOverlay = ({ result, sides, onClose }: ResultOverlayProps) => {
    DiceRollModal – fullscreen modal
    ───────────────────────────────────────────────────────────────────────────── */
 interface DiceRollModalProps {
+  open: boolean;
+  rollId: number;
   sides: number;
   color: string;
   onComplete: (result: number) => void;
   onClose: () => void;
 }
 
-export const DiceRollModal = ({ sides, color, onComplete, onClose }: DiceRollModalProps) => {
+export const DiceRollModal = ({ open, rollId, sides, color, onComplete, onClose }: DiceRollModalProps) => {
   const [result, setResult] = useState<number | null>(null);
   const accentColor = useMemo(() => cssVarToHsl('--accent', 'hsl(32, 95%, 48%)'), []);
+  const [webglError, setWebglError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setResult(null);
+      setWebglError(null);
+    }
+  }, [open, rollId]);
 
   const handleSettled = useCallback(
     (r: number) => {
@@ -265,29 +270,94 @@ export const DiceRollModal = ({ sides, color, onComplete, onClose }: DiceRollMod
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center"
-      onClick={result !== null ? handleOverlayClose : undefined}
+      className={
+        `fixed inset-0 z-[100] transition-opacity duration-150 ${
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`
+      }
+      aria-hidden={!open}
     >
-      <div className="relative w-full h-full max-w-3xl max-h-[80vh] md:max-h-[70vh] m-4">
-        {result !== null && (
-          <ResultOverlay result={result} sides={sides} onClose={handleOverlayClose} />
-        )}
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        onClick={result !== null ? handleOverlayClose : undefined}
+      />
 
-        <Canvas shadows gl={{ antialias: true }}>
-          <PerspectiveCamera makeDefault position={[0, 7, 6]} fov={40} />
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[3, 8, 4]} intensity={1.2} castShadow />
-          <pointLight position={[-3, 5, -3]} intensity={0.4} color={accentColor} />
+      {/* Content */}
+      <div className="absolute inset-0 p-4 md:p-8 flex items-center justify-center">
+        <div className="relative w-full h-full max-w-none max-h-none rounded-2xl border border-border/50 bg-card/30 overflow-hidden">
+          <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between">
+            <div className="text-sm font-semibold text-foreground">
+              Tirada 3D — d{sides}
+              {webglError ? <span className="ml-2 text-destructive">(WebGL)</span> : null}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-card/40 backdrop-blur border border-border/50"
+              onClick={handleOverlayClose}
+            >
+              Cerrar
+            </Button>
+          </div>
 
-          <Physics gravity={[0, -14, 0]}>
-            <PhysicsDice sides={sides} color={color} onSettled={handleSettled} />
-            <DiceTray />
-          </Physics>
-        </Canvas>
+          {result !== null && <ResultOverlay result={result} sides={sides} onClose={handleOverlayClose} />}
 
-        <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-muted-foreground text-sm">
-          Lanzando d{sides}…
-        </p>
+          {webglError ? (
+            <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+              <div className="max-w-lg space-y-2">
+                <p className="text-lg font-semibold text-foreground">No se pudo renderizar el dado 3D.</p>
+                <p className="text-sm text-muted-foreground">{webglError}</p>
+                <p className="text-xs text-muted-foreground">
+                  Si estás en modo ahorro de energía o con aceleración por hardware desactivada, actívala y recarga.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Canvas
+              style={{ width: '100%', height: '100%' }}
+              dpr={1}
+              camera={{ position: [0, 7, 8], fov: 42, near: 0.1, far: 120 }}
+              gl={{ antialias: false, powerPreference: 'high-performance', alpha: false }}
+              onCreated={(state) => {
+                state.camera.lookAt(0, 0, 0);
+                state.camera.updateProjectionMatrix();
+
+                // Detect context loss early and show a proper message
+                const canvas = state.gl.domElement;
+                const onLost = (e: Event) => {
+                  e.preventDefault?.();
+                  setWebglError('Se perdió el contexto WebGL (posible limitación del dispositivo o demasiados contextos).');
+                };
+                const onError = () => {
+                  setWebglError('Error inicializando WebGL en este navegador/dispositivo.');
+                };
+
+                canvas.addEventListener('webglcontextlost', onLost as EventListener, false);
+                canvas.addEventListener('webglcontextcreationerror', onError as EventListener, false);
+
+                return () => {
+                  canvas.removeEventListener('webglcontextlost', onLost as EventListener);
+                  canvas.removeEventListener('webglcontextcreationerror', onError as EventListener);
+                };
+              }}
+            >
+              <hemisphereLight intensity={0.9} />
+              <directionalLight position={[4, 10, 6]} intensity={1.6} />
+              <pointLight position={[-4, 6, -4]} intensity={0.8} color={accentColor} />
+
+              <Physics gravity={[0, -14, 0]}>
+                {/* Keyed so each roll re-throws without recreating the WebGL context */}
+                <PhysicsDice key={rollId} sides={sides} color={color} onSettled={handleSettled} />
+                <DiceTray />
+              </Physics>
+            </Canvas>
+          )}
+
+          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-muted-foreground text-sm z-20">
+            {result === null ? `Lanzando d${sides}…` : 'Pulsa “Cerrar” o toca fuera para salir'}
+          </p>
+        </div>
       </div>
     </div>
   );

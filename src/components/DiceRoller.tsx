@@ -35,6 +35,7 @@ export const DiceRoller = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeDice, setActiveDice] = useState<{ sides: number; colorName: string }>({ sides: 6, colorName: 'blue' });
   const [isRolling, setIsRolling] = useState(false);
+  const [rollId, setRollId] = useState(0);
   
   const defaultPosition = useMemo(() => {
     const x = Math.max(16, window.innerWidth - PANEL_WIDTH - 16);
@@ -58,6 +59,7 @@ export const DiceRoller = () => {
   const rollDice = useCallback((sides: number, colorName: string) => {
     if (isRolling) return;
     setActiveDice({ sides, colorName });
+    setRollId((v) => v + 1);
     setIsRolling(true);
   }, [isRolling]);
 
@@ -141,8 +143,10 @@ export const DiceRoller = () => {
             </div>
 
             {/* Fullscreen modal for 3D dice - rendered via portal */}
-            {isRolling && createPortal(
+            {isExpanded && createPortal(
               <DiceRollModal
+                open={isRolling}
+                rollId={rollId}
                 sides={activeDice.sides}
                 color={activeDice.colorName}
                 onComplete={handleRollComplete}
