@@ -6,17 +6,15 @@ import * as THREE from 'three';
 interface DiceMeshProps {
   sides: number;
   isRolling: boolean;
-  result: number;
   color: string;
 }
 
 const DiceMesh = ({ sides, isRolling, color }: DiceMeshProps) => {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
   const [targetRotation, setTargetRotation] = useState({ x: 0, y: 0, z: 0 });
   
   useEffect(() => {
     if (!isRolling) {
-      // Set final rotation when rolling stops
       setTargetRotation({
         x: Math.random() * Math.PI * 2,
         y: Math.random() * Math.PI * 2,
@@ -26,26 +24,24 @@ const DiceMesh = ({ sides, isRolling, color }: DiceMeshProps) => {
   }, [isRolling]);
 
   useFrame((_, delta) => {
-    if (meshRef.current) {
+    if (groupRef.current) {
       if (isRolling) {
-        // Fast spinning during roll
-        meshRef.current.rotation.x += delta * 15;
-        meshRef.current.rotation.y += delta * 12;
-        meshRef.current.rotation.z += delta * 8;
+        groupRef.current.rotation.x += delta * 15;
+        groupRef.current.rotation.y += delta * 12;
+        groupRef.current.rotation.z += delta * 8;
       } else {
-        // Smooth interpolation to final position
-        meshRef.current.rotation.x = THREE.MathUtils.lerp(
-          meshRef.current.rotation.x,
+        groupRef.current.rotation.x = THREE.MathUtils.lerp(
+          groupRef.current.rotation.x,
           targetRotation.x,
           delta * 5
         );
-        meshRef.current.rotation.y = THREE.MathUtils.lerp(
-          meshRef.current.rotation.y,
+        groupRef.current.rotation.y = THREE.MathUtils.lerp(
+          groupRef.current.rotation.y,
           targetRotation.y,
           delta * 5
         );
-        meshRef.current.rotation.z = THREE.MathUtils.lerp(
-          meshRef.current.rotation.z,
+        groupRef.current.rotation.z = THREE.MathUtils.lerp(
+          groupRef.current.rotation.z,
           targetRotation.z,
           delta * 5
         );
@@ -62,7 +58,6 @@ const DiceMesh = ({ sides, isRolling, color }: DiceMeshProps) => {
       case 8:
         return <octahedronGeometry args={[0.8, 0]} />;
       case 10:
-        // D10 approximated with dodecahedron
         return <dodecahedronGeometry args={[0.7, 0]} />;
       case 12:
         return <dodecahedronGeometry args={[0.8, 0]} />;
@@ -82,31 +77,34 @@ const DiceMesh = ({ sides, isRolling, color }: DiceMeshProps) => {
     yellow: '#eab308',
   };
 
+  const diceColor = colorMap[color] || '#eab308';
+
   return (
     <Float 
       speed={isRolling ? 0 : 2} 
       rotationIntensity={isRolling ? 0 : 0.2} 
       floatIntensity={isRolling ? 0 : 0.3}
     >
-      <mesh ref={meshRef} castShadow>
-        {getGeometry()}
-        <meshStandardMaterial
-          color={colorMap[color] || '#eab308'}
-          metalness={0.3}
-          roughness={0.4}
-          envMapIntensity={1}
-        />
-      </mesh>
-      {/* Edge highlight */}
-      <mesh ref={meshRef}>
-        {getGeometry()}
-        <meshBasicMaterial
-          color={colorMap[color] || '#eab308'}
-          wireframe
-          transparent
-          opacity={0.3}
-        />
-      </mesh>
+      <group ref={groupRef}>
+        <mesh castShadow>
+          {getGeometry()}
+          <meshStandardMaterial
+            color={diceColor}
+            metalness={0.4}
+            roughness={0.3}
+            envMapIntensity={1.2}
+          />
+        </mesh>
+        {/* Subtle edge glow */}
+        <mesh scale={1.02}>
+          {getGeometry()}
+          <meshBasicMaterial
+            color={diceColor}
+            transparent
+            opacity={0.15}
+          />
+        </mesh>
+      </group>
     </Float>
   );
 };
@@ -114,38 +112,23 @@ const DiceMesh = ({ sides, isRolling, color }: DiceMeshProps) => {
 interface Dice3DProps {
   sides: number;
   isRolling: boolean;
-  result: number;
   color: string;
 }
 
-export const Dice3D = ({ sides, isRolling, result, color }: Dice3DProps) => {
+export const Dice3D = ({ sides, isRolling, color }: Dice3DProps) => {
   return (
-    <div className="w-16 h-16 relative">
+    <div className="w-16 h-16">
       <Canvas
         camera={{ position: [0, 0, 3], fov: 50 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
-        <pointLight position={[-5, -5, -5]} intensity={0.5} color="#f97316" />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[5, 5, 5]} intensity={1.2} />
+        <pointLight position={[-3, -3, -3]} intensity={0.4} color="#f97316" />
         <Environment preset="city" />
-        <DiceMesh sides={sides} isRolling={isRolling} result={result} color={color} />
+        <DiceMesh sides={sides} isRolling={isRolling} color={color} />
       </Canvas>
-      {/* Result overlay */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span 
-          className={`text-lg font-bold drop-shadow-lg transition-opacity duration-300 ${
-            isRolling ? 'opacity-0' : 'opacity-100'
-          }`}
-          style={{ 
-            textShadow: '0 0 8px rgba(0,0,0,0.8), 0 0 16px rgba(0,0,0,0.6)',
-            color: 'white'
-          }}
-        >
-          {result}
-        </span>
-      </div>
     </div>
   );
 };

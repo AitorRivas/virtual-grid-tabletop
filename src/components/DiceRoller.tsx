@@ -188,7 +188,6 @@ export const DiceRoller = () => {
                       <Dice3D 
                         sides={result.sides} 
                         isRolling={result.isRolling} 
-                        result={result.result}
                         color={result.colorName}
                       />
                     </Suspense>
