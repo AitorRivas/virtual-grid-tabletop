@@ -1,16 +1,9 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
-import { Environment, PerspectiveCamera, Text } from '@react-three/drei';
+import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
-
-interface DiceProps {
-  sides: number;
-  color: string;
-  onRollComplete: (result: number) => void;
-  rollTrigger: number;
-}
 
 const colorMap: Record<string, string> = {
   green: '#22c55e',
@@ -21,234 +14,206 @@ const colorMap: Record<string, string> = {
   yellow: '#eab308',
 };
 
-const PhysicsDice = ({ sides, color, onRollComplete, rollTrigger }: DiceProps) => {
+interface PhysicsDiceProps {
+  sides: number;
+  color: string;
+  shouldRoll: boolean;
+  onSettled: (result: number) => void;
+}
+
+const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) => {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const meshRef = useRef<THREE.Mesh>(null);
-  const [hasSettled, setHasSettled] = useState(false);
-  const [showResult, setShowResult] = useState<number | null>(null);
-  const settleCheckRef = useRef<number>(0);
+  const hasRolledRef = useRef(false);
+  const settleCountRef = useRef(0);
+  const hasSettledRef = useRef(false);
 
-  const throwDice = useCallback(() => {
-    if (!rigidBodyRef.current) return;
-    
-    setHasSettled(false);
-    setShowResult(null);
-    settleCheckRef.current = 0;
-    
-    // Reset position - start from center top
-    rigidBodyRef.current.setTranslation({ x: 0, y: 1.5, z: 0 }, true);
-    rigidBodyRef.current.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
-    
-    // Apply random impulse - gentler throw
-    const impulseX = (Math.random() - 0.5) * 4;
-    const impulseY = -3;
-    const impulseZ = (Math.random() - 0.5) * 4;
-    
-    rigidBodyRef.current.setLinvel({ x: impulseX, y: impulseY, z: impulseZ }, true);
-    
-    // Apply random angular velocity for spin
-    const angularX = (Math.random() - 0.5) * 20;
-    const angularY = (Math.random() - 0.5) * 20;
-    const angularZ = (Math.random() - 0.5) * 20;
-    
-    rigidBodyRef.current.setAngvel({ x: angularX, y: angularY, z: angularZ }, true);
-  }, []);
-
+  // Reset refs when shouldRoll changes to true
   useEffect(() => {
-    if (rollTrigger > 0) {
-      throwDice();
+    if (shouldRoll && !hasRolledRef.current) {
+      hasRolledRef.current = true;
+      hasSettledRef.current = false;
+      settleCountRef.current = 0;
+      
+      // Delay throw slightly to ensure physics is ready
+      const timeout = setTimeout(() => {
+        if (rigidBodyRef.current) {
+          // Position at top
+          rigidBodyRef.current.setTranslation({ x: 0, y: 2, z: 0 }, true);
+          
+          // Random rotation
+          const rx = Math.random() * Math.PI;
+          const ry = Math.random() * Math.PI;
+          const rz = Math.random() * Math.PI;
+          const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz));
+          rigidBodyRef.current.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
+          
+          // Apply velocity
+          rigidBodyRef.current.setLinvel({ 
+            x: (Math.random() - 0.5) * 3, 
+            y: -5, 
+            z: (Math.random() - 0.5) * 3 
+          }, true);
+          
+          // Apply spin
+          rigidBodyRef.current.setAngvel({ 
+            x: (Math.random() - 0.5) * 15, 
+            y: (Math.random() - 0.5) * 15, 
+            z: (Math.random() - 0.5) * 15 
+          }, true);
+        }
+      }, 100);
+      
+      return () => clearTimeout(timeout);
     }
-  }, [rollTrigger, throwDice]);
+  }, [shouldRoll]);
+
+  // Reset when shouldRoll becomes false (ready for next roll)
+  useEffect(() => {
+    if (!shouldRoll) {
+      hasRolledRef.current = false;
+    }
+  }, [shouldRoll]);
 
   useFrame(() => {
-    if (!rigidBodyRef.current || hasSettled) return;
+    if (!rigidBodyRef.current || !shouldRoll || hasSettledRef.current) return;
     
-    const velocity = rigidBodyRef.current.linvel();
-    const angularVel = rigidBodyRef.current.angvel();
-    const position = rigidBodyRef.current.translation();
+    const vel = rigidBodyRef.current.linvel();
+    const angVel = rigidBodyRef.current.angvel();
     
-    const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
-    const angularSpeed = Math.sqrt(angularVel.x ** 2 + angularVel.y ** 2 + angularVel.z ** 2);
+    const speed = Math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2);
+    const angSpeed = Math.sqrt(angVel.x ** 2 + angVel.y ** 2 + angVel.z ** 2);
     
-    // Check if dice has settled (on the table surface)
-    if (speed < 0.05 && angularSpeed < 0.05 && position.y < 0.8 && position.y > 0) {
-      settleCheckRef.current++;
-      
-      if (settleCheckRef.current > 40) {
-        setHasSettled(true);
+    if (speed < 0.1 && angSpeed < 0.1) {
+      settleCountRef.current++;
+      if (settleCountRef.current > 60) {
+        hasSettledRef.current = true;
         const result = Math.floor(Math.random() * sides) + 1;
-        setShowResult(result);
-        onRollComplete(result);
+        onSettled(result);
       }
     } else {
-      settleCheckRef.current = 0;
+      settleCountRef.current = 0;
     }
   });
 
   const getGeometry = () => {
     switch (sides) {
-      case 4:
-        return <tetrahedronGeometry args={[0.4, 0]} />;
-      case 6:
-        return <boxGeometry args={[0.5, 0.5, 0.5]} />;
-      case 8:
-        return <octahedronGeometry args={[0.4, 0]} />;
-      case 10:
-        return <dodecahedronGeometry args={[0.35, 0]} />;
-      case 12:
-        return <dodecahedronGeometry args={[0.4, 0]} />;
-      case 20:
-        return <icosahedronGeometry args={[0.4, 0]} />;
-      default:
-        return <boxGeometry args={[0.5, 0.5, 0.5]} />;
+      case 4: return <tetrahedronGeometry args={[0.35, 0]} />;
+      case 6: return <boxGeometry args={[0.45, 0.45, 0.45]} />;
+      case 8: return <octahedronGeometry args={[0.35, 0]} />;
+      case 10: return <dodecahedronGeometry args={[0.32, 0]} />;
+      case 12: return <dodecahedronGeometry args={[0.35, 0]} />;
+      case 20: return <icosahedronGeometry args={[0.35, 0]} />;
+      default: return <boxGeometry args={[0.45, 0.45, 0.45]} />;
     }
   };
 
-  const diceColor = colorMap[color] || '#eab308';
-
   return (
-    <>
-      <RigidBody
-        ref={rigidBodyRef}
-        colliders="hull"
-        restitution={0.4}
-        friction={0.6}
-        linearDamping={0.3}
-        angularDamping={0.3}
-        position={[0, 1.5, 0]}
-        mass={1}
-      >
-        <mesh ref={meshRef} castShadow receiveShadow>
-          {getGeometry()}
-          <meshStandardMaterial
-            color={diceColor}
-            metalness={0.3}
-            roughness={0.4}
-            emissive={diceColor}
-            emissiveIntensity={0.1}
-          />
-        </mesh>
-      </RigidBody>
-      
-      {/* Floating result number when settled */}
-      {showResult !== null && (
-        <Text
-          position={[0, 2, 0]}
-          fontSize={0.6}
-          color="white"
-          anchorX="center"
-          anchorY="middle"
-          font="/fonts/inter-bold.woff"
-          outlineWidth={0.05}
-          outlineColor="#000000"
-        >
-          {showResult}
-        </Text>
-      )}
-    </>
-  );
-};
-
-const DiceTray = () => {
-  return (
-    <group>
-      {/* Floor */}
-      <RigidBody type="fixed" position={[0, 0, 0]}>
-        <CuboidCollider args={[2, 0.1, 2]} />
-        <mesh receiveShadow position={[0, 0, 0]}>
-          <boxGeometry args={[4, 0.2, 4]} />
-          <meshStandardMaterial color="#16213e" />
-        </mesh>
-      </RigidBody>
-      
-      {/* Felt surface */}
-      <mesh position={[0, 0.11, 0]} receiveShadow>
-        <boxGeometry args={[3.8, 0.02, 3.8]} />
-        <meshStandardMaterial color="#1a3a1a" roughness={0.9} />
+    <RigidBody
+      ref={rigidBodyRef}
+      colliders="hull"
+      restitution={0.3}
+      friction={0.7}
+      linearDamping={0.4}
+      angularDamping={0.4}
+      position={[0, 2, 0]}
+    >
+      <mesh castShadow>
+        {getGeometry()}
+        <meshStandardMaterial
+          color={colorMap[color] || '#eab308'}
+          metalness={0.2}
+          roughness={0.5}
+        />
       </mesh>
-      
-      {/* Walls - wooden rim */}
-      {/* Back wall */}
-      <RigidBody type="fixed" position={[0, 0.3, -2]}>
-        <CuboidCollider args={[2, 0.4, 0.1]} />
-        <mesh castShadow>
-          <boxGeometry args={[4, 0.8, 0.2]} />
-          <meshStandardMaterial color="#3d2914" />
-        </mesh>
-      </RigidBody>
-      
-      {/* Front wall */}
-      <RigidBody type="fixed" position={[0, 0.3, 2]}>
-        <CuboidCollider args={[2, 0.4, 0.1]} />
-        <mesh castShadow>
-          <boxGeometry args={[4, 0.8, 0.2]} />
-          <meshStandardMaterial color="#3d2914" />
-        </mesh>
-      </RigidBody>
-      
-      {/* Left wall */}
-      <RigidBody type="fixed" position={[-2, 0.3, 0]}>
-        <CuboidCollider args={[0.1, 0.4, 2]} />
-        <mesh castShadow>
-          <boxGeometry args={[0.2, 0.8, 4]} />
-          <meshStandardMaterial color="#3d2914" />
-        </mesh>
-      </RigidBody>
-      
-      {/* Right wall */}
-      <RigidBody type="fixed" position={[2, 0.3, 0]}>
-        <CuboidCollider args={[0.1, 0.4, 2]} />
-        <mesh castShadow>
-          <boxGeometry args={[0.2, 0.8, 4]} />
-          <meshStandardMaterial color="#3d2914" />
-        </mesh>
-      </RigidBody>
-    </group>
+    </RigidBody>
   );
 };
+
+const DiceTray = () => (
+  <group>
+    {/* Floor */}
+    <RigidBody type="fixed" position={[0, 0, 0]}>
+      <CuboidCollider args={[1.5, 0.1, 1.5]} />
+    </RigidBody>
+    <mesh receiveShadow position={[0, 0, 0]}>
+      <boxGeometry args={[3, 0.2, 3]} />
+      <meshStandardMaterial color="#1a2a1a" />
+    </mesh>
+    
+    {/* Walls */}
+    <RigidBody type="fixed" position={[0, 0.4, -1.5]}>
+      <CuboidCollider args={[1.5, 0.5, 0.1]} />
+    </RigidBody>
+    <mesh position={[0, 0.4, -1.5]}>
+      <boxGeometry args={[3, 1, 0.2]} />
+      <meshStandardMaterial color="#2d1a0d" />
+    </mesh>
+    
+    <RigidBody type="fixed" position={[0, 0.4, 1.5]}>
+      <CuboidCollider args={[1.5, 0.5, 0.1]} />
+    </RigidBody>
+    <mesh position={[0, 0.4, 1.5]}>
+      <boxGeometry args={[3, 1, 0.2]} />
+      <meshStandardMaterial color="#2d1a0d" />
+    </mesh>
+    
+    <RigidBody type="fixed" position={[-1.5, 0.4, 0]}>
+      <CuboidCollider args={[0.1, 0.5, 1.5]} />
+    </RigidBody>
+    <mesh position={[-1.5, 0.4, 0]}>
+      <boxGeometry args={[0.2, 1, 3]} />
+      <meshStandardMaterial color="#2d1a0d" />
+    </mesh>
+    
+    <RigidBody type="fixed" position={[1.5, 0.4, 0]}>
+      <CuboidCollider args={[0.1, 0.5, 1.5]} />
+    </RigidBody>
+    <mesh position={[1.5, 0.4, 0]}>
+      <boxGeometry args={[0.2, 1, 3]} />
+      <meshStandardMaterial color="#2d1a0d" />
+    </mesh>
+  </group>
+);
 
 interface DicePhysicsSceneProps {
   sides: number;
   color: string;
+  isRolling: boolean;
   onRollComplete: (result: number) => void;
-  rollTrigger: number;
 }
 
-export const DicePhysicsScene = ({ sides, color, onRollComplete, rollTrigger }: DicePhysicsSceneProps) => {
+export const DicePhysicsScene = ({ sides, color, isRolling, onRollComplete }: DicePhysicsSceneProps) => {
+  const [key, setKey] = useState(0);
+  
+  // Reset scene when starting a new roll
+  useEffect(() => {
+    if (isRolling) {
+      setKey(prev => prev + 1);
+    }
+  }, [isRolling]);
+
   return (
-    <div className="w-full h-48 rounded-lg overflow-hidden border border-border/50">
-      <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[0, 4, 4]} fov={40} />
-        <ambientLight intensity={0.5} />
-        <directionalLight
-          position={[3, 6, 3]}
-          intensity={1.2}
-          castShadow
-          shadow-mapSize={[1024, 1024]}
-          shadow-camera-far={20}
-          shadow-camera-left={-5}
-          shadow-camera-right={5}
-          shadow-camera-top={5}
-          shadow-camera-bottom={-5}
-        />
-        <pointLight position={[-2, 3, -2]} intensity={0.4} color="#f97316" />
-        <Environment preset="apartment" />
+    <div className="w-full h-44 rounded-lg overflow-hidden border border-border/50 bg-[#0a0a12]">
+      <Canvas 
+        key={key}
+        shadows 
+        gl={{ antialias: true, powerPreference: 'default' }}
+        frameloop="demand"
+      >
+        <PerspectiveCamera makeDefault position={[0, 4, 3.5]} fov={35} />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[2, 5, 2]} intensity={1} castShadow />
+        <pointLight position={[-2, 3, -2]} intensity={0.3} color="#f97316" />
         
-        <Physics gravity={[0, -15, 0]} debug={false}>
+        <Physics gravity={[0, -12, 0]}>
           <PhysicsDice
             sides={sides}
             color={color}
-            onRollComplete={onRollComplete}
-            rollTrigger={rollTrigger}
+            shouldRoll={isRolling}
+            onSettled={onRollComplete}
           />
           <DiceTray />
         </Physics>
-        
-        {/* Background gradient */}
-        <mesh position={[0, 0, -5]}>
-          <planeGeometry args={[20, 20]} />
-          <meshBasicMaterial color="#0f0f1a" />
-        </mesh>
       </Canvas>
     </div>
   );
