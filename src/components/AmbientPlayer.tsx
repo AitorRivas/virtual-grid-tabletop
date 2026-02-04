@@ -325,7 +325,7 @@ export const AmbientPlayer = () => {
             value={[channel.volume]}
             onValueChange={(v) => setChannel(prev => ({ ...prev, volume: v[0] }))}
             max={100}
-            step={5}
+            step={1}
             className="flex-1"
           />
           <span className="text-xs text-muted-foreground w-8">{channel.volume}%</span>
