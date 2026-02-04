@@ -27,19 +27,17 @@ interface DiceResult {
   colorName: string;
 }
 
-const PANEL_WIDTH = 360;
-const PANEL_HEIGHT = 480;
+const PANEL_WIDTH = 340;
 
 export const DiceRoller = () => {
   const [results, setResults] = useState<DiceResult[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [currentRoll, setCurrentRoll] = useState<{ sides: number; colorName: string } | null>(null);
-  const [rollTrigger, setRollTrigger] = useState(0);
+  const [activeDice, setActiveDice] = useState<{ sides: number; colorName: string }>({ sides: 6, colorName: 'blue' });
   const [isRolling, setIsRolling] = useState(false);
   
   const defaultPosition = useMemo(() => {
     const x = Math.max(16, window.innerWidth - PANEL_WIDTH - 16);
-    const y = Math.max(16, window.innerHeight - PANEL_HEIGHT - 100);
+    const y = Math.max(16, window.innerHeight - 450);
     return { x, y };
   }, []);
   
@@ -56,33 +54,29 @@ export const DiceRoller = () => {
     setIsExpanded(true);
   }, [resetPosition]);
 
-  const rollDice = (sides: number, colorName: string) => {
+  const rollDice = useCallback((sides: number, colorName: string) => {
     if (isRolling) return;
     
+    setActiveDice({ sides, colorName });
     setIsRolling(true);
-    setCurrentRoll({ sides, colorName });
-    setRollTrigger(prev => prev + 1);
-  };
+  }, [isRolling]);
 
   const handleRollComplete = useCallback((result: number) => {
-    if (!currentRoll) return;
-    
     const newResult: DiceResult = {
       id: Date.now(),
-      sides: currentRoll.sides,
+      sides: activeDice.sides,
       result,
-      colorName: currentRoll.colorName,
+      colorName: activeDice.colorName,
     };
 
     setResults(prev => [newResult, ...prev.slice(0, 9)]);
     setIsRolling(false);
-  }, [currentRoll]);
+  }, [activeDice]);
 
-  const clearResults = () => {
+  const clearResults = useCallback(() => {
     setResults([]);
-  };
+  }, []);
 
-  // Only d20 has critical hits and fumbles (natural 20 and natural 1)
   const isCritical = (result: DiceResult) => result.sides === 20 && result.result === 20;
   const isFumble = (result: DiceResult) => result.sides === 20 && result.result === 1;
 
@@ -97,7 +91,6 @@ export const DiceRoller = () => {
         bottom: isExpanded ? 'auto' : '16px',
       }}
     >
-      {/* Toggle button */}
       {!isExpanded && (
         <Button
           onClick={handleExpand}
@@ -108,10 +101,8 @@ export const DiceRoller = () => {
         </Button>
       )}
 
-      {/* Dice panel */}
       {isExpanded && (
         <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl overflow-hidden" style={{ width: PANEL_WIDTH }}>
-          {/* Draggable header */}
           <div 
             className={`flex items-center justify-between p-3 border-b border-border/50 bg-gradient-to-r from-primary/10 to-accent/10 cursor-move select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             onMouseDown={handleMouseDown}
@@ -131,7 +122,7 @@ export const DiceRoller = () => {
             </Button>
           </div>
 
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-3">
             {/* Dice buttons */}
             <div className="grid grid-cols-6 gap-2">
               {diceTypes.map(({ sides, label, color, colorName }) => (
@@ -139,7 +130,7 @@ export const DiceRoller = () => {
                   key={sides}
                   onClick={() => rollDice(sides, colorName)}
                   disabled={isRolling}
-                  className={`aspect-square rounded-lg ${color} hover:opacity-90 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-xs font-bold text-foreground shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                  className={`aspect-square rounded-lg ${color} hover:opacity-90 hover:scale-105 active:scale-95 transition-all flex items-center justify-center text-xs font-bold text-foreground shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
                   title={`Lanzar ${label}`}
                 >
                   {label}
@@ -147,68 +138,54 @@ export const DiceRoller = () => {
               ))}
             </div>
 
-            {/* 3D Physics Scene */}
+            {/* 3D Scene */}
             <Suspense fallback={
-              <div className="w-full h-48 rounded-lg bg-secondary/30 flex items-center justify-center">
+              <div className="w-full h-44 rounded-lg bg-secondary/30 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
               </div>
             }>
               <DicePhysicsScene
-                sides={currentRoll?.sides || 6}
-                color={currentRoll?.colorName || 'blue'}
+                sides={activeDice.sides}
+                color={activeDice.colorName}
+                isRolling={isRolling}
                 onRollComplete={handleRollComplete}
-                rollTrigger={rollTrigger}
               />
             </Suspense>
 
-            {/* Rolling indicator */}
             {isRolling && (
-              <div className="text-center text-sm text-muted-foreground animate-pulse">
-                Rodando d{currentRoll?.sides}...
+              <div className="text-center text-sm text-primary font-medium animate-pulse">
+                Lanzando d{activeDice.sides}...
               </div>
             )}
 
-            {/* Results history */}
+            {/* Results */}
             {results.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground font-medium">Historial</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearResults}
-                    className="text-xs h-6 px-2 hover:bg-destructive/20"
-                  >
+                  <span className="text-xs text-muted-foreground">Historial</span>
+                  <Button variant="ghost" size="sm" onClick={clearResults} className="text-xs h-6 px-2">
                     Limpiar
                   </Button>
                 </div>
                 
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto scrollbar-thin">
-                  {results.map((result) => (
+                <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto scrollbar-thin">
+                  {results.map((r) => (
                     <div
-                      key={result.id}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                        isCritical(result)
-                          ? 'bg-token-green/20 text-token-green border border-token-green/50'
-                          : isFumble(result)
-                          ? 'bg-destructive/20 text-destructive border border-destructive/50'
-                          : 'bg-secondary/50 text-foreground border border-border/30'
+                      key={r.id}
+                      className={`px-2 py-1 rounded text-sm font-bold ${
+                        isCritical(r)
+                          ? 'bg-token-green/20 text-token-green border border-token-green/40'
+                          : isFumble(r)
+                          ? 'bg-destructive/20 text-destructive border border-destructive/40'
+                          : 'bg-secondary/60 text-foreground'
                       }`}
                     >
-                      <span className="text-muted-foreground text-xs mr-1">d{result.sides}:</span>
-                      <span>{result.result}</span>
-                      {isCritical(result) && (
-                        <Sparkles className="w-3 h-3 inline ml-1 text-token-yellow" />
-                      )}
+                      <span className="text-muted-foreground text-xs">d{r.sides}:</span>
+                      <span className="ml-1">{r.result}</span>
+                      {isCritical(r) && <Sparkles className="w-3 h-3 inline ml-0.5 text-token-yellow" />}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {results.length === 0 && !isRolling && (
-              <div className="text-center py-4 text-muted-foreground">
-                <p className="text-sm">Selecciona un dado para lanzar</p>
               </div>
             )}
           </div>
