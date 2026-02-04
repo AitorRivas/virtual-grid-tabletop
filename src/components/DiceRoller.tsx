@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo, Suspense } from 'react';
-import { Dices, GripHorizontal, Sparkles, Loader2 } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
+import { Dices, GripHorizontal, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { useDraggable } from '@/hooks/useDraggable';
-import { DicePhysicsScene } from './dice/DicePhysics';
+import { DiceRollModal } from './dice/DiceRollModal';
 
 interface DiceType {
   sides: number;
@@ -56,7 +56,6 @@ export const DiceRoller = () => {
 
   const rollDice = useCallback((sides: number, colorName: string) => {
     if (isRolling) return;
-    
     setActiveDice({ sides, colorName });
     setIsRolling(true);
   }, [isRolling]);
@@ -68,10 +67,12 @@ export const DiceRoller = () => {
       result,
       colorName: activeDice.colorName,
     };
-
     setResults(prev => [newResult, ...prev.slice(0, 9)]);
-    setIsRolling(false);
   }, [activeDice]);
+
+  const handleModalClose = useCallback(() => {
+    setIsRolling(false);
+  }, []);
 
   const clearResults = useCallback(() => {
     setResults([]);
@@ -138,24 +139,14 @@ export const DiceRoller = () => {
               ))}
             </div>
 
-            {/* 3D Scene */}
-            <Suspense fallback={
-              <div className="w-full h-44 rounded-lg bg-secondary/30 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
-              </div>
-            }>
-              <DicePhysicsScene
+            {/* Fullscreen modal for 3D dice */}
+            {isRolling && (
+              <DiceRollModal
                 sides={activeDice.sides}
                 color={activeDice.colorName}
-                isRolling={isRolling}
-                onRollComplete={handleRollComplete}
+                onComplete={handleRollComplete}
+                onClose={handleModalClose}
               />
-            </Suspense>
-
-            {isRolling && (
-              <div className="text-center text-sm text-primary font-medium animate-pulse">
-                Lanzando d{activeDice.sides}...
-              </div>
             )}
 
             {/* Results */}
