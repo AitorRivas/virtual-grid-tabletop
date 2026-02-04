@@ -1,17 +1,31 @@
-import { useRef, useEffect, useState } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
 
-const colorMap: Record<string, string> = {
-  green: '#22c55e',
-  blue: '#3b82f6',
-  purple: '#a855f7',
-  orange: '#f97316',
-  red: '#ef4444',
-  yellow: '#eab308',
+const tokenVarMap: Record<string, string> = {
+  green: '--token-green',
+  blue: '--token-blue',
+  purple: '--token-purple',
+  orange: '--token-orange',
+  red: '--token-red',
+  yellow: '--token-yellow',
+};
+
+const cssVarToCssHsl = (varName: string, fallback: string) => {
+  if (typeof window === 'undefined') return fallback;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  if (!raw) return fallback;
+  // Expected format: "210 85% 58%"
+  const parts = raw.split(/\s+/).filter(Boolean);
+  if (parts.length < 3) return fallback;
+  const h = Number.parseFloat(parts[0]);
+  const s = Number.parseFloat(parts[1].replace('%', ''));
+  const l = Number.parseFloat(parts[2].replace('%', ''));
+  if ([h, s, l].some((n) => Number.isNaN(n))) return fallback;
+  return `hsl(${h}, ${s}%, ${l}%)`;
 };
 
 interface PhysicsDiceProps {
@@ -26,6 +40,12 @@ const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) 
   const hasRolledRef = useRef(false);
   const settleCountRef = useRef(0);
   const hasSettledRef = useRef(false);
+  const fallbackTimerRef = useRef<number | null>(null);
+
+  const diceColor = useMemo(() => {
+    const tokenVar = tokenVarMap[color] ?? '--primary';
+    return cssVarToCssHsl(tokenVar, 'hsl(38, 90%, 55%)');
+  }, [color]);
 
   // Reset refs when shouldRoll changes to true
   useEffect(() => {
@@ -33,6 +53,16 @@ const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) 
       hasRolledRef.current = true;
       hasSettledRef.current = false;
       settleCountRef.current = 0;
+
+      // Failsafe: never let the UI get stuck in "Lanzando..."
+      if (fallbackTimerRef.current) window.clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = window.setTimeout(() => {
+        if (!hasSettledRef.current) {
+          hasSettledRef.current = true;
+          const result = Math.floor(Math.random() * sides) + 1;
+          onSettled(result);
+        }
+      }, 6500);
       
       // Delay throw slightly to ensure physics is ready
       const timeout = setTimeout(() => {
@@ -50,7 +80,7 @@ const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) 
           // Apply velocity
           rigidBodyRef.current.setLinvel({ 
             x: (Math.random() - 0.5) * 3, 
-            y: -5, 
+            y: -3, 
             z: (Math.random() - 0.5) * 3 
           }, true);
           
@@ -71,6 +101,10 @@ const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) 
   useEffect(() => {
     if (!shouldRoll) {
       hasRolledRef.current = false;
+      if (fallbackTimerRef.current) {
+        window.clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
     }
   }, [shouldRoll]);
 
@@ -87,6 +121,10 @@ const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) 
       settleCountRef.current++;
       if (settleCountRef.current > 60) {
         hasSettledRef.current = true;
+        if (fallbackTimerRef.current) {
+          window.clearTimeout(fallbackTimerRef.current);
+          fallbackTimerRef.current = null;
+        }
         const result = Math.floor(Math.random() * sides) + 1;
         onSettled(result);
       }
@@ -120,7 +158,7 @@ const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) 
       <mesh castShadow>
         {getGeometry()}
         <meshStandardMaterial
-          color={colorMap[color] || '#eab308'}
+          color={diceColor}
           metalness={0.2}
           roughness={0.5}
         />
@@ -129,51 +167,56 @@ const PhysicsDice = ({ sides, color, shouldRoll, onSettled }: PhysicsDiceProps) 
   );
 };
 
-const DiceTray = () => (
-  <group>
-    {/* Floor */}
-    <RigidBody type="fixed" position={[0, 0, 0]}>
-      <CuboidCollider args={[1.5, 0.1, 1.5]} />
-    </RigidBody>
-    <mesh receiveShadow position={[0, 0, 0]}>
-      <boxGeometry args={[3, 0.2, 3]} />
-      <meshStandardMaterial color="#1a2a1a" />
-    </mesh>
-    
-    {/* Walls */}
-    <RigidBody type="fixed" position={[0, 0.4, -1.5]}>
-      <CuboidCollider args={[1.5, 0.5, 0.1]} />
-    </RigidBody>
-    <mesh position={[0, 0.4, -1.5]}>
-      <boxGeometry args={[3, 1, 0.2]} />
-      <meshStandardMaterial color="#2d1a0d" />
-    </mesh>
-    
-    <RigidBody type="fixed" position={[0, 0.4, 1.5]}>
-      <CuboidCollider args={[1.5, 0.5, 0.1]} />
-    </RigidBody>
-    <mesh position={[0, 0.4, 1.5]}>
-      <boxGeometry args={[3, 1, 0.2]} />
-      <meshStandardMaterial color="#2d1a0d" />
-    </mesh>
-    
-    <RigidBody type="fixed" position={[-1.5, 0.4, 0]}>
-      <CuboidCollider args={[0.1, 0.5, 1.5]} />
-    </RigidBody>
-    <mesh position={[-1.5, 0.4, 0]}>
-      <boxGeometry args={[0.2, 1, 3]} />
-      <meshStandardMaterial color="#2d1a0d" />
-    </mesh>
-    
-    <RigidBody type="fixed" position={[1.5, 0.4, 0]}>
-      <CuboidCollider args={[0.1, 0.5, 1.5]} />
-    </RigidBody>
-    <mesh position={[1.5, 0.4, 0]}>
-      <boxGeometry args={[0.2, 1, 3]} />
-      <meshStandardMaterial color="#2d1a0d" />
-    </mesh>
-  </group>
-);
+const DiceTray = () => {
+  const feltColor = useMemo(() => cssVarToCssHsl('--board-bg', 'hsl(220, 22%, 5%)'), []);
+  const wallColor = useMemo(() => cssVarToCssHsl('--toolbar-bg', 'hsl(220, 18%, 9%)'), []);
+
+  return (
+    <group>
+      {/* Floor */}
+      <RigidBody type="fixed" position={[0, 0, 0]}>
+        <CuboidCollider args={[1.5, 0.1, 1.5]} />
+      </RigidBody>
+      <mesh receiveShadow position={[0, 0, 0]}>
+        <boxGeometry args={[3, 0.2, 3]} />
+        <meshStandardMaterial color={feltColor} />
+      </mesh>
+
+      {/* Walls */}
+      <RigidBody type="fixed" position={[0, 0.4, -1.5]}>
+        <CuboidCollider args={[1.5, 0.5, 0.1]} />
+      </RigidBody>
+      <mesh position={[0, 0.4, -1.5]}>
+        <boxGeometry args={[3, 1, 0.2]} />
+        <meshStandardMaterial color={wallColor} />
+      </mesh>
+
+      <RigidBody type="fixed" position={[0, 0.4, 1.5]}>
+        <CuboidCollider args={[1.5, 0.5, 0.1]} />
+      </RigidBody>
+      <mesh position={[0, 0.4, 1.5]}>
+        <boxGeometry args={[3, 1, 0.2]} />
+        <meshStandardMaterial color={wallColor} />
+      </mesh>
+
+      <RigidBody type="fixed" position={[-1.5, 0.4, 0]}>
+        <CuboidCollider args={[0.1, 0.5, 1.5]} />
+      </RigidBody>
+      <mesh position={[-1.5, 0.4, 0]}>
+        <boxGeometry args={[0.2, 1, 3]} />
+        <meshStandardMaterial color={wallColor} />
+      </mesh>
+
+      <RigidBody type="fixed" position={[1.5, 0.4, 0]}>
+        <CuboidCollider args={[0.1, 0.5, 1.5]} />
+      </RigidBody>
+      <mesh position={[1.5, 0.4, 0]}>
+        <boxGeometry args={[0.2, 1, 3]} />
+        <meshStandardMaterial color={wallColor} />
+      </mesh>
+    </group>
+  );
+};
 
 interface DicePhysicsSceneProps {
   sides: number;
@@ -183,27 +226,18 @@ interface DicePhysicsSceneProps {
 }
 
 export const DicePhysicsScene = ({ sides, color, isRolling, onRollComplete }: DicePhysicsSceneProps) => {
-  const [key, setKey] = useState(0);
-  
-  // Reset scene when starting a new roll
-  useEffect(() => {
-    if (isRolling) {
-      setKey(prev => prev + 1);
-    }
-  }, [isRolling]);
+  const accentColor = useMemo(() => cssVarToCssHsl('--accent', 'hsl(32, 95%, 48%)'), []);
 
   return (
-    <div className="w-full h-44 rounded-lg overflow-hidden border border-border/50 bg-[#0a0a12]">
+    <div className="w-full h-44 rounded-lg overflow-hidden border border-border/50 bg-background">
       <Canvas 
-        key={key}
         shadows 
         gl={{ antialias: true, powerPreference: 'default' }}
-        frameloop="demand"
       >
         <PerspectiveCamera makeDefault position={[0, 4, 3.5]} fov={35} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 5, 2]} intensity={1} castShadow />
-        <pointLight position={[-2, 3, -2]} intensity={0.3} color="#f97316" />
+        <pointLight position={[-2, 3, -2]} intensity={0.3} color={accentColor} />
         
         <Physics gravity={[0, -12, 0]}>
           <PhysicsDice
