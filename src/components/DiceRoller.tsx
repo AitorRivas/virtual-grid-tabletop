@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo, Suspense } from 'react';
-import { Dices, GripHorizontal, Sparkles } from 'lucide-react';
+import { Dices, GripHorizontal, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useDraggable } from '@/hooks/useDraggable';
-import { Dice3D } from './dice/Dice3D';
+import { DicePhysicsScene } from './dice/DicePhysics';
 
 interface DiceType {
   sides: number;
@@ -24,16 +24,18 @@ interface DiceResult {
   id: number;
   sides: number;
   result: number;
-  isRolling: boolean;
   colorName: string;
 }
 
-const PANEL_WIDTH = 320;
-const PANEL_HEIGHT = 400;
+const PANEL_WIDTH = 360;
+const PANEL_HEIGHT = 480;
 
 export const DiceRoller = () => {
   const [results, setResults] = useState<DiceResult[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [currentRoll, setCurrentRoll] = useState<{ sides: number; colorName: string } | null>(null);
+  const [rollTrigger, setRollTrigger] = useState(0);
+  const [isRolling, setIsRolling] = useState(false);
   
   const defaultPosition = useMemo(() => {
     const x = Math.max(16, window.innerWidth - PANEL_WIDTH - 16);
@@ -55,37 +57,26 @@ export const DiceRoller = () => {
   }, [resetPosition]);
 
   const rollDice = (sides: number, colorName: string) => {
-    const id = Date.now();
+    if (isRolling) return;
+    
+    setIsRolling(true);
+    setCurrentRoll({ sides, colorName });
+    setRollTrigger(prev => prev + 1);
+  };
+
+  const handleRollComplete = useCallback((result: number) => {
+    if (!currentRoll) return;
+    
     const newResult: DiceResult = {
-      id,
-      sides,
-      result: 1,
-      isRolling: true,
-      colorName,
+      id: Date.now(),
+      sides: currentRoll.sides,
+      result,
+      colorName: currentRoll.colorName,
     };
 
-    setResults(prev => [newResult, ...prev.slice(0, 4)]);
-
-    // Animate the roll
-    let rollCount = 0;
-    const maxRolls = 20;
-    const interval = setInterval(() => {
-      rollCount++;
-      const randomResult = Math.floor(Math.random() * sides) + 1;
-      
-      setResults(prev => 
-        prev.map(r => 
-          r.id === id 
-            ? { ...r, result: randomResult, isRolling: rollCount < maxRolls } 
-            : r
-        )
-      );
-
-      if (rollCount >= maxRolls) {
-        clearInterval(interval);
-      }
-    }, 60);
-  };
+    setResults(prev => [newResult, ...prev.slice(0, 9)]);
+    setIsRolling(false);
+  }, [currentRoll]);
 
   const clearResults = () => {
     setResults([]);
@@ -119,7 +110,7 @@ export const DiceRoller = () => {
 
       {/* Dice panel */}
       {isExpanded && (
-        <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl w-80 overflow-hidden">
+        <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl overflow-hidden" style={{ width: PANEL_WIDTH }}>
           {/* Draggable header */}
           <div 
             className={`flex items-center justify-between p-3 border-b border-border/50 bg-gradient-to-r from-primary/10 to-accent/10 cursor-move select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
@@ -140,14 +131,15 @@ export const DiceRoller = () => {
             </Button>
           </div>
 
-          <div className="p-4">
+          <div className="p-4 space-y-4">
             {/* Dice buttons */}
-            <div className="grid grid-cols-6 gap-2 mb-4">
+            <div className="grid grid-cols-6 gap-2">
               {diceTypes.map(({ sides, label, color, colorName }) => (
                 <button
                   key={sides}
                   onClick={() => rollDice(sides, colorName)}
-                  className={`aspect-square rounded-lg ${color} hover:opacity-90 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-xs font-bold text-foreground shadow-lg hover:shadow-xl`}
+                  disabled={isRolling}
+                  className={`aspect-square rounded-lg ${color} hover:opacity-90 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-xs font-bold text-foreground shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
                   title={`Lanzar ${label}`}
                 >
                   {label}
@@ -155,87 +147,67 @@ export const DiceRoller = () => {
               ))}
             </div>
 
-            {results.length > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearResults}
-                className="text-xs h-7 mb-3 w-full hover:bg-destructive/20"
-              >
-                Limpiar resultados
-              </Button>
-            )}
+            {/* 3D Physics Scene */}
+            <Suspense fallback={
+              <div className="w-full h-48 rounded-lg bg-secondary/30 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+              </div>
+            }>
+              <DicePhysicsScene
+                sides={currentRoll?.sides || 6}
+                color={currentRoll?.colorName || 'blue'}
+                onRollComplete={handleRollComplete}
+                rollTrigger={rollTrigger}
+              />
+            </Suspense>
 
-            {/* 3D Results */}
-            {results.length > 0 && (
-              <div className="space-y-3 max-h-64 overflow-y-auto scrollbar-thin pr-1">
-                {results.map((result) => (
-                  <div
-                    key={result.id}
-                    className={`flex items-center gap-4 p-3 rounded-xl transition-all ${
-                      isCritical(result) && !result.isRolling
-                        ? 'bg-gradient-to-r from-token-green/20 to-token-yellow/20 border border-token-green/50 shadow-lg shadow-token-green/20'
-                        : isFumble(result) && !result.isRolling
-                        ? 'bg-gradient-to-r from-destructive/20 to-destructive/10 border border-destructive/50 shadow-lg shadow-destructive/20'
-                        : 'bg-secondary/30 border border-border/30'
-                    }`}
-                  >
-                    <Suspense fallback={
-                      <div className="w-16 h-16 bg-secondary rounded-lg animate-pulse flex items-center justify-center">
-                        <Dices className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    }>
-                      <Dice3D 
-                        sides={result.sides} 
-                        isRolling={result.isRolling} 
-                        color={result.colorName}
-                      />
-                    </Suspense>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          d{result.sides}
-                        </span>
-                        <span className="text-muted-foreground/50">→</span>
-                        <span 
-                          className={`text-2xl font-bold transition-all ${
-                            result.isRolling 
-                              ? 'text-muted-foreground animate-pulse' 
-                              : isCritical(result)
-                              ? 'text-token-green'
-                              : isFumble(result)
-                              ? 'text-destructive'
-                              : 'text-primary'
-                          }`}
-                        >
-                          {result.result}
-                        </span>
-                      </div>
-                      
-                      {/* Only show critical/fumble labels for d20 */}
-                      {isCritical(result) && !result.isRolling && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Sparkles className="w-4 h-4 text-token-yellow animate-pulse" />
-                          <span className="text-sm font-bold text-token-green">
-                            ¡Crítico Natural!
-                          </span>
-                        </div>
-                      )}
-                      {isFumble(result) && !result.isRolling && (
-                        <span className="text-sm font-bold text-destructive">
-                          ¡Pifia Natural!
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            {/* Rolling indicator */}
+            {isRolling && (
+              <div className="text-center text-sm text-muted-foreground animate-pulse">
+                Rodando d{currentRoll?.sides}...
               </div>
             )}
 
-            {results.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Dices className="w-12 h-12 mx-auto mb-2 opacity-30" />
+            {/* Results history */}
+            {results.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground font-medium">Historial</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearResults}
+                    className="text-xs h-6 px-2 hover:bg-destructive/20"
+                  >
+                    Limpiar
+                  </Button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto scrollbar-thin">
+                  {results.map((result) => (
+                    <div
+                      key={result.id}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                        isCritical(result)
+                          ? 'bg-token-green/20 text-token-green border border-token-green/50'
+                          : isFumble(result)
+                          ? 'bg-destructive/20 text-destructive border border-destructive/50'
+                          : 'bg-secondary/50 text-foreground border border-border/30'
+                      }`}
+                    >
+                      <span className="text-muted-foreground text-xs mr-1">d{result.sides}:</span>
+                      <span>{result.result}</span>
+                      {isCritical(result) && (
+                        <Sparkles className="w-3 h-3 inline ml-1 text-token-yellow" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {results.length === 0 && !isRolling && (
+              <div className="text-center py-4 text-muted-foreground">
                 <p className="text-sm">Selecciona un dado para lanzar</p>
               </div>
             )}
