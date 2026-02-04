@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Dices, GripHorizontal, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { useDraggable } from '@/hooks/useDraggable';
@@ -139,14 +140,15 @@ export const DiceRoller = () => {
               ))}
             </div>
 
-            {/* Fullscreen modal for 3D dice */}
-            {isRolling && (
+            {/* Fullscreen modal for 3D dice - rendered via portal */}
+            {isRolling && createPortal(
               <DiceRollModal
                 sides={activeDice.sides}
                 color={activeDice.colorName}
                 onComplete={handleRollComplete}
                 onClose={handleModalClose}
-              />
+              />,
+              document.body
             )}
 
             {/* Results */}
