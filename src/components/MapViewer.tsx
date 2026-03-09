@@ -96,6 +96,16 @@ export const MapViewer = () => {
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
 
+  // Player view broadcast
+  const { broadcast, openPlayerWindow } = usePlayerBroadcastSender();
+
+  // Broadcast active map state whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      broadcast(activeMap);
+    }
+  }, [activeMap, isLoaded, broadcast]);
+
   // Grid config memoized
   const gridConfig = useMemo((): GridConfig => ({
     type: showGrid ? 'square' : 'none',
