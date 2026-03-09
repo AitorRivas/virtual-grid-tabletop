@@ -1,16 +1,17 @@
 import { useState, useCallback } from 'react';
-import { Map, Users, Music, Swords, Wrench, ChevronRight, ChevronLeft, Monitor, Layers } from 'lucide-react';
+import { Map, Users, Swords, ChevronRight, ChevronLeft, Monitor, Layers, Clapperboard, Image, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MapManager } from './MapManager';
 import { TokenToolbar } from './TokenToolbar';
-import { MapData } from '@/hooks/useSessionStorage';
+import { SceneManager } from './SceneManager';
+import { MapData, SceneData } from '@/hooks/useSessionStorage';
 import { TokenData, TokenColor, TokenStatus } from './MapViewer';
 import { Character, Monster } from '@/types/dnd';
 import { cn } from '@/lib/utils';
 
-type SidebarSection = 'maps' | 'tokens' | 'initiative';
+type SidebarSection = 'maps' | 'tokens' | 'scenes' | 'initiative';
 
 interface GMSidebarProps {
   // Maps
@@ -49,6 +50,17 @@ interface GMSidebarProps {
   onNextTurn: () => void;
   onEndInitiative: () => void;
   isInitiativeActive: boolean;
+  // Scenes
+  scenes: SceneData[];
+  activeSceneId: string | null;
+  onAddScene: (name: string) => string;
+  onRemoveScene: (id: string) => void;
+  onUpdateScene: (id: string, updates: Partial<SceneData>) => void;
+  onActivateScene: (id: string) => void;
+  // Narrative overlay
+  narrativeOverlay: { image: string | null; text: string; visible: boolean };
+  onShowNarrativeImage: (image: string, text?: string) => void;
+  onHideNarrativeImage: () => void;
 }
 
 export const GMSidebar = ({
@@ -84,6 +96,15 @@ export const GMSidebar = ({
   onNextTurn,
   onEndInitiative,
   isInitiativeActive,
+  scenes,
+  activeSceneId,
+  onAddScene,
+  onRemoveScene,
+  onUpdateScene,
+  onActivateScene,
+  narrativeOverlay,
+  onShowNarrativeImage,
+  onHideNarrativeImage,
 }: GMSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<SidebarSection>('tokens');
@@ -91,6 +112,7 @@ export const GMSidebar = ({
   const navItems: { id: SidebarSection; icon: typeof Map; label: string }[] = [
     { id: 'maps', icon: Layers, label: 'Mapas' },
     { id: 'tokens', icon: Users, label: 'Tokens' },
+    { id: 'scenes', icon: Clapperboard, label: 'Escenas' },
     { id: 'initiative', icon: Swords, label: 'Iniciativa' },
   ];
 
@@ -151,6 +173,23 @@ export const GMSidebar = ({
         ))}
 
         <div className="flex-1" />
+
+        {/* Narrative overlay quick toggle */}
+        {narrativeOverlay.visible && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-10 h-10 p-0 mb-1"
+                onClick={onHideNarrativeImage}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Ocultar imagen narrativa</TooltipContent>
+          </Tooltip>
+        )}
 
         {/* Collapse toggle */}
         <Button
@@ -214,6 +253,21 @@ export const GMSidebar = ({
             </div>
           )}
 
+          {/* Scenes section */}
+          {activeSection === 'scenes' && (
+            <ScrollArea className="flex-1">
+              <SceneManager
+                scenes={scenes}
+                activeSceneId={activeSceneId}
+                maps={maps}
+                onAddScene={onAddScene}
+                onRemoveScene={onRemoveScene}
+                onUpdateScene={onUpdateScene}
+                onActivateScene={onActivateScene}
+              />
+            </ScrollArea>
+          )}
+
           {/* Initiative section */}
           {activeSection === 'initiative' && (
             <ScrollArea className="flex-1">
@@ -258,7 +312,6 @@ export const GMSidebar = ({
                       </Button>
                     </div>
 
-                    {/* Initiative order */}
                     <div className="space-y-1">
                       {sortedInitiativeTokens.map((token, index) => (
                         <div

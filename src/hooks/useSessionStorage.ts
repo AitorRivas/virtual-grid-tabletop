@@ -21,9 +21,26 @@ export interface MapData {
   cellStates: Record<string, CellState>;
 }
 
+export interface SceneData {
+  id: string;
+  name: string;
+  mapId: string | null;
+  narrativeImage: string | null;
+  narrativeText: string;
+  musicTrackName: string | null;
+  ambientTrackName: string | null;
+}
+
 interface SessionData {
   maps: MapData[];
   activeMapId: string | null;
+  scenes: SceneData[];
+  activeSceneId: string | null;
+  narrativeOverlay: {
+    image: string | null;
+    text: string;
+    visible: boolean;
+  };
 }
 
 const createDefaultMap = (name = 'Mapa 1'): MapData => ({
@@ -43,17 +60,37 @@ const createDefaultMap = (name = 'Mapa 1'): MapData => ({
   cellStates: {},
 });
 
+export const createDefaultScene = (name: string, mapId: string | null = null): SceneData => ({
+  id: Date.now().toString() + Math.random().toString(36).slice(2),
+  name,
+  mapId,
+  narrativeImage: null,
+  narrativeText: '',
+  musicTrackName: null,
+  ambientTrackName: null,
+});
+
 const defaultSession: SessionData = {
   maps: [],
   activeMapId: null,
+  scenes: [],
+  activeSceneId: null,
+  narrativeOverlay: { image: null, text: '', visible: false },
 };
 
-// Migrate old single-map sessions to new multi-map format
+// Migrate old sessions
 function migrateSession(raw: any): SessionData {
   if (raw && Array.isArray(raw.maps)) {
-    return raw as SessionData;
+    // Ensure scenes array exists (migration from pre-scene version)
+    return {
+      maps: raw.maps,
+      activeMapId: raw.activeMapId ?? null,
+      scenes: raw.scenes ?? [],
+      activeSceneId: raw.activeSceneId ?? null,
+      narrativeOverlay: raw.narrativeOverlay ?? { image: null, text: '', visible: false },
+    };
   }
-  // Old format: flat session with mapImage, tokens, etc.
+  // Old format: flat session
   if (raw && (raw.mapImage !== undefined || raw.tokens !== undefined)) {
     const migratedMap: MapData = {
       id: 'migrated-1',
@@ -74,6 +111,9 @@ function migrateSession(raw: any): SessionData {
     return {
       maps: [migratedMap],
       activeMapId: migratedMap.id,
+      scenes: [],
+      activeSceneId: null,
+      narrativeOverlay: { image: null, text: '', visible: false },
     };
   }
   return defaultSession;
@@ -83,7 +123,6 @@ export const useSessionStorage = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [session, setSession] = useState<SessionData>(defaultSession);
 
-  // Load from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -97,7 +136,6 @@ export const useSessionStorage = () => {
     setIsLoaded(true);
   }, []);
 
-  // Save to localStorage whenever session changes (after initial load)
   useEffect(() => {
     if (!isLoaded) return;
     try {
@@ -116,6 +154,7 @@ export const useSessionStorage = () => {
   const addMap = useCallback((name?: string) => {
     const newMap = createDefaultMap(name || `Mapa ${session.maps.length + 1}`);
     setSession(prev => ({
+      ...prev,
       maps: [...prev.maps, newMap],
       activeMapId: newMap.id,
     }));
@@ -128,7 +167,7 @@ export const useSessionStorage = () => {
       const newActiveId = prev.activeMapId === id
         ? (remaining[0]?.id ?? null)
         : prev.activeMapId;
-      return { maps: remaining, activeMapId: newActiveId };
+      return { ...prev, maps: remaining, activeMapId: newActiveId };
     });
   }, []);
 
@@ -148,6 +187,40 @@ export const useSessionStorage = () => {
     }));
   }, []);
 
+  // Scene management
+  const addScene = useCallback((name: string) => {
+    const newScene = createDefaultScene(name, session.activeMapId);
+    setSession(prev => ({
+      ...prev,
+      scenes: [...prev.scenes, newScene],
+    }));
+    return newScene.id;
+  }, [session.activeMapId]);
+
+  const removeScene = useCallback((id: string) => {
+    setSession(prev => ({
+      ...prev,
+      scenes: prev.scenes.filter(s => s.id !== id),
+      activeSceneId: prev.activeSceneId === id ? null : prev.activeSceneId,
+    }));
+  }, []);
+
+  const updateScene = useCallback((id: string, updates: Partial<SceneData>) => {
+    setSession(prev => ({
+      ...prev,
+      scenes: prev.scenes.map(s => s.id === id ? { ...s, ...updates } : s),
+    }));
+  }, []);
+
+  const setActiveSceneId = useCallback((id: string | null) => {
+    setSession(prev => ({ ...prev, activeSceneId: id }));
+  }, []);
+
+  // Narrative overlay
+  const setNarrativeOverlay = useCallback((overlay: SessionData['narrativeOverlay']) => {
+    setSession(prev => ({ ...prev, narrativeOverlay: overlay }));
+  }, []);
+
   const clearSession = useCallback(() => {
     setSession(defaultSession);
     localStorage.removeItem(STORAGE_KEY);
@@ -157,12 +230,20 @@ export const useSessionStorage = () => {
     maps: session.maps,
     activeMapId: session.activeMapId,
     activeMap,
+    scenes: session.scenes,
+    activeSceneId: session.activeSceneId,
+    narrativeOverlay: session.narrativeOverlay,
     isLoaded,
     setActiveMapId,
     addMap,
     removeMap,
     renameMap,
     updateActiveMap,
+    addScene,
+    removeScene,
+    updateScene,
+    setActiveSceneId,
+    setNarrativeOverlay,
     clearSession,
   };
 };
