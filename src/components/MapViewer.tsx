@@ -585,16 +585,29 @@ export const MapViewer = () => {
         {/* Sidebar */}
         <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
           <div className="flex flex-col h-full overflow-hidden">
-            {/* Map Manager */}
-            <div className="border-b border-border/50 shrink-0 max-h-48 overflow-y-auto">
-              <MapManager
-                maps={maps}
-                activeMapId={activeMapId}
-                onSelectMap={setActiveMapId}
-                onAddMap={addMap}
-                onRemoveMap={removeMap}
-                onRenameMap={renameMap}
-              />
+            {/* Player View + Map Manager */}
+            <div className="border-b border-border/50 shrink-0">
+              <div className="p-2">
+                <Button
+                  onClick={openPlayerWindow}
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 mb-2"
+                >
+                  <Monitor className="w-4 h-4" />
+                  Abrir vista de jugadores
+                </Button>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                <MapManager
+                  maps={maps}
+                  activeMapId={activeMapId}
+                  onSelectMap={setActiveMapId}
+                  onAddMap={addMap}
+                  onRemoveMap={removeMap}
+                  onRenameMap={renameMap}
+                />
+              </div>
             </div>
 
             {/* Token Toolbar */}
