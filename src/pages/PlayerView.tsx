@@ -189,6 +189,8 @@ const PlayerView = () => {
                 brushSize={50}
                 fogData={fogData}
                 onFogChange={() => {}}
+                fogTool="brush"
+                fogMode="reveal"
               />
             )}
 

@@ -724,6 +724,10 @@ export const MapViewer = () => {
           fogBrushSize={fogBrushSize}
           onFogBrushSizeChange={setFogBrushSize}
           onResetFog={() => setFogData(null)}
+          fogTool={fogTool}
+          onFogToolChange={setFogTool}
+          fogMode={fogMode}
+          onFogModeChange={setFogMode}
         />
 
         {/* Map area */}
