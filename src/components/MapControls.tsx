@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Upload, Grid3x3, ZoomIn, Film, Trash2, Cloud, RotateCcw, Shield, LogOut, Key, Eye, EyeOff, Paintbrush, Square, Hexagon, EyeOff as HideIcon } from 'lucide-react';
+import { Upload, Grid3x3, ZoomIn, Film, Trash2, Cloud, RotateCcw, Shield, LogOut, Key, Eye, EyeOff, Paintbrush, Square, Hexagon, EyeOff as HideIcon, Flashlight } from 'lucide-react';
+import type { TokenData } from './MapViewer';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
