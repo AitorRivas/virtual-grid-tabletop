@@ -563,7 +563,6 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     }
                     return success;
                   }}
-                  onClose={() => setSelectedCharacter(null)}
                   initialReadOnly={true}
                 />
               )}
