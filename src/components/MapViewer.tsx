@@ -53,6 +53,14 @@ export const MapViewer = () => {
     renameMap,
     updateActiveMap,
     clearSession,
+    scenes,
+    activeSceneId,
+    addScene,
+    removeScene,
+    updateScene,
+    setActiveSceneId,
+    narrativeOverlay,
+    setNarrativeOverlay,
   } = useSessionStorage();
 
   // Derive current map state from activeMap
@@ -101,13 +109,45 @@ export const MapViewer = () => {
   // Player view broadcast
   const { broadcast, openPlayerWindow } = usePlayerBroadcastSender();
 
-  // Broadcast active map state
+  // Broadcast active map state + narrative overlay
   useEffect(() => {
     if (isLoaded) {
-      broadcast(activeMap);
+      broadcast(activeMap, narrativeOverlay);
     }
-  }, [activeMap, isLoaded, broadcast]);
+  }, [activeMap, narrativeOverlay, isLoaded, broadcast]);
 
+  // Scene activation handler
+  const handleActivateScene = useCallback((sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+
+    setActiveSceneId(sceneId);
+
+    // Switch to linked map if specified
+    if (scene.mapId && scene.mapId !== activeMapId) {
+      setActiveMapId(scene.mapId);
+    }
+
+    // Show narrative image if specified
+    if (scene.narrativeImage) {
+      setNarrativeOverlay({
+        image: scene.narrativeImage,
+        text: scene.narrativeText,
+        visible: true,
+      });
+    }
+
+    toast.success(`Escena "${scene.name}" activada`);
+  }, [scenes, activeMapId, setActiveMapId, setActiveSceneId, setNarrativeOverlay]);
+
+  // Narrative overlay handlers
+  const handleShowNarrativeImage = useCallback((image: string, text?: string) => {
+    setNarrativeOverlay({ image, text: text ?? '', visible: true });
+  }, [setNarrativeOverlay]);
+
+  const handleHideNarrativeImage = useCallback(() => {
+    setNarrativeOverlay({ image: null, text: '', visible: false });
+  }, [setNarrativeOverlay]);
   // Grid config memoized
   const gridConfig = useMemo((): GridConfig => ({
     type: showGrid ? 'square' : 'none',
