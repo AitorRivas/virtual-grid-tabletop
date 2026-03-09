@@ -76,6 +76,13 @@ export const MapControls = ({
   onFogToolChange,
   fogMode = 'reveal',
   onFogModeChange,
+  narrativeLightEnabled,
+  onToggleNarrativeLight,
+  narrativeLightRadius,
+  onNarrativeLightRadiusChange,
+  tokens: tokensForLight,
+  narrativeLightFollowTokenId,
+  onNarrativeLightFollowToken,
 }: MapControlsProps) => {
   const navigate = useNavigate();
   const { isAdmin, signOut, updatePassword, profile } = useAuth();
