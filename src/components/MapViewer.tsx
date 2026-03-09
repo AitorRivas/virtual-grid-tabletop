@@ -93,6 +93,8 @@ export const MapViewer = () => {
   // Fog edit state
   const [fogEditMode, setFogEditMode] = useState(false);
   const [fogBrushSize, setFogBrushSize] = useState(50);
+  const [fogTool, setFogTool] = useState<import('./FogOfWar').FogTool>('brush');
+  const [fogMode, setFogMode] = useState<import('./FogOfWar').FogMode>('reveal');
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
 
   // Grid engine
@@ -575,6 +577,8 @@ export const MapViewer = () => {
                 brushSize={fogBrushSize}
                 fogData={fogData}
                 onFogChange={setFogData}
+                fogTool={fogTool}
+                fogMode={fogMode}
               />
             )}
 
@@ -720,6 +724,10 @@ export const MapViewer = () => {
           fogBrushSize={fogBrushSize}
           onFogBrushSizeChange={setFogBrushSize}
           onResetFog={() => setFogData(null)}
+          fogTool={fogTool}
+          onFogToolChange={setFogTool}
+          fogMode={fogMode}
+          onFogModeChange={setFogMode}
         />
 
         {/* Map area */}
