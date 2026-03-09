@@ -104,6 +104,7 @@ function migrateState(raw: any): GameState {
       scenes: [],
       activeSceneId: null,
       narrativeOverlay: { image: null, text: '', visible: false },
+      narrativeLight: defaultNarrativeLight,
     };
   }
   return defaultState;
