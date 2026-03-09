@@ -577,6 +577,8 @@ export const MapViewer = () => {
                 brushSize={fogBrushSize}
                 fogData={fogData}
                 onFogChange={setFogData}
+                fogTool={fogTool}
+                fogMode={fogMode}
               />
             )}
 
