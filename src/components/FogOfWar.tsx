@@ -21,6 +21,7 @@ export const FogOfWar = ({
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const isInitializedRef = useRef(false);
+  const lastFogDataRef = useRef<string | null>(null);
 
   // Initialize or restore fog
   useEffect(() => {
@@ -33,19 +34,20 @@ export const FogOfWar = ({
     // Reset composite operation to default
     ctx.globalCompositeOperation = 'source-over';
 
-    if (fogData && isInitializedRef.current) {
-      // Already initialized, skip
+    if (fogData && fogData === lastFogDataRef.current && isInitializedRef.current) {
+      // Same data, skip
       return;
     }
 
     if (fogData) {
-      // Restore from saved data
+      // Restore from saved data (or external update from broadcast)
       const img = new Image();
       img.onload = () => {
         ctx.globalCompositeOperation = 'source-over';
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         isInitializedRef.current = true;
+        lastFogDataRef.current = fogData;
       };
       img.src = fogData;
     } else {
@@ -54,10 +56,11 @@ export const FogOfWar = ({
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
       isInitializedRef.current = true;
+      lastFogDataRef.current = null;
       // Save initial state
       onFogChange(canvas.toDataURL('image/png', 0.8));
     }
-  }, [width, height]);
+  }, [width, height, fogData]);
 
   // Reset when fogData becomes null (reset button)
   useEffect(() => {
