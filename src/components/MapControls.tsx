@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Upload, Grid3x3, ZoomIn, Film, Trash2, Cloud, Eraser, RotateCcw, Shield, LogOut, Key, Settings, Menu, Eye, EyeOff } from 'lucide-react';
+import { Upload, Grid3x3, ZoomIn, Film, Trash2, Cloud, RotateCcw, Shield, LogOut, Key, Eye, EyeOff, Paintbrush, Square, Hexagon, EyeOff as HideIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -10,6 +10,7 @@ import { Input } from './ui/input';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import type { FogTool, FogMode } from './FogOfWar';
 
 interface MapControlsProps {
   showGrid: boolean;
@@ -34,6 +35,10 @@ interface MapControlsProps {
   fogBrushSize?: number;
   onFogBrushSizeChange?: (size: number) => void;
   onResetFog?: () => void;
+  fogTool?: FogTool;
+  onFogToolChange?: (tool: FogTool) => void;
+  fogMode?: FogMode;
+  onFogModeChange?: (mode: FogMode) => void;
 }
 
 export const MapControls = ({
@@ -59,6 +64,10 @@ export const MapControls = ({
   fogBrushSize,
   onFogBrushSizeChange,
   onResetFog,
+  fogTool = 'brush',
+  onFogToolChange,
+  fogMode = 'reveal',
+  onFogModeChange,
 }: MapControlsProps) => {
   const navigate = useNavigate();
   const { isAdmin, signOut, updatePassword, profile } = useAuth();
@@ -100,10 +109,16 @@ export const MapControls = ({
     navigate('/auth');
   };
 
+  const toolButtons: { tool: FogTool; icon: React.ReactNode; label: string }[] = [
+    { tool: 'brush', icon: <Paintbrush className="w-3.5 h-3.5" />, label: 'Pincel' },
+    { tool: 'rectangle', icon: <Square className="w-3.5 h-3.5" />, label: 'Rectángulo' },
+    { tool: 'polygon', icon: <Hexagon className="w-3.5 h-3.5" />, label: 'Polígono' },
+  ];
+
   return (
     <div className="bg-toolbar-bg/95 backdrop-blur-sm border-b border-border/50 px-4 py-2.5">
       <div className="flex items-center gap-2 max-w-full mx-auto">
-        {/* User Menu - Compact dropdown */}
+        {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2 h-8 px-2">
@@ -287,7 +302,7 @@ export const MapControls = ({
                     <span className="hidden md:inline">Niebla</span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-4" align="start">
+                <PopoverContent className="w-64 p-4" align="start">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Niebla de guerra</Label>
@@ -303,30 +318,87 @@ export const MapControls = ({
                     
                     {fogEnabled && (
                       <>
+                        {/* Edit toggle */}
                         <Button
                           onClick={onToggleFogEditMode}
                           variant={fogEditMode ? "default" : "secondary"}
                           size="sm"
                           className="w-full gap-2"
                         >
-                          <Eraser className="w-4 h-4" />
-                          {fogEditMode ? 'Dejar de borrar' : 'Borrar niebla'}
+                          <Paintbrush className="w-4 h-4" />
+                          {fogEditMode ? 'Dejar de editar' : 'Editar niebla'}
                         </Button>
 
-                        {fogEditMode && fogBrushSize !== undefined && onFogBrushSizeChange && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <Label>Tamaño pincel</Label>
-                              <span className="text-muted-foreground">{fogBrushSize}px</span>
+                        {fogEditMode && (
+                          <>
+                            {/* Mode: reveal / hide */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-medium text-muted-foreground">Modo</Label>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant={fogMode === 'reveal' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className="flex-1 h-7 text-xs gap-1"
+                                  onClick={() => onFogModeChange?.('reveal')}
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  Revelar
+                                </Button>
+                                <Button
+                                  variant={fogMode === 'hide' ? 'destructive' : 'outline'}
+                                  size="sm"
+                                  className="flex-1 h-7 text-xs gap-1"
+                                  onClick={() => onFogModeChange?.('hide')}
+                                >
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                  Ocultar
+                                </Button>
+                              </div>
                             </div>
-                            <Slider
-                              value={[fogBrushSize]}
-                              onValueChange={(values) => onFogBrushSizeChange(values[0])}
-                              min={10}
-                              max={500}
-                              step={10}
-                            />
-                          </div>
+
+                            {/* Tool selector */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-medium text-muted-foreground">Herramienta</Label>
+                              <div className="flex gap-1">
+                                {toolButtons.map(({ tool, icon, label }) => (
+                                  <Button
+                                    key={tool}
+                                    variant={fogTool === tool ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="flex-1 h-7 text-xs gap-1"
+                                    onClick={() => onFogToolChange?.(tool)}
+                                  >
+                                    {icon}
+                                    {label}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Brush size (only for brush tool) */}
+                            {fogTool === 'brush' && fogBrushSize !== undefined && onFogBrushSizeChange && (
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <Label>Tamaño pincel</Label>
+                                  <span className="text-muted-foreground">{fogBrushSize}px</span>
+                                </div>
+                                <Slider
+                                  value={[fogBrushSize]}
+                                  onValueChange={(values) => onFogBrushSizeChange(values[0])}
+                                  min={10}
+                                  max={500}
+                                  step={10}
+                                />
+                              </div>
+                            )}
+
+                            {/* Polygon hint */}
+                            {fogTool === 'polygon' && (
+                              <p className="text-xs text-muted-foreground">
+                                Haz clic para añadir puntos. Doble clic para cerrar. Esc para cancelar.
+                              </p>
+                            )}
+                          </>
                         )}
 
                         {onResetFog && (
@@ -349,7 +421,7 @@ export const MapControls = ({
 
             <div className="h-5 w-px bg-border/50" />
 
-            {/* Zoom Control - Always visible */}
+            {/* Zoom Control */}
             <div className="flex items-center gap-2">
               <ZoomIn className="w-4 h-4 text-muted-foreground" />
               <Slider
