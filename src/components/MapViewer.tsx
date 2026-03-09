@@ -568,6 +568,7 @@ export const MapViewer = () => {
             {/* Fog of War layer */}
             {fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
+                key={activeMapId ?? 'no-map'}
                 width={mapDimensions.width}
                 height={mapDimensions.height}
                 enabled={fogEditMode}
