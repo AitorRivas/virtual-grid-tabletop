@@ -78,6 +78,7 @@ function migrateState(raw: any): GameState {
       scenes: raw.scenes ?? [],
       activeSceneId: raw.activeSceneId ?? null,
       narrativeOverlay: raw.narrativeOverlay ?? { image: null, text: '', visible: false },
+      narrativeLight: raw.narrativeLight ?? defaultNarrativeLight,
     };
   }
   if (raw && (raw.mapImage !== undefined || raw.tokens !== undefined)) {
