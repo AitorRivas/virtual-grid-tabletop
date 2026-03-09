@@ -744,6 +744,13 @@ export const MapViewer = () => {
           onFogToolChange={setFogTool}
           fogMode={fogMode}
           onFogModeChange={setFogMode}
+          narrativeLightEnabled={narrativeLight.enabled}
+          onToggleNarrativeLight={() => setNarrativeLight({ enabled: !narrativeLight.enabled })}
+          narrativeLightRadius={narrativeLight.radius}
+          onNarrativeLightRadiusChange={(r) => setNarrativeLight({ radius: r })}
+          tokens={tokens}
+          narrativeLightFollowTokenId={narrativeLight.followTokenId}
+          onNarrativeLightFollowToken={(id) => setNarrativeLight({ followTokenId: id })}
         />
 
         {/* Map area */}
