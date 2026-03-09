@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { MapData } from './useSessionStorage';
+import { MapData, SceneData } from './useSessionStorage';
 
 const CHANNEL_NAME = 'vtt-player-sync';
 
@@ -15,6 +15,12 @@ export interface PlayerViewState {
   fogEnabled: boolean;
   fogData: string | null;
   cellStates: MapData['cellStates'];
+  // Narrative overlay
+  narrativeOverlay: {
+    image: string | null;
+    text: string;
+    visible: boolean;
+  };
 }
 
 /** GM side: broadcasts active map state to player view windows */
@@ -28,7 +34,10 @@ export const usePlayerBroadcastSender = () => {
     };
   }, []);
 
-  const broadcast = useCallback((activeMap: MapData | null) => {
+  const broadcast = useCallback((
+    activeMap: MapData | null,
+    narrativeOverlay?: { image: string | null; text: string; visible: boolean }
+  ) => {
     if (!channelRef.current) return;
     const state: PlayerViewState = {
       mapImage: activeMap?.mapImage ?? null,
@@ -42,6 +51,7 @@ export const usePlayerBroadcastSender = () => {
       fogEnabled: activeMap?.fogEnabled ?? false,
       fogData: activeMap?.fogData ?? null,
       cellStates: activeMap?.cellStates ?? {},
+      narrativeOverlay: narrativeOverlay ?? { image: null, text: '', visible: false },
     };
     channelRef.current.postMessage({ type: 'STATE_UPDATE', state });
   }, []);

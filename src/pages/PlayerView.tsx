@@ -14,9 +14,39 @@ const PlayerView = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Track previous narrative image for transition
+  const [narrativeVisible, setNarrativeVisible] = useState(false);
+  const [narrativeImage, setNarrativeImage] = useState<string | null>(null);
+  const [narrativeText, setNarrativeText] = useState('');
+  const [narrativeFading, setNarrativeFading] = useState(false);
+
   usePlayerBroadcastReceiver(useCallback((s: PlayerViewState) => {
     setState(s);
   }, []));
+
+  // Handle narrative overlay transitions
+  useEffect(() => {
+    if (!state) return;
+    const overlay = state.narrativeOverlay;
+
+    if (overlay.visible && overlay.image) {
+      // Show narrative with fade-in
+      setNarrativeImage(overlay.image);
+      setNarrativeText(overlay.text);
+      setNarrativeFading(false);
+      // Small delay to trigger CSS transition
+      requestAnimationFrame(() => setNarrativeVisible(true));
+    } else if (!overlay.visible && narrativeVisible) {
+      // Fade out
+      setNarrativeFading(true);
+      setNarrativeVisible(false);
+      setTimeout(() => {
+        setNarrativeFading(false);
+        setNarrativeImage(null);
+        setNarrativeText('');
+      }, 800);
+    }
+  }, [state?.narrativeOverlay?.visible, state?.narrativeOverlay?.image]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -46,6 +76,27 @@ const PlayerView = () => {
   if (!state || !state.mapImage) {
     return (
       <div ref={rootRef} className="h-screen w-screen bg-black flex items-center justify-center">
+        {/* Narrative overlay even without map */}
+        {(narrativeVisible || narrativeFading) && narrativeImage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-700"
+            style={{ opacity: narrativeVisible && !narrativeFading ? 1 : 0 }}
+          >
+            <img
+              src={narrativeImage}
+              alt="Narrativa"
+              className="max-w-full max-h-full object-contain"
+            />
+            {narrativeText && (
+              <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/90 to-transparent">
+                <p className="text-white text-2xl font-medium text-center max-w-3xl mx-auto leading-relaxed">
+                  {narrativeText}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="text-center text-white/40 space-y-4">
           <div className="text-6xl">🎲</div>
           <p className="text-xl font-medium">Esperando al GM...</p>
@@ -57,6 +108,27 @@ const PlayerView = () => {
 
   return (
     <div ref={rootRef} className="h-screen w-screen overflow-hidden bg-black relative">
+      {/* Narrative overlay */}
+      {(narrativeVisible || narrativeFading) && narrativeImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-700"
+          style={{ opacity: narrativeVisible && !narrativeFading ? 1 : 0 }}
+        >
+          <img
+            src={narrativeImage}
+            alt="Narrativa"
+            className="max-w-full max-h-full object-contain"
+          />
+          {narrativeText && (
+            <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/90 to-transparent">
+              <p className="text-white text-2xl font-medium text-center max-w-3xl mx-auto leading-relaxed">
+                {narrativeText}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <TransformWrapper
         initialScale={1}
         minScale={0.1}
@@ -146,7 +218,7 @@ const PlayerView = () => {
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Fullscreen toggle - subtle corner button */}
+      {/* Fullscreen toggle */}
       <button
         onClick={toggleFullscreen}
         className="absolute bottom-4 right-4 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white/50 hover:text-white transition-all z-10"
