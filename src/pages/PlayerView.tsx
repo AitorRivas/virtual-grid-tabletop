@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from '@/components/Token';
 import { FogOfWar } from '@/components/FogOfWar';
+import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { useGameState } from '@/hooks/useGameState';
 import { GridConfig } from '@/lib/gridEngine/types';
