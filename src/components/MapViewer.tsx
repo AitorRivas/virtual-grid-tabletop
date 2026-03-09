@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
 import { Token } from './Token';
@@ -9,6 +9,7 @@ import { AmbientPlayer } from './AmbientPlayer';
 import { FogOfWar } from './FogOfWar';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
+import { MapManager } from './MapManager';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -43,30 +44,33 @@ export interface TokenData {
 }
 
 export const MapViewer = () => {
-  const { 
-    mapImage: savedMapImage,
-    tokens: savedTokens,
-    showGrid: savedShowGrid,
-    gridSize: savedGridSize,
-    gridColor: savedGridColor,
-    gridLineWidth: savedGridLineWidth,
-    fogEnabled: savedFogEnabled,
-    fogData: savedFogData,
-    gridCellSize: savedGridCellSize,
-    gridOffsetX: savedGridOffsetX,
-    gridOffsetY: savedGridOffsetY,
-    cellStates: savedCellStates,
+  const {
+    maps,
+    activeMapId,
+    activeMap,
     isLoaded,
-    updateSession,
+    setActiveMapId,
+    addMap,
+    removeMap,
+    renameMap,
+    updateActiveMap,
     clearSession,
   } = useSessionStorage();
 
-  const [mapImage, setMapImage] = useState<string | null>(null);
-  const [tokens, setTokens] = useState<TokenData[]>([]);
-  const [showGrid, setShowGrid] = useState(true);
-  const [gridSize, setGridSize] = useState(50);
-  const [gridColor, setGridColor] = useState('#000000');
-  const [gridLineWidth, setGridLineWidth] = useState(1);
+  // Derive current map state from activeMap (or defaults)
+  const mapImage = activeMap?.mapImage ?? null;
+  const tokens = activeMap?.tokens ?? [];
+  const showGrid = activeMap?.showGrid ?? true;
+  const gridSize = activeMap?.gridSize ?? 50;
+  const gridColor = activeMap?.gridColor ?? '#000000';
+  const gridLineWidth = activeMap?.gridLineWidth ?? 1;
+  const fogEnabled = activeMap?.fogEnabled ?? false;
+  const fogData = activeMap?.fogData ?? null;
+  const gridOffsetX = activeMap?.gridOffsetX ?? 0;
+  const gridOffsetY = activeMap?.gridOffsetY ?? 0;
+  const cellStates = activeMap?.cellStates ?? {};
+
+  // Local UI state (not persisted per-map)
   const [zoomLevel, setZoomLevel] = useState(1);
   const [defaultTokenSize, setDefaultTokenSize] = useState(50);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
@@ -77,26 +81,21 @@ export const MapViewer = () => {
   const [newTokenImage, setNewTokenImage] = useState<string | undefined>(undefined);
   const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
   const tokenImageInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Cinema mode state
   const [cinemaMode, setCinemaMode] = useState(false);
 
-  // Fog of war state
-  const [fogEnabled, setFogEnabled] = useState(false);
+  // Fog edit state (local UI)
   const [fogEditMode, setFogEditMode] = useState(false);
   const [fogBrushSize, setFogBrushSize] = useState(50);
-  const [fogData, setFogData] = useState<string | null>(null);
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
 
-  // Grid engine state - uses gridSize as the single source of truth for cell size
-  const [gridOffsetX, setGridOffsetX] = useState(0);
-  const [gridOffsetY, setGridOffsetY] = useState(0);
-  const [cellStates, setCellStates] = useState<Record<string, CellState>>({});
+  // Grid engine local UI state
   const [cellEditMode, setCellEditMode] = useState(false);
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
 
-  // Grid config memoized - uses gridSize for both visual grid and movement engine
+  // Grid config memoized
   const gridConfig = useMemo((): GridConfig => ({
     type: showGrid ? 'square' : 'none',
     cellSize: gridSize,
@@ -107,57 +106,64 @@ export const MapViewer = () => {
     feetPerCell: 5,
   }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
 
-  // Load saved session on mount
+  // Reset local UI state when switching maps
   useEffect(() => {
-    if (isLoaded) {
-      setMapImage(savedMapImage);
-      setTokens(savedTokens);
-      setShowGrid(savedShowGrid);
-      setGridSize(savedGridSize);
-      setGridColor(savedGridColor);
-      setGridLineWidth(savedGridLineWidth);
-      setFogEnabled(savedFogEnabled);
-      setFogData(savedFogData);
-      if (savedGridCellSize > 0) {
-        setGridSize(savedGridCellSize);
-      }
-      setGridOffsetX(savedGridOffsetX);
-      setGridOffsetY(savedGridOffsetY);
-      setCellStates(savedCellStates);
-      if (savedMapImage) {
-        toast.success('Sesión restaurada');
-      }
+    setSelectedToken(null);
+    setIsAddingToken(false);
+    setPendingTokenPosition(null);
+    setFogEditMode(false);
+    setCellEditMode(false);
+    setZoomLevel(1);
+  }, [activeMapId]);
+
+  // Auto-create first map if session loaded with none
+  useEffect(() => {
+    if (isLoaded && maps.length === 0) {
+      addMap('Mapa 1');
+    }
+  }, [isLoaded, maps.length, addMap]);
+
+  // Restore toast on load
+  useEffect(() => {
+    if (isLoaded && activeMap?.mapImage) {
+      toast.success('Sesión restaurada');
     }
   }, [isLoaded]);
 
-  // Save session when state changes
-  useEffect(() => {
-    if (isLoaded) {
-      updateSession({
-        mapImage,
-        tokens,
-        showGrid,
-        gridSize,
-        gridColor,
-        gridLineWidth,
-        fogEnabled,
-        fogData,
-        gridCellSize: gridSize,
-        gridOffsetX,
-        gridOffsetY,
-        cellStates,
-      });
-    }
-  }, [mapImage, tokens, showGrid, gridSize, gridColor, gridLineWidth, fogEnabled, fogData, gridOffsetX, gridOffsetY, cellStates, isLoaded, updateSession]);
-  
   // Store zoom functions
   const zoomFunctionsRef = useRef<{
     setTransform: (x: number, y: number, scale: number) => void;
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Helper to update active map fields
+  const setMapImage = useCallback((img: string | null) => updateActiveMap({ mapImage: img }), [updateActiveMap]);
+  const setTokens = useCallback((updater: TokenData[] | ((prev: TokenData[]) => TokenData[])) => {
+    if (typeof updater === 'function') {
+      // Need current tokens
+      updateActiveMap({ tokens: updater(tokens) });
+    } else {
+      updateActiveMap({ tokens: updater });
+    }
+  }, [updateActiveMap, tokens]);
+  const setShowGrid = useCallback((v: boolean) => updateActiveMap({ showGrid: v }), [updateActiveMap]);
+  const setGridSize = useCallback((v: number) => updateActiveMap({ gridSize: v, gridCellSize: v }), [updateActiveMap]);
+  const setGridColor = useCallback((v: string) => updateActiveMap({ gridColor: v }), [updateActiveMap]);
+  const setGridLineWidth = useCallback((v: number) => updateActiveMap({ gridLineWidth: v }), [updateActiveMap]);
+  const setFogEnabled = useCallback((v: boolean) => updateActiveMap({ fogEnabled: v }), [updateActiveMap]);
+  const setFogData = useCallback((v: string | null) => updateActiveMap({ fogData: v }), [updateActiveMap]);
+  const setGridOffsetX = useCallback((v: number) => updateActiveMap({ gridOffsetX: v }), [updateActiveMap]);
+  const setGridOffsetY = useCallback((v: number) => updateActiveMap({ gridOffsetY: v }), [updateActiveMap]);
+  const setCellStates = useCallback((updater: Record<string, CellState> | ((prev: Record<string, CellState>) => Record<string, CellState>)) => {
+    if (typeof updater === 'function') {
+      updateActiveMap({ cellStates: updater(cellStates) });
+    } else {
+      updateActiveMap({ cellStates: updater });
+    }
+  }, [updateActiveMap, cellStates]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -316,9 +322,6 @@ export const MapViewer = () => {
   };
 
   const handleClearSession = () => {
-    setMapImage(null);
-    setTokens([]);
-    setSelectedToken(null);
     clearSession();
     toast.success('Sesión limpiada');
   };
@@ -397,6 +400,7 @@ export const MapViewer = () => {
   // Render map content (shared between normal and cinema mode)
   const renderMapContent = () => (
     <TransformWrapper
+      key={activeMapId}
       initialScale={1}
       minScale={0.1}
       maxScale={10}
@@ -569,27 +573,44 @@ export const MapViewer = () => {
       <ResizablePanelGroup direction="horizontal" className="h-full">
         {/* Sidebar */}
         <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
-          <TokenToolbar
-            selectedColor={newTokenColor}
-            onColorChange={setNewTokenColor}
-            isAddingToken={isAddingToken}
-            onToggleAddToken={() => setIsAddingToken(!isAddingToken)}
-            onClearAll={handleClearAll}
-            tokens={tokens}
-            selectedToken={selectedToken}
-            onSelectToken={setSelectedToken}
-            onDeleteToken={handleDeleteToken}
-            onTokenNameChange={handleTokenNameChange}
-            onStatusChange={handleStatusChange}
-            onTokenSizeChange={handleTokenSizeChange}
-            onTokenRotationChange={handleTokenRotation}
-            onToggleCondition={handleToggleCondition}
-            onHpChange={handleHpChange}
-            defaultTokenSize={defaultTokenSize}
-            onDefaultTokenSizeChange={setDefaultTokenSize}
-            onAddCharacterToMap={handleAddCharacterToMap}
-            onAddMonsterToMap={handleAddMonsterToMap}
-          />
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Map Manager */}
+            <div className="border-b border-border/50 shrink-0 max-h-48 overflow-y-auto">
+              <MapManager
+                maps={maps}
+                activeMapId={activeMapId}
+                onSelectMap={setActiveMapId}
+                onAddMap={addMap}
+                onRemoveMap={removeMap}
+                onRenameMap={renameMap}
+              />
+            </div>
+
+            {/* Token Toolbar */}
+            <div className="flex-1 overflow-hidden">
+              <TokenToolbar
+                selectedColor={newTokenColor}
+                onColorChange={setNewTokenColor}
+                isAddingToken={isAddingToken}
+                onToggleAddToken={() => setIsAddingToken(!isAddingToken)}
+                onClearAll={handleClearAll}
+                tokens={tokens}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                onDeleteToken={handleDeleteToken}
+                onTokenNameChange={handleTokenNameChange}
+                onStatusChange={handleStatusChange}
+                onTokenSizeChange={handleTokenSizeChange}
+                onTokenRotationChange={handleTokenRotation}
+                onToggleCondition={handleToggleCondition}
+                onHpChange={handleHpChange}
+                defaultTokenSize={defaultTokenSize}
+                onDefaultTokenSizeChange={setDefaultTokenSize}
+                onAddCharacterToMap={handleAddCharacterToMap}
+                onAddMonsterToMap={handleAddMonsterToMap}
+              />
+            </div>
+          </div>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
