@@ -7,6 +7,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import PlayerView from "./pages/PlayerView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
