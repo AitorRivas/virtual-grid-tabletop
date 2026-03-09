@@ -15,7 +15,8 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
-import { Film, X, Upload } from 'lucide-react';
+import { Film, X, Upload, Monitor } from 'lucide-react';
+import { usePlayerBroadcastSender } from '@/hooks/usePlayerBroadcast';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
@@ -94,6 +95,16 @@ export const MapViewer = () => {
   const [cellEditMode, setCellEditMode] = useState(false);
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
+
+  // Player view broadcast
+  const { broadcast, openPlayerWindow } = usePlayerBroadcastSender();
+
+  // Broadcast active map state whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      broadcast(activeMap);
+    }
+  }, [activeMap, isLoaded, broadcast]);
 
   // Grid config memoized
   const gridConfig = useMemo((): GridConfig => ({
@@ -574,16 +585,29 @@ export const MapViewer = () => {
         {/* Sidebar */}
         <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
           <div className="flex flex-col h-full overflow-hidden">
-            {/* Map Manager */}
-            <div className="border-b border-border/50 shrink-0 max-h-48 overflow-y-auto">
-              <MapManager
-                maps={maps}
-                activeMapId={activeMapId}
-                onSelectMap={setActiveMapId}
-                onAddMap={addMap}
-                onRemoveMap={removeMap}
-                onRenameMap={renameMap}
-              />
+            {/* Player View + Map Manager */}
+            <div className="border-b border-border/50 shrink-0">
+              <div className="p-2">
+                <Button
+                  onClick={openPlayerWindow}
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 mb-2"
+                >
+                  <Monitor className="w-4 h-4" />
+                  Abrir vista de jugadores
+                </Button>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                <MapManager
+                  maps={maps}
+                  activeMapId={activeMapId}
+                  onSelectMap={setActiveMapId}
+                  onAddMap={addMap}
+                  onRemoveMap={removeMap}
+                  onRenameMap={renameMap}
+                />
+              </div>
             </div>
 
             {/* Token Toolbar */}
