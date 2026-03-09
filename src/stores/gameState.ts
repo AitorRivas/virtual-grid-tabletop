@@ -56,12 +56,17 @@ export interface GameState {
   narrativeLight: NarrativeLightData;
 }
 
+const defaultNarrativeLight: NarrativeLightData = {
+  enabled: false, x: 500, y: 500, radius: 200, followTokenId: null,
+};
+
 const defaultState: GameState = {
   maps: [],
   activeMapId: null,
   scenes: [],
   activeSceneId: null,
   narrativeOverlay: { image: null, text: '', visible: false },
+  narrativeLight: defaultNarrativeLight,
 };
 
 // Migrate old session formats
