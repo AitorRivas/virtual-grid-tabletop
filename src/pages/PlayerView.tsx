@@ -191,6 +191,7 @@ const PlayerView = () => {
             {/* Fog of War */}
             {state.fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
+                key={state.mapImage}
                 width={mapDimensions.width}
                 height={mapDimensions.height}
                 enabled={false}

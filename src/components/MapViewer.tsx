@@ -170,6 +170,7 @@ export const MapViewer = () => {
     setFogEditMode(false);
     setCellEditMode(false);
     setZoomLevel(1);
+    setMapDimensions({ width: 0, height: 0 });
   }, [activeMapId]);
 
   // Auto-create first map
