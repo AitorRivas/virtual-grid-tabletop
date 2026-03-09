@@ -158,7 +158,9 @@ export const FogOfWar = ({
   const saveFogState = useCallback(() => {
     const canvas = canvasRef.current;
     if (canvas && isDrawingRef.current) {
-      onFogChange(canvas.toDataURL('image/png', 0.8));
+      const dataUrl = canvas.toDataURL('image/png', 0.8);
+      lastFogDataRef.current = dataUrl;
+      onFogChange(dataUrl);
     }
     isDrawingRef.current = false;
     lastPointRef.current = null;
