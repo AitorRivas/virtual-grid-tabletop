@@ -117,6 +117,13 @@ export const useGameState = () => {
     gameStateStore.setState(prev => ({ ...prev, narrativeOverlay: overlay }));
   }, []);
 
+  const setNarrativeLight = useCallback((light: Partial<NarrativeLightData>) => {
+    gameStateStore.setState(prev => ({
+      ...prev,
+      narrativeLight: { ...prev.narrativeLight, ...light },
+    }));
+  }, []);
+
   const clearSession = useCallback(() => {
     gameStateStore.clear();
   }, []);
@@ -128,6 +135,7 @@ export const useGameState = () => {
     scenes: state.scenes,
     activeSceneId: state.activeSceneId,
     narrativeOverlay: state.narrativeOverlay,
+    narrativeLight: state.narrativeLight,
     isLoaded,
     setActiveMapId,
     addMap,
@@ -139,6 +147,7 @@ export const useGameState = () => {
     updateScene,
     setActiveSceneId,
     setNarrativeOverlay,
+    setNarrativeLight,
     clearSession,
   };
 };
