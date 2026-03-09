@@ -35,6 +35,14 @@ export interface SceneData {
   ambientTrackName: string | null;
 }
 
+export interface NarrativeLightData {
+  enabled: boolean;
+  x: number;
+  y: number;
+  radius: number;
+  followTokenId: string | null;
+}
+
 export interface GameState {
   maps: MapData[];
   activeMapId: string | null;
@@ -45,6 +53,7 @@ export interface GameState {
     text: string;
     visible: boolean;
   };
+  narrativeLight: NarrativeLightData;
 }
 
 const defaultState: GameState = {
