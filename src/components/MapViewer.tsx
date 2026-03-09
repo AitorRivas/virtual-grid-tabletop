@@ -14,8 +14,7 @@ import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X, Upload } from 'lucide-react';
-import { usePlayerBroadcastSender } from '@/hooks/usePlayerBroadcast';
-import { useSessionStorage } from '@/hooks/useSessionStorage';
+import { useGameState } from '@/hooks/useGameState';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 
@@ -61,7 +60,7 @@ export const MapViewer = () => {
     setActiveSceneId,
     narrativeOverlay,
     setNarrativeOverlay,
-  } = useSessionStorage();
+  } = useGameState();
 
   // Derive current map state from activeMap
   const mapImage = activeMap?.mapImage ?? null;
@@ -106,18 +105,11 @@ export const MapViewer = () => {
   const [activeInitiativeIndex, setActiveInitiativeIndex] = useState(0);
   const [isInitiativeActive, setIsInitiativeActive] = useState(false);
 
-  // Player view broadcast
-  const { broadcast, openPlayerWindow } = usePlayerBroadcastSender();
-
-  // Broadcast active map state + narrative overlay to player view
-  // Use JSON serialization to ensure deep changes are detected
-  const activeMapJson = JSON.stringify(activeMap);
-  const narrativeOverlayJson = JSON.stringify(narrativeOverlay);
-  useEffect(() => {
-    if (isLoaded) {
-      broadcast(activeMap, narrativeOverlay);
-    }
-  }, [activeMapJson, narrativeOverlayJson, isLoaded, broadcast]);
+  // Open player view window
+  const openPlayerWindow = useCallback(() => {
+    const w = window.open('/player-view', 'vtt-player-view', 'popup');
+    if (w) w.focus();
+  }, []);
 
   // Scene activation handler
   const handleActivateScene = useCallback((sceneId: string) => {

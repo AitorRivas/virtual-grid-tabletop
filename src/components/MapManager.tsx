@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { MapData } from '@/hooks/useSessionStorage';
+import { MapData } from '@/hooks/useGameState';
 import { Plus, Trash2, Pencil, Check, X, Map } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

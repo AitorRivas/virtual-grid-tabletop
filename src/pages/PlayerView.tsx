@@ -3,18 +3,18 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from '@/components/Token';
 import { FogOfWar } from '@/components/FogOfWar';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
-import { usePlayerBroadcastReceiver, PlayerViewState } from '@/hooks/usePlayerBroadcast';
+import { useGameState } from '@/hooks/useGameState';
 import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 
 const PlayerView = () => {
-  const [state, setState] = useState<PlayerViewState | null>(null);
+  const { activeMap, narrativeOverlay } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Track previous narrative image for transition
+  // Track narrative transitions
   const [narrativeVisible, setNarrativeVisible] = useState(false);
   const [narrativeImage, setNarrativeImage] = useState<string | null>(null);
   const [narrativeText, setNarrativeText] = useState('');
@@ -22,29 +22,35 @@ const PlayerView = () => {
 
   const prevMapImageRef = useRef<string | null>(null);
 
-  usePlayerBroadcastReceiver(useCallback((s: PlayerViewState) => {
-    // Reset map dimensions when map image changes to force correct FogOfWar sizing
-    if (s.mapImage !== prevMapImageRef.current) {
+  // Derive state from shared store
+  const mapImage = activeMap?.mapImage ?? null;
+  const tokens = activeMap?.tokens ?? [];
+  const showGrid = activeMap?.showGrid ?? true;
+  const gridSize = activeMap?.gridSize ?? 50;
+  const gridColor = activeMap?.gridColor ?? '#000000';
+  const gridLineWidth = activeMap?.gridLineWidth ?? 1;
+  const fogEnabled = activeMap?.fogEnabled ?? false;
+  const fogData = activeMap?.fogData ?? null;
+  const gridOffsetX = activeMap?.gridOffsetX ?? 0;
+  const gridOffsetY = activeMap?.gridOffsetY ?? 0;
+  const cellStates = activeMap?.cellStates ?? {};
+
+  // Reset dimensions when map image changes
+  useEffect(() => {
+    if (mapImage !== prevMapImageRef.current) {
       setMapDimensions({ width: 0, height: 0 });
-      prevMapImageRef.current = s.mapImage;
+      prevMapImageRef.current = mapImage;
     }
-    setState(s);
-  }, []));
+  }, [mapImage]);
 
   // Handle narrative overlay transitions
   useEffect(() => {
-    if (!state) return;
-    const overlay = state.narrativeOverlay;
-
-    if (overlay.visible && overlay.image) {
-      // Show narrative with fade-in
-      setNarrativeImage(overlay.image);
-      setNarrativeText(overlay.text);
+    if (narrativeOverlay.visible && narrativeOverlay.image) {
+      setNarrativeImage(narrativeOverlay.image);
+      setNarrativeText(narrativeOverlay.text);
       setNarrativeFading(false);
-      // Small delay to trigger CSS transition
       requestAnimationFrame(() => setNarrativeVisible(true));
-    } else if (!overlay.visible && narrativeVisible) {
-      // Fade out
+    } else if (!narrativeOverlay.visible && narrativeVisible) {
       setNarrativeFading(true);
       setNarrativeVisible(false);
       setTimeout(() => {
@@ -53,9 +59,9 @@ const PlayerView = () => {
         setNarrativeText('');
       }, 800);
     }
-  }, [state?.narrativeOverlay?.visible, state?.narrativeOverlay?.image]);
+  }, [narrativeOverlay.visible, narrativeOverlay.image]);
 
-  // Listen for fullscreen changes
+  // Fullscreen
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handler);
@@ -71,39 +77,39 @@ const PlayerView = () => {
   }, []);
 
   const gridConfig = useMemo((): GridConfig => ({
-    type: state?.showGrid ? 'square' : 'none',
-    cellSize: state?.gridSize ?? 50,
-    offsetX: state?.gridOffsetX ?? 0,
-    offsetY: state?.gridOffsetY ?? 0,
+    type: showGrid ? 'square' : 'none',
+    cellSize: gridSize,
+    offsetX: gridOffsetX,
+    offsetY: gridOffsetY,
     mapWidth: mapDimensions.width,
     mapHeight: mapDimensions.height,
     feetPerCell: 5,
-  }), [state?.showGrid, state?.gridSize, state?.gridOffsetX, state?.gridOffsetY, mapDimensions]);
+  }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
 
-  if (!state || !state.mapImage) {
+  // Narrative overlay component
+  const renderNarrative = () => {
+    if (!(narrativeVisible || narrativeFading) || !narrativeImage) return null;
     return (
-      <div ref={rootRef} className="h-screen w-screen bg-black flex items-center justify-center">
-        {/* Narrative overlay even without map */}
-        {(narrativeVisible || narrativeFading) && narrativeImage && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-700"
-            style={{ opacity: narrativeVisible && !narrativeFading ? 1 : 0 }}
-          >
-            <img
-              src={narrativeImage}
-              alt="Narrativa"
-              className="max-w-full max-h-full object-contain"
-            />
-            {narrativeText && (
-              <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/90 to-transparent">
-                <p className="text-white text-2xl font-medium text-center max-w-3xl mx-auto leading-relaxed">
-                  {narrativeText}
-                </p>
-              </div>
-            )}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-700"
+        style={{ opacity: narrativeVisible && !narrativeFading ? 1 : 0 }}
+      >
+        <img src={narrativeImage} alt="Narrativa" className="max-w-full max-h-full object-contain" />
+        {narrativeText && (
+          <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/90 to-transparent">
+            <p className="text-white text-2xl font-medium text-center max-w-3xl mx-auto leading-relaxed">
+              {narrativeText}
+            </p>
           </div>
         )}
+      </div>
+    );
+  };
 
+  if (!mapImage) {
+    return (
+      <div ref={rootRef} className="h-screen w-screen bg-black flex items-center justify-center">
+        {renderNarrative()}
         <div className="text-center text-white/40 space-y-4">
           <div className="text-6xl">🎲</div>
           <p className="text-xl font-medium">Esperando al GM...</p>
@@ -115,26 +121,7 @@ const PlayerView = () => {
 
   return (
     <div ref={rootRef} className="h-screen w-screen overflow-hidden bg-black relative">
-      {/* Narrative overlay */}
-      {(narrativeVisible || narrativeFading) && narrativeImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-700"
-          style={{ opacity: narrativeVisible && !narrativeFading ? 1 : 0 }}
-        >
-          <img
-            src={narrativeImage}
-            alt="Narrativa"
-            className="max-w-full max-h-full object-contain"
-          />
-          {narrativeText && (
-            <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/90 to-transparent">
-              <p className="text-white text-2xl font-medium text-center max-w-3xl mx-auto leading-relaxed">
-                {narrativeText}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+      {renderNarrative()}
 
       <TransformWrapper
         initialScale={1}
@@ -149,7 +136,7 @@ const PlayerView = () => {
         >
           <div ref={mapContainerRef} className="relative">
             <img
-              src={state.mapImage}
+              src={mapImage}
               alt="Mapa"
               className="block select-none pointer-events-none"
               style={{ maxWidth: 'none', maxHeight: 'none' }}
@@ -160,22 +147,21 @@ const PlayerView = () => {
               }}
             />
 
-            {/* Grid */}
-            {state.showGrid && (
+            {showGrid && (
               <svg className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
                 <defs>
                   <pattern
                     id="player-grid"
-                    width={state.gridSize}
-                    height={state.gridSize}
+                    width={gridSize}
+                    height={gridSize}
                     patternUnits="userSpaceOnUse"
-                    patternTransform={`translate(${state.gridOffsetX} ${state.gridOffsetY})`}
+                    patternTransform={`translate(${gridOffsetX} ${gridOffsetY})`}
                   >
                     <path
-                      d={`M ${state.gridSize} 0 L 0 0 0 ${state.gridSize}`}
+                      d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
                       fill="none"
-                      stroke={state.gridColor}
-                      strokeWidth={state.gridLineWidth}
+                      stroke={gridColor}
+                      strokeWidth={gridLineWidth}
                       opacity="0.5"
                     />
                   </pattern>
@@ -184,32 +170,29 @@ const PlayerView = () => {
               </svg>
             )}
 
-            {/* Cell states */}
             {mapDimensions.width > 0 && (
               <CellStateOverlay
                 gridConfig={gridConfig}
-                cellStates={state.cellStates}
+                cellStates={cellStates}
                 editMode={false}
                 brushState="blocked"
                 onCellClick={() => {}}
               />
             )}
 
-            {/* Fog of War */}
-            {state.fogEnabled && mapDimensions.width > 0 && (
+            {fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
-                key={state.mapImage}
+                key={mapImage}
                 width={mapDimensions.width}
                 height={mapDimensions.height}
                 enabled={false}
                 brushSize={50}
-                fogData={state.fogData}
+                fogData={fogData}
                 onFogChange={() => {}}
               />
             )}
 
-            {/* Tokens (read-only) */}
-            {state.tokens.map(token => (
+            {tokens.map(token => (
               <Token
                 key={token.id}
                 {...token}
@@ -226,7 +209,6 @@ const PlayerView = () => {
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Fullscreen toggle */}
       <button
         onClick={toggleFullscreen}
         className="absolute bottom-4 right-4 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white/50 hover:text-white transition-all z-10"
