@@ -9,7 +9,7 @@ import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 
 const PlayerView = () => {
-  const { activeMap, narrativeOverlay } = useGameState();
+  const { activeMap, narrativeOverlay, narrativeLight } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
