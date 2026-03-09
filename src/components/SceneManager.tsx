@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
-import { SceneData, MapData } from '@/hooks/useSessionStorage';
+import { SceneData, MapData } from '@/hooks/useGameState';
 import { Plus, Trash2, Pencil, Check, X, Play, Image, Map, Music, Type, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

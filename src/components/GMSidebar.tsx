@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MapManager } from './MapManager';
 import { TokenToolbar } from './TokenToolbar';
 import { SceneManager } from './SceneManager';
-import { MapData, SceneData } from '@/hooks/useSessionStorage';
+import { MapData, SceneData } from '@/hooks/useGameState';
 import { TokenData, TokenColor, TokenStatus } from './MapViewer';
 import { Character, Monster } from '@/types/dnd';
 import { cn } from '@/lib/utils';
