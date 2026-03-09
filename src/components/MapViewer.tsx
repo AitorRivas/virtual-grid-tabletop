@@ -585,6 +585,19 @@ export const MapViewer = () => {
               />
             )}
 
+            {/* Narrative Light layer */}
+            {narrativeLight.enabled && mapDimensions.width > 0 && (
+              <NarrativeLight
+                width={mapDimensions.width}
+                height={mapDimensions.height}
+                x={narrativeLight.x}
+                y={narrativeLight.y}
+                radius={narrativeLight.radius}
+                editable={true}
+                onMove={(nx, ny) => setNarrativeLight({ x: nx, y: ny })}
+              />
+            )}
+
             {/* Tokens */}
             {tokens.map(token => (
               <Token
