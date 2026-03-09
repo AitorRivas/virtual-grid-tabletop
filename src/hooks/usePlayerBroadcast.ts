@@ -26,11 +26,40 @@ export interface PlayerViewState {
 /** GM side: broadcasts active map state to player view windows */
 export const usePlayerBroadcastSender = () => {
   const channelRef = useRef<BroadcastChannel | null>(null);
+  const latestStateRef = useRef<PlayerViewState | null>(null);
+
+  const buildState = useCallback((
+    activeMap: MapData | null,
+    narrativeOverlay?: { image: string | null; text: string; visible: boolean }
+  ): PlayerViewState => ({
+    mapImage: activeMap?.mapImage ?? null,
+    tokens: activeMap?.tokens ?? [],
+    showGrid: activeMap?.showGrid ?? true,
+    gridSize: activeMap?.gridSize ?? 50,
+    gridColor: activeMap?.gridColor ?? '#000000',
+    gridLineWidth: activeMap?.gridLineWidth ?? 1,
+    gridOffsetX: activeMap?.gridOffsetX ?? 0,
+    gridOffsetY: activeMap?.gridOffsetY ?? 0,
+    fogEnabled: activeMap?.fogEnabled ?? false,
+    fogData: activeMap?.fogData ?? null,
+    cellStates: activeMap?.cellStates ?? {},
+    narrativeOverlay: narrativeOverlay ?? { image: null, text: '', visible: false },
+  }), []);
 
   useEffect(() => {
-    channelRef.current = new BroadcastChannel(CHANNEL_NAME);
+    const channel = new BroadcastChannel(CHANNEL_NAME);
+    channelRef.current = channel;
+
+    // Listen for state requests from player views
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'REQUEST_STATE' && latestStateRef.current) {
+        channel.postMessage({ type: 'STATE_UPDATE', state: latestStateRef.current });
+      }
+    };
+
     return () => {
-      channelRef.current?.close();
+      channel.close();
+      channelRef.current = null;
     };
   }, []);
 
@@ -38,28 +67,21 @@ export const usePlayerBroadcastSender = () => {
     activeMap: MapData | null,
     narrativeOverlay?: { image: string | null; text: string; visible: boolean }
   ) => {
-    if (!channelRef.current) return;
-    const state: PlayerViewState = {
-      mapImage: activeMap?.mapImage ?? null,
-      tokens: activeMap?.tokens ?? [],
-      showGrid: activeMap?.showGrid ?? true,
-      gridSize: activeMap?.gridSize ?? 50,
-      gridColor: activeMap?.gridColor ?? '#000000',
-      gridLineWidth: activeMap?.gridLineWidth ?? 1,
-      gridOffsetX: activeMap?.gridOffsetX ?? 0,
-      gridOffsetY: activeMap?.gridOffsetY ?? 0,
-      fogEnabled: activeMap?.fogEnabled ?? false,
-      fogData: activeMap?.fogData ?? null,
-      cellStates: activeMap?.cellStates ?? {},
-      narrativeOverlay: narrativeOverlay ?? { image: null, text: '', visible: false },
-    };
-    channelRef.current.postMessage({ type: 'STATE_UPDATE', state });
-  }, []);
+    const state = buildState(activeMap, narrativeOverlay);
+    latestStateRef.current = state;
+    channelRef.current?.postMessage({ type: 'STATE_UPDATE', state });
+  }, [buildState]);
 
   const openPlayerWindow = useCallback(() => {
     const w = window.open('/player-view', 'vtt-player-view', 'popup');
     if (w) {
       w.focus();
+      // Re-broadcast current state after a short delay for the new window to set up its listener
+      setTimeout(() => {
+        if (latestStateRef.current) {
+          channelRef.current?.postMessage({ type: 'STATE_UPDATE', state: latestStateRef.current });
+        }
+      }, 500);
     }
   }, []);
 
@@ -80,6 +102,8 @@ export const usePlayerBroadcastReceiver = (
         callbackRef.current(event.data.state);
       }
     };
+    // Request current state from GM on mount
+    channel.postMessage({ type: 'REQUEST_STATE' });
     return () => channel.close();
   }, []);
 };

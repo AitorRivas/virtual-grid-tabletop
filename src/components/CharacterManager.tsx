@@ -563,7 +563,6 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     }
                     return success;
                   }}
-                  onClose={() => setSelectedCharacter(null)}
                   initialReadOnly={true}
                 />
               )}
@@ -862,7 +861,6 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     }
                     return success;
                   }}
-                  onClose={() => setSelectedMonster(null)}
                   initialReadOnly={true}
                 />
               )}

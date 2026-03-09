@@ -109,12 +109,15 @@ export const MapViewer = () => {
   // Player view broadcast
   const { broadcast, openPlayerWindow } = usePlayerBroadcastSender();
 
-  // Broadcast active map state + narrative overlay
+  // Broadcast active map state + narrative overlay to player view
+  // Use JSON serialization to ensure deep changes are detected
+  const activeMapJson = JSON.stringify(activeMap);
+  const narrativeOverlayJson = JSON.stringify(narrativeOverlay);
   useEffect(() => {
     if (isLoaded) {
       broadcast(activeMap, narrativeOverlay);
     }
-  }, [activeMap, narrativeOverlay, isLoaded, broadcast]);
+  }, [activeMapJson, narrativeOverlayJson, isLoaded, broadcast]);
 
   // Scene activation handler
   const handleActivateScene = useCallback((sceneId: string) => {
