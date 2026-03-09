@@ -4,6 +4,12 @@ import { TokenColor, TokenStatus } from './MapViewer';
 import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
+interface FloatingNumber {
+  id: string;
+  value: number;
+  type: 'damage' | 'heal' | 'crit';
+}
+
 interface TokenProps {
   id: string;
   x: number;
@@ -18,6 +24,7 @@ interface TokenProps {
   imageUrl?: string;
   rotation?: number;
   isSelected: boolean;
+  isActiveInitiative?: boolean;
   onMove: (id: string, x: number, y: number) => void;
   onClick: () => void;
   onDelete: () => void;
@@ -39,7 +46,7 @@ const colorClasses: Record<TokenColor, string> = {
 };
 
 export const Token = ({ 
-  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected,
+  id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected, isActiveInitiative = false,
   onMove, onClick, onDelete, onMarkDead, onRotate, mapContainerRef 
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -47,7 +54,35 @@ export const Token = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, tokenX: 0, tokenY: 0 });
   const [rotationStart, setRotationStart] = useState({ angle: 0, rotation: 0 });
   const [showActions, setShowActions] = useState(false);
+  const [flashType, setFlashType] = useState<'damage' | 'heal' | null>(null);
+  const [floatingNumbers, setFloatingNumbers] = useState<FloatingNumber[]>([]);
+  const prevHpRef = useRef(hpCurrent);
   const tokenRef = useRef<HTMLDivElement>(null);
+
+  // Detect HP changes and trigger visual feedback
+  useEffect(() => {
+    const prevHp = prevHpRef.current;
+    if (prevHp !== hpCurrent && prevHp !== undefined) {
+      const delta = hpCurrent - prevHp;
+      if (delta < 0) {
+        // Damage
+        const isCrit = Math.abs(delta) >= hpMax * 0.3; // 30%+ of max HP = crit
+        setFlashType('damage');
+        const floatId = Date.now().toString();
+        setFloatingNumbers(prev => [...prev, { id: floatId, value: delta, type: isCrit ? 'crit' : 'damage' }]);
+        setTimeout(() => setFlashType(null), 500);
+        setTimeout(() => setFloatingNumbers(prev => prev.filter(f => f.id !== floatId)), 1200);
+      } else if (delta > 0) {
+        // Heal
+        setFlashType('heal');
+        const floatId = Date.now().toString();
+        setFloatingNumbers(prev => [...prev, { id: floatId, value: delta, type: 'heal' }]);
+        setTimeout(() => setFlashType(null), 500);
+        setTimeout(() => setFloatingNumbers(prev => prev.filter(f => f.id !== floatId)), 1200);
+      }
+    }
+    prevHpRef.current = hpCurrent;
+  }, [hpCurrent, hpMax]);
 
   // Calculate angle from center of token to mouse position
   const calculateAngle = useCallback((clientX: number, clientY: number) => {
@@ -68,7 +103,6 @@ export const Token = ({
     const distance = Math.sqrt(
       Math.pow(clientX - centerX, 2) + Math.pow(clientY - centerY, 2)
     );
-    // Consider "edge" as the outer 25% of the radius
     return distance > radius * 0.65 && distance < radius * 1.2;
   }, []);
 
@@ -77,11 +111,8 @@ export const Token = ({
     onClick();
     
     if (!mapContainerRef.current) return;
-    
-    // Don't allow interactions with dead/inactive tokens
     if (status !== 'active') return;
     
-    // Check if clicking on edge for rotation
     if (isOnEdge(e.clientX, e.clientY)) {
       setIsRotating(true);
       setRotationStart({
@@ -91,7 +122,6 @@ export const Token = ({
       return;
     }
     
-    // Otherwise, start dragging
     setIsDragging(true);
     setDragStart({
       x: e.clientX,
@@ -143,7 +173,6 @@ export const Token = ({
     };
   }, [isDragging, isRotating, dragStart, rotationStart, id, onMove, onRotate, mapContainerRef, calculateAngle]);
 
-  // Update cursor based on position
   const handleMouseMoveForCursor = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (status !== 'active') return;
     const target = e.currentTarget;
@@ -158,22 +187,22 @@ export const Token = ({
   const isInactive = status === 'inactive';
   const displayColor = isDead ? 'black' : color;
 
-  // Get active conditions data
   const activeConditionsData = tokenConditions
     .map(id => getConditionById(id))
     .filter(Boolean);
 
-  // Show max 5 icons around the token (6th position for +X indicator)
   const visibleConditions = activeConditionsData.slice(0, 5);
   const hasMoreConditions = activeConditionsData.length > 5;
 
-  // Calculate HP percentage for the bar
   const hpPercentage = Math.max(0, Math.min(100, (hpCurrent / hpMax) * 100));
   const hpColor = hpCurrent / hpMax > 0.5 
     ? 'hsl(142, 76%, 36%)' 
     : hpCurrent / hpMax > 0.25 
     ? 'hsl(45, 93%, 47%)'
     : 'hsl(0, 84%, 60%)';
+
+  // Determine flash animation class
+  const flashClass = flashType === 'damage' ? 'animate-damage-flash' : flashType === 'heal' ? 'animate-heal-flash' : '';
 
   return (
     <TooltipProvider>
@@ -194,7 +223,17 @@ export const Token = ({
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
       >
-        {/* Rotation indicator ring - shown when selected or rotating */}
+        {/* Initiative active halo */}
+        {isActiveInitiative && status === 'active' && (
+          <div 
+            className="absolute inset-[-6px] rounded-full animate-initiative-pulse pointer-events-none"
+            style={{
+              border: '2px solid hsl(48, 95%, 55%)',
+            }}
+          />
+        )}
+
+        {/* Rotation indicator ring */}
         {status === 'active' && (isSelected || isRotating) && (
           <div 
             className="absolute inset-[-4px] rounded-full border-2 border-dashed pointer-events-none transition-opacity"
@@ -211,11 +250,11 @@ export const Token = ({
             {visibleConditions.map((condition, index) => {
               if (!condition) return null;
               const Icon = condition.icon;
-              const angle = (index * 60) - 90; // Start from top, space 60 degrees apart
-              const iconSize = Math.max(16, size * 0.25); // Scale with token size, min 16px
-              const radius = size / 2 + iconSize / 2 + 4; // Dynamic radius based on icon size
-              const x = Math.cos((angle * Math.PI) / 180) * radius;
-              const y = Math.sin((angle * Math.PI) / 180) * radius;
+              const angle = (index * 60) - 90;
+              const iconSize = Math.max(16, size * 0.25);
+              const radius = size / 2 + iconSize / 2 + 4;
+              const cx = Math.cos((angle * Math.PI) / 180) * radius;
+              const cy = Math.sin((angle * Math.PI) / 180) * radius;
               
               return (
                 <Tooltip key={condition.id}>
@@ -227,7 +266,7 @@ export const Token = ({
                         height: iconSize,
                         left: '50%',
                         top: '50%',
-                        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                        transform: `translate(calc(-50% + ${cx}px), calc(-50% + ${cy}px))`,
                         backgroundColor: `hsl(${condition.color})`,
                       }}
                     >
@@ -275,7 +314,7 @@ export const Token = ({
         <div
           className={`w-full h-full rounded-full ${!imageUrl ? colorClasses[displayColor] : ''} border-2 ${
             isSelected ? 'border-primary' : 'border-foreground/30'
-          } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative overflow-hidden`}
+          } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative overflow-hidden ${flashClass}`}
           style={{
             boxShadow: isSelected 
               ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
@@ -301,8 +340,38 @@ export const Token = ({
           ) : (
             isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()
           )}
+
+          {/* Crit burst effect overlay */}
+          {floatingNumbers.some(f => f.type === 'crit') && (
+            <div className="absolute inset-0 rounded-full animate-crit-burst pointer-events-none"
+              style={{ border: '3px solid hsl(0, 84%, 60%)', background: 'hsl(0, 84%, 60% / 0.15)' }}
+            />
+          )}
         </div>
         
+        {/* Floating damage/heal numbers */}
+        {floatingNumbers.map((fn) => (
+          <div
+            key={fn.id}
+            className="absolute left-1/2 -translate-x-1/2 animate-float-up pointer-events-none z-[150]"
+            style={{ top: -10 }}
+          >
+            <span
+              className="font-black text-lg drop-shadow-lg whitespace-nowrap"
+              style={{
+                color: fn.type === 'heal' ? 'hsl(142, 76%, 50%)' : 'hsl(0, 84%, 60%)',
+                fontSize: fn.type === 'crit' ? size * 0.5 : size * 0.35,
+                textShadow: fn.type === 'crit' 
+                  ? '0 0 10px hsl(0, 84%, 60%), 0 2px 4px rgba(0,0,0,0.8)' 
+                  : '0 2px 4px rgba(0,0,0,0.8)',
+              }}
+            >
+              {fn.value > 0 ? `+${fn.value}` : fn.value}
+              {fn.type === 'crit' && ' 💥'}
+            </span>
+          </div>
+        ))}
+
         {/* HP Bar underneath the token */}
         {hpMax > 0 && status === 'active' && (
           <div 
@@ -323,7 +392,7 @@ export const Token = ({
           </div>
         )}
         
-        {/* Token name label - positioned below HP bar */}
+        {/* Token name label */}
         <div
           className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-card/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold text-card-foreground border border-border pointer-events-none"
           style={{ 
@@ -336,7 +405,7 @@ export const Token = ({
           {isInactive && ' ⏸️'}
         </div>
 
-        {/* Quick action buttons - positioned well above the token */}
+        {/* Quick action buttons */}
         {showActions && status === 'active' && (
           <div 
             className="absolute left-1/2 -translate-x-1/2 flex gap-1 z-[110]"
@@ -347,7 +416,7 @@ export const Token = ({
                 e.stopPropagation();
                 onMarkDead();
               }}
-              className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded text-white transition-colors shadow-lg"
+              className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
               title="Marcar como muerto"
             >
               <Skull className="w-4 h-4" />
@@ -365,7 +434,7 @@ export const Token = ({
           </div>
         )}
 
-        {/* Rotation hint tooltip - shown when hovering on edge */}
+        {/* Rotation hint tooltip */}
         {isRotating && (
           <div 
             className="absolute -top-8 left-1/2 -translate-x-1/2 bg-card/95 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium text-card-foreground border border-border whitespace-nowrap z-[120]"
