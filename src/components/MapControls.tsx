@@ -40,6 +40,13 @@ interface MapControlsProps {
   onFogToolChange?: (tool: FogTool) => void;
   fogMode?: FogMode;
   onFogModeChange?: (mode: FogMode) => void;
+  narrativeLightEnabled?: boolean;
+  onToggleNarrativeLight?: () => void;
+  narrativeLightRadius?: number;
+  onNarrativeLightRadiusChange?: (radius: number) => void;
+  tokens?: TokenData[];
+  narrativeLightFollowTokenId?: string | null;
+  onNarrativeLightFollowToken?: (id: string | null) => void;
 }
 
 export const MapControls = ({
