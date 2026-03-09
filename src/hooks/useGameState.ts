@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { gameStateStore, GameState, MapData, SceneData } from '@/stores/gameState';
+import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData } from '@/stores/gameState';
 
-export type { MapData, SceneData, GameState };
+export type { MapData, SceneData, GameState, NarrativeLightData };
 
 export const createDefaultMap = (name = 'Mapa 1'): MapData => ({
   id: Date.now().toString() + Math.random().toString(36).slice(2),
