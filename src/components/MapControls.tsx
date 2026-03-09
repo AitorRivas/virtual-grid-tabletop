@@ -434,6 +434,75 @@ export const MapControls = ({
               </Popover>
             )}
 
+            {/* Narrative Light */}
+            {onToggleNarrativeLight && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={narrativeLightEnabled ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-2 h-8"
+                  >
+                    <Flashlight className="w-4 h-4" />
+                    <span className="hidden md:inline">Linterna</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-4" align="start">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Linterna narrativa</Label>
+                      <Button
+                        variant={narrativeLightEnabled ? "default" : "secondary"}
+                        size="sm"
+                        onClick={onToggleNarrativeLight}
+                        className="h-7 px-2"
+                      >
+                        {narrativeLightEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </Button>
+                    </div>
+
+                    {narrativeLightEnabled && (
+                      <>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <Label>Radio</Label>
+                            <span className="text-muted-foreground">{narrativeLightRadius ?? 200}px</span>
+                          </div>
+                          <Slider
+                            value={[narrativeLightRadius ?? 200]}
+                            onValueChange={(v) => onNarrativeLightRadiusChange?.(v[0])}
+                            min={50}
+                            max={1000}
+                            step={10}
+                          />
+                        </div>
+
+                        {onNarrativeLightFollowToken && tokensForLight && tokensForLight.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium text-muted-foreground">Seguir token</Label>
+                            <select
+                              className="w-full h-8 rounded-md border border-border bg-background px-2 text-sm"
+                              value={narrativeLightFollowTokenId ?? ''}
+                              onChange={(e) => onNarrativeLightFollowToken(e.target.value || null)}
+                            >
+                              <option value="">Manual</option>
+                              {tokensForLight.filter(t => t.status === 'active').map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground">
+                          Arrastra sobre el mapa para mover la zona iluminada.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
             <div className="h-5 w-px bg-border/50" />
 
             {/* Zoom Control */}
