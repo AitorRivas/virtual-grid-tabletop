@@ -20,7 +20,14 @@ const PlayerView = () => {
   const [narrativeText, setNarrativeText] = useState('');
   const [narrativeFading, setNarrativeFading] = useState(false);
 
+  const prevMapImageRef = useRef<string | null>(null);
+
   usePlayerBroadcastReceiver(useCallback((s: PlayerViewState) => {
+    // Reset map dimensions when map image changes to force correct FogOfWar sizing
+    if (s.mapImage !== prevMapImageRef.current) {
+      setMapDimensions({ width: 0, height: 0 });
+      prevMapImageRef.current = s.mapImage;
+    }
     setState(s);
   }, []));
 
@@ -191,6 +198,7 @@ const PlayerView = () => {
             {/* Fog of War */}
             {state.fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
+                key={state.mapImage}
                 width={mapDimensions.width}
                 height={mapDimensions.height}
                 enabled={false}

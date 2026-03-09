@@ -34,8 +34,8 @@ export const FogOfWar = ({
     // Reset composite operation to default
     ctx.globalCompositeOperation = 'source-over';
 
+    // Skip if same data and already initialized with same dimensions
     if (fogData && fogData === lastFogDataRef.current && isInitializedRef.current) {
-      // Same data, skip
       return;
     }
 
@@ -50,14 +50,13 @@ export const FogOfWar = ({
         lastFogDataRef.current = fogData;
       };
       img.src = fogData;
-    } else {
-      // Fill with black fog
+    } else if (!isInitializedRef.current) {
+      // Fill with black fog only on first init
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
       isInitializedRef.current = true;
       lastFogDataRef.current = null;
-      // Save initial state
       onFogChange(canvas.toDataURL('image/png', 0.8));
     }
   }, [width, height, fogData]);
