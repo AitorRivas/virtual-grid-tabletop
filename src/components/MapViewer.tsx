@@ -61,6 +61,8 @@ export const MapViewer = () => {
     setActiveSceneId,
     narrativeOverlay,
     setNarrativeOverlay,
+    narrativeLight,
+    setNarrativeLight,
   } = useGameState();
 
   // Derive current map state from activeMap
