@@ -95,6 +95,30 @@ export default {
           "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.4)" },
           "50%": { boxShadow: "0 0 20px 4px hsl(var(--primary) / 0.3)" },
         },
+        "damage-flash": {
+          "0%": { boxShadow: "0 0 0 0 hsl(0 84% 60% / 0.8)", filter: "brightness(1)" },
+          "30%": { boxShadow: "0 0 20px 8px hsl(0 84% 60% / 0.6)", filter: "brightness(1.3)" },
+          "100%": { boxShadow: "0 0 0 0 hsl(0 84% 60% / 0)", filter: "brightness(1)" },
+        },
+        "heal-flash": {
+          "0%": { boxShadow: "0 0 0 0 hsl(142 76% 36% / 0.8)", filter: "brightness(1)" },
+          "30%": { boxShadow: "0 0 20px 8px hsl(142 76% 36% / 0.6)", filter: "brightness(1.2)" },
+          "100%": { boxShadow: "0 0 0 0 hsl(142 76% 36% / 0)", filter: "brightness(1)" },
+        },
+        "float-up": {
+          "0%": { opacity: "1", transform: "translateY(0) scale(1)" },
+          "70%": { opacity: "1", transform: "translateY(-40px) scale(1.1)" },
+          "100%": { opacity: "0", transform: "translateY(-60px) scale(0.9)" },
+        },
+        "initiative-pulse": {
+          "0%, 100%": { boxShadow: "0 0 8px 2px hsl(48 95% 55% / 0.4)" },
+          "50%": { boxShadow: "0 0 20px 6px hsl(48 95% 55% / 0.6)" },
+        },
+        "crit-burst": {
+          "0%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.8)", opacity: "0.8" },
+          "100%": { transform: "scale(2.2)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -104,6 +128,11 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-in-right": "slide-in-right 0.25s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "damage-flash": "damage-flash 0.5s ease-out",
+        "heal-flash": "heal-flash 0.5s ease-out",
+        "float-up": "float-up 1.2s ease-out forwards",
+        "initiative-pulse": "initiative-pulse 2s ease-in-out infinite",
+        "crit-burst": "crit-burst 0.6s ease-out forwards",
       },
     },
   },
