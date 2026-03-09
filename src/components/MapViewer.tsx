@@ -680,6 +680,15 @@ export const MapViewer = () => {
         onNextTurn={handleNextTurn}
         onEndInitiative={handleEndInitiative}
         isInitiativeActive={isInitiativeActive}
+        scenes={scenes}
+        activeSceneId={activeSceneId}
+        onAddScene={addScene}
+        onRemoveScene={removeScene}
+        onUpdateScene={updateScene}
+        onActivateScene={handleActivateScene}
+        narrativeOverlay={narrativeOverlay}
+        onShowNarrativeImage={handleShowNarrativeImage}
+        onHideNarrativeImage={handleHideNarrativeImage}
       />
 
       {/* Main content */}
