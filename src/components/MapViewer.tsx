@@ -5,6 +5,7 @@ import { MapControls } from './MapControls';
 import { DiceRoller } from './DiceRoller';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FogOfWar } from './FogOfWar';
+import { NarrativeLight } from './NarrativeLight';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
 import { GMSidebar } from './GMSidebar';
@@ -60,6 +61,8 @@ export const MapViewer = () => {
     setActiveSceneId,
     narrativeOverlay,
     setNarrativeOverlay,
+    narrativeLight,
+    setNarrativeLight,
   } = useGameState();
 
   // Derive current map state from activeMap
@@ -155,6 +158,16 @@ export const MapViewer = () => {
     mapHeight: mapDimensions.height,
     feetPerCell: 5,
   }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
+
+  // Follow token with narrative light
+  useEffect(() => {
+    if (!narrativeLight.enabled || !narrativeLight.followTokenId) return;
+    const token = tokens.find(t => t.id === narrativeLight.followTokenId);
+    if (!token || mapDimensions.width === 0) return;
+    const px = (token.x / 100) * mapDimensions.width;
+    const py = (token.y / 100) * mapDimensions.height;
+    setNarrativeLight({ x: px, y: py });
+  }, [narrativeLight.enabled, narrativeLight.followTokenId, tokens, mapDimensions]);
 
   // Reset local UI state when switching maps
   useEffect(() => {
@@ -582,6 +595,19 @@ export const MapViewer = () => {
               />
             )}
 
+            {/* Narrative Light layer */}
+            {narrativeLight.enabled && mapDimensions.width > 0 && (
+              <NarrativeLight
+                width={mapDimensions.width}
+                height={mapDimensions.height}
+                x={narrativeLight.x}
+                y={narrativeLight.y}
+                radius={narrativeLight.radius}
+                editable={true}
+                onMove={(nx, ny) => setNarrativeLight({ x: nx, y: ny })}
+              />
+            )}
+
             {/* Tokens */}
             {tokens.map(token => (
               <Token
@@ -728,6 +754,13 @@ export const MapViewer = () => {
           onFogToolChange={setFogTool}
           fogMode={fogMode}
           onFogModeChange={setFogMode}
+          narrativeLightEnabled={narrativeLight.enabled}
+          onToggleNarrativeLight={() => setNarrativeLight({ enabled: !narrativeLight.enabled })}
+          narrativeLightRadius={narrativeLight.radius}
+          onNarrativeLightRadiusChange={(r) => setNarrativeLight({ radius: r })}
+          tokens={tokens}
+          narrativeLightFollowTokenId={narrativeLight.followTokenId}
+          onNarrativeLightFollowToken={(id) => setNarrativeLight({ followTokenId: id })}
         />
 
         {/* Map area */}

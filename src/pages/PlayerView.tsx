@@ -2,13 +2,14 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from '@/components/Token';
 import { FogOfWar } from '@/components/FogOfWar';
+import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { useGameState } from '@/hooks/useGameState';
 import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 
 const PlayerView = () => {
-  const { activeMap, narrativeOverlay } = useGameState();
+  const { activeMap, narrativeOverlay, narrativeLight } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -191,6 +192,17 @@ const PlayerView = () => {
                 onFogChange={() => {}}
                 fogTool="brush"
                 fogMode="reveal"
+              />
+            )}
+
+            {/* Narrative Light layer */}
+            {narrativeLight.enabled && mapDimensions.width > 0 && (
+              <NarrativeLight
+                width={mapDimensions.width}
+                height={mapDimensions.height}
+                x={narrativeLight.x}
+                y={narrativeLight.y}
+                radius={narrativeLight.radius}
               />
             )}
 

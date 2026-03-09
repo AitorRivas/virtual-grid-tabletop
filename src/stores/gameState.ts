@@ -35,6 +35,14 @@ export interface SceneData {
   ambientTrackName: string | null;
 }
 
+export interface NarrativeLightData {
+  enabled: boolean;
+  x: number;
+  y: number;
+  radius: number;
+  followTokenId: string | null;
+}
+
 export interface GameState {
   maps: MapData[];
   activeMapId: string | null;
@@ -45,7 +53,12 @@ export interface GameState {
     text: string;
     visible: boolean;
   };
+  narrativeLight: NarrativeLightData;
 }
+
+const defaultNarrativeLight: NarrativeLightData = {
+  enabled: false, x: 500, y: 500, radius: 200, followTokenId: null,
+};
 
 const defaultState: GameState = {
   maps: [],
@@ -53,6 +66,7 @@ const defaultState: GameState = {
   scenes: [],
   activeSceneId: null,
   narrativeOverlay: { image: null, text: '', visible: false },
+  narrativeLight: defaultNarrativeLight,
 };
 
 // Migrate old session formats
@@ -64,6 +78,7 @@ function migrateState(raw: any): GameState {
       scenes: raw.scenes ?? [],
       activeSceneId: raw.activeSceneId ?? null,
       narrativeOverlay: raw.narrativeOverlay ?? { image: null, text: '', visible: false },
+      narrativeLight: raw.narrativeLight ?? defaultNarrativeLight,
     };
   }
   if (raw && (raw.mapImage !== undefined || raw.tokens !== undefined)) {
@@ -89,6 +104,7 @@ function migrateState(raw: any): GameState {
       scenes: [],
       activeSceneId: null,
       narrativeOverlay: { image: null, text: '', visible: false },
+      narrativeLight: defaultNarrativeLight,
     };
   }
   return defaultState;

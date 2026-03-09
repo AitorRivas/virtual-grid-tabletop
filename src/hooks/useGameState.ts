@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { gameStateStore, GameState, MapData, SceneData } from '@/stores/gameState';
+import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData } from '@/stores/gameState';
 
-export type { MapData, SceneData, GameState };
+export type { MapData, SceneData, GameState, NarrativeLightData };
 
 export const createDefaultMap = (name = 'Mapa 1'): MapData => ({
   id: Date.now().toString() + Math.random().toString(36).slice(2),
@@ -117,6 +117,13 @@ export const useGameState = () => {
     gameStateStore.setState(prev => ({ ...prev, narrativeOverlay: overlay }));
   }, []);
 
+  const setNarrativeLight = useCallback((light: Partial<NarrativeLightData>) => {
+    gameStateStore.setState(prev => ({
+      ...prev,
+      narrativeLight: { ...prev.narrativeLight, ...light },
+    }));
+  }, []);
+
   const clearSession = useCallback(() => {
     gameStateStore.clear();
   }, []);
@@ -128,6 +135,7 @@ export const useGameState = () => {
     scenes: state.scenes,
     activeSceneId: state.activeSceneId,
     narrativeOverlay: state.narrativeOverlay,
+    narrativeLight: state.narrativeLight,
     isLoaded,
     setActiveMapId,
     addMap,
@@ -139,6 +147,7 @@ export const useGameState = () => {
     updateScene,
     setActiveSceneId,
     setNarrativeOverlay,
+    setNarrativeLight,
     clearSession,
   };
 };
