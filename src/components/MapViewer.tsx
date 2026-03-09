@@ -1,21 +1,19 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
 import { Token } from './Token';
 import { MapControls } from './MapControls';
-import { TokenToolbar } from './TokenToolbar';
 import { DiceRoller } from './DiceRoller';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FogOfWar } from './FogOfWar';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
-import { MapManager } from './MapManager';
+import { GMSidebar } from './GMSidebar';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
-import { Film, X, Upload, Monitor } from 'lucide-react';
+import { Film, X, Upload } from 'lucide-react';
 import { usePlayerBroadcastSender } from '@/hooks/usePlayerBroadcast';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
@@ -39,7 +37,6 @@ export interface TokenData {
   hpCurrent: number;
   imageUrl?: string;
   rotation?: number;
-  // Grid engine properties
   speedFeet?: number;
   sizeInCells?: number;
 }
@@ -58,7 +55,7 @@ export const MapViewer = () => {
     clearSession,
   } = useSessionStorage();
 
-  // Derive current map state from activeMap (or defaults)
+  // Derive current map state from activeMap
   const mapImage = activeMap?.mapImage ?? null;
   const tokens = activeMap?.tokens ?? [];
   const showGrid = activeMap?.showGrid ?? true;
@@ -71,7 +68,7 @@ export const MapViewer = () => {
   const gridOffsetY = activeMap?.gridOffsetY ?? 0;
   const cellStates = activeMap?.cellStates ?? {};
 
-  // Local UI state (not persisted per-map)
+  // Local UI state
   const [zoomLevel, setZoomLevel] = useState(1);
   const [defaultTokenSize, setDefaultTokenSize] = useState(50);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
@@ -83,23 +80,28 @@ export const MapViewer = () => {
   const [pendingTokenPosition, setPendingTokenPosition] = useState<{ x: number; y: number } | null>(null);
   const tokenImageInputRef = useRef<HTMLInputElement>(null);
 
-  // Cinema mode state
+  // Cinema mode
   const [cinemaMode, setCinemaMode] = useState(false);
 
-  // Fog edit state (local UI)
+  // Fog edit state
   const [fogEditMode, setFogEditMode] = useState(false);
   const [fogBrushSize, setFogBrushSize] = useState(50);
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
 
-  // Grid engine local UI state
+  // Grid engine
   const [cellEditMode, setCellEditMode] = useState(false);
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
 
+  // Initiative system
+  const [initiativeOrder, setInitiativeOrder] = useState<string[]>([]);
+  const [activeInitiativeIndex, setActiveInitiativeIndex] = useState(0);
+  const [isInitiativeActive, setIsInitiativeActive] = useState(false);
+
   // Player view broadcast
   const { broadcast, openPlayerWindow } = usePlayerBroadcastSender();
 
-  // Broadcast active map state whenever it changes
+  // Broadcast active map state
   useEffect(() => {
     if (isLoaded) {
       broadcast(activeMap);
@@ -127,21 +129,21 @@ export const MapViewer = () => {
     setZoomLevel(1);
   }, [activeMapId]);
 
-  // Auto-create first map if session loaded with none
+  // Auto-create first map
   useEffect(() => {
     if (isLoaded && maps.length === 0) {
       addMap('Mapa 1');
     }
   }, [isLoaded, maps.length, addMap]);
 
-  // Restore toast on load
+  // Restore toast
   useEffect(() => {
     if (isLoaded && activeMap?.mapImage) {
       toast.success('Sesión restaurada');
     }
   }, [isLoaded]);
 
-  // Store zoom functions
+  // Zoom functions
   const zoomFunctionsRef = useRef<{
     setTransform: (x: number, y: number, scale: number) => void;
     state: { positionX: number; positionY: number; scale: number };
@@ -150,11 +152,10 @@ export const MapViewer = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Helper to update active map fields
+  // Map update helpers
   const setMapImage = useCallback((img: string | null) => updateActiveMap({ mapImage: img }), [updateActiveMap]);
   const setTokens = useCallback((updater: TokenData[] | ((prev: TokenData[]) => TokenData[])) => {
     if (typeof updater === 'function') {
-      // Need current tokens
       updateActiveMap({ tokens: updater(tokens) });
     } else {
       updateActiveMap({ tokens: updater });
@@ -175,6 +176,39 @@ export const MapViewer = () => {
       updateActiveMap({ cellStates: updater });
     }
   }, [updateActiveMap, cellStates]);
+
+  // Initiative handlers
+  const handleStartInitiative = useCallback(() => {
+    const activeTokens = tokens
+      .filter(t => t.status === 'active')
+      .sort((a, b) => b.initiative - a.initiative);
+    if (activeTokens.length === 0) return;
+    setInitiativeOrder(activeTokens.map(t => t.id));
+    setActiveInitiativeIndex(0);
+    setIsInitiativeActive(true);
+    toast.success('¡Combate iniciado!');
+  }, [tokens]);
+
+  const handleNextTurn = useCallback(() => {
+    setActiveInitiativeIndex(prev => {
+      const next = (prev + 1) % initiativeOrder.length;
+      const token = tokens.find(t => t.id === initiativeOrder[next]);
+      if (token) toast.info(`Turno de ${token.name}`);
+      return next;
+    });
+  }, [initiativeOrder, tokens]);
+
+  const handleEndInitiative = useCallback(() => {
+    setIsInitiativeActive(false);
+    setInitiativeOrder([]);
+    setActiveInitiativeIndex(0);
+    toast.success('Combate finalizado');
+  }, []);
+
+  // Get the currently active initiative token id
+  const activeInitiativeTokenId = isInitiativeActive && initiativeOrder.length > 0
+    ? initiativeOrder[activeInitiativeIndex]
+    : null;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -337,7 +371,6 @@ export const MapViewer = () => {
     toast.success('Sesión limpiada');
   };
 
-  // Handle cell state painting
   const handleCellStateClick = (cellX: number, cellY: number) => {
     const key = `${cellX},${cellY}`;
     setCellStates(prev => {
@@ -350,7 +383,6 @@ export const MapViewer = () => {
     });
   };
 
-  // Handle grid calibration complete
   const handleCalibrationComplete = (cellSize: number, offsetX: number, offsetY: number) => {
     setGridSize(cellSize);
     setGridOffsetX(offsetX);
@@ -408,7 +440,7 @@ export const MapViewer = () => {
     toast.success(`${monster.name} añadido al mapa`);
   };
 
-  // Render map content (shared between normal and cinema mode)
+  // Render map content
   const renderMapContent = () => (
     <TransformWrapper
       key={activeMapId}
@@ -463,10 +495,7 @@ export const MapViewer = () => {
             {showGrid && (
               <svg
                 className="absolute inset-0 pointer-events-none"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                }}
+                style={{ width: '100%', height: '100%' }}
               >
                 <defs>
                   <pattern
@@ -489,7 +518,7 @@ export const MapViewer = () => {
               </svg>
             )}
 
-            {/* Cell state overlay (blocked/difficult terrain) */}
+            {/* Cell state overlay */}
             {mapDimensions.width > 0 && (
               <CellStateOverlay
                 gridConfig={gridConfig}
@@ -520,6 +549,7 @@ export const MapViewer = () => {
                 imageUrl={token.imageUrl}
                 rotation={token.rotation}
                 isSelected={selectedToken === token.id}
+                isActiveInitiative={token.id === activeInitiativeTokenId}
                 onMove={handleTokenMove}
                 onClick={() => setSelectedToken(token.id)}
                 onDelete={() => handleDeleteToken(token.id)}
@@ -538,7 +568,6 @@ export const MapViewer = () => {
   if (cinemaMode && mapImage) {
     return (
       <div className="h-screen w-screen overflow-hidden bg-black flex flex-col">
-        {/* Top black bar */}
         <div className="h-16 bg-black flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Film className="w-5 h-5 text-primary" />
@@ -555,15 +584,12 @@ export const MapViewer = () => {
           </Button>
         </div>
 
-        {/* Map area */}
         <div className="flex-1 relative overflow-hidden bg-black">
           {renderMapContent()}
         </div>
 
-        {/* Bottom black bar */}
         <div className="h-16 bg-black" />
 
-        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -572,7 +598,6 @@ export const MapViewer = () => {
           className="hidden"
         />
 
-        {/* Ambient Player */}
         <AmbientPlayer />
       </div>
     );
@@ -580,127 +605,102 @@ export const MapViewer = () => {
 
   // Normal View
   return (
-    <div className="h-screen w-screen overflow-hidden bg-board-bg">
-      <ResizablePanelGroup direction="horizontal" className="h-full">
-        {/* Sidebar */}
-        <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
-          <div className="flex flex-col h-full overflow-hidden">
-            {/* Player View + Map Manager */}
-            <div className="border-b border-border/50 shrink-0">
-              <div className="p-2">
-                <Button
-                  onClick={openPlayerWindow}
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2 mb-2"
+    <div className="h-screen w-screen overflow-hidden bg-board-bg flex">
+      {/* GM Sidebar */}
+      <GMSidebar
+        maps={maps}
+        activeMapId={activeMapId}
+        onSelectMap={setActiveMapId}
+        onAddMap={addMap}
+        onRemoveMap={removeMap}
+        onRenameMap={renameMap}
+        tokens={tokens}
+        selectedToken={selectedToken}
+        onSelectToken={setSelectedToken}
+        onDeleteToken={handleDeleteToken}
+        onTokenNameChange={handleTokenNameChange}
+        onStatusChange={handleStatusChange}
+        onTokenSizeChange={handleTokenSizeChange}
+        onTokenRotationChange={handleTokenRotation}
+        onToggleCondition={handleToggleCondition}
+        onHpChange={handleHpChange}
+        selectedColor={newTokenColor}
+        onColorChange={setNewTokenColor}
+        isAddingToken={isAddingToken}
+        onToggleAddToken={() => setIsAddingToken(!isAddingToken)}
+        onClearAll={handleClearAll}
+        defaultTokenSize={defaultTokenSize}
+        onDefaultTokenSizeChange={setDefaultTokenSize}
+        onAddCharacterToMap={handleAddCharacterToMap}
+        onAddMonsterToMap={handleAddMonsterToMap}
+        onOpenPlayerView={openPlayerWindow}
+        initiativeOrder={initiativeOrder}
+        activeInitiativeIndex={activeInitiativeIndex}
+        onStartInitiative={handleStartInitiative}
+        onNextTurn={handleNextTurn}
+        onEndInitiative={handleEndInitiative}
+        isInitiativeActive={isInitiativeActive}
+      />
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top controls */}
+        <MapControls
+          showGrid={showGrid}
+          onToggleGrid={() => setShowGrid(!showGrid)}
+          gridSize={gridSize}
+          onGridSizeChange={setGridSize}
+          gridColor={gridColor}
+          onGridColorChange={setGridColor}
+          gridLineWidth={gridLineWidth}
+          onGridLineWidthChange={setGridLineWidth}
+          zoomLevel={zoomLevel}
+          onZoomChange={(zoom) => {
+            if (zoomFunctionsRef.current) {
+              const { state, setTransform } = zoomFunctionsRef.current;
+              setTransform(state.positionX, state.positionY, zoom);
+              setZoomLevel(zoom);
+            }
+          }}
+          onUploadClick={() => fileInputRef.current?.click()}
+          hasMap={!!mapImage}
+          cinemaMode={cinemaMode}
+          onToggleCinemaMode={() => setCinemaMode(!cinemaMode)}
+          onClearSession={handleClearSession}
+          fogEnabled={fogEnabled}
+          onToggleFog={() => setFogEnabled(!fogEnabled)}
+          fogEditMode={fogEditMode}
+          onToggleFogEditMode={() => setFogEditMode(!fogEditMode)}
+          fogBrushSize={fogBrushSize}
+          onFogBrushSizeChange={setFogBrushSize}
+          onResetFog={() => setFogData(null)}
+        />
+
+        {/* Map area */}
+        <div className="flex-1 relative overflow-hidden bg-board-bg">
+          {!mapImage ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🗺️</div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Carga tu mapa
+                </h2>
+                <p className="text-muted-foreground mb-4">
+                  Sube una imagen de hasta 20MB
+                </p>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
                 >
-                  <Monitor className="w-4 h-4" />
-                  Abrir vista de jugadores
-                </Button>
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                <MapManager
-                  maps={maps}
-                  activeMapId={activeMapId}
-                  onSelectMap={setActiveMapId}
-                  onAddMap={addMap}
-                  onRemoveMap={removeMap}
-                  onRenameMap={renameMap}
-                />
+                  Seleccionar mapa
+                </button>
               </div>
             </div>
-
-            {/* Token Toolbar */}
-            <div className="flex-1 overflow-hidden">
-              <TokenToolbar
-                selectedColor={newTokenColor}
-                onColorChange={setNewTokenColor}
-                isAddingToken={isAddingToken}
-                onToggleAddToken={() => setIsAddingToken(!isAddingToken)}
-                onClearAll={handleClearAll}
-                tokens={tokens}
-                selectedToken={selectedToken}
-                onSelectToken={setSelectedToken}
-                onDeleteToken={handleDeleteToken}
-                onTokenNameChange={handleTokenNameChange}
-                onStatusChange={handleStatusChange}
-                onTokenSizeChange={handleTokenSizeChange}
-                onTokenRotationChange={handleTokenRotation}
-                onToggleCondition={handleToggleCondition}
-                onHpChange={handleHpChange}
-                defaultTokenSize={defaultTokenSize}
-                onDefaultTokenSizeChange={setDefaultTokenSize}
-                onAddCharacterToMap={handleAddCharacterToMap}
-                onAddMonsterToMap={handleAddMonsterToMap}
-              />
-            </div>
-          </div>
-        </ResizablePanel>
-
-        <ResizableHandle withHandle />
-
-        {/* Main viewer */}
-        <ResizablePanel defaultSize={75}>
-          <div className="flex flex-col h-full min-w-0 overflow-hidden">
-            {/* Top controls */}
-            <MapControls
-              showGrid={showGrid}
-              onToggleGrid={() => setShowGrid(!showGrid)}
-              gridSize={gridSize}
-              onGridSizeChange={setGridSize}
-              gridColor={gridColor}
-              onGridColorChange={setGridColor}
-              gridLineWidth={gridLineWidth}
-              onGridLineWidthChange={setGridLineWidth}
-              zoomLevel={zoomLevel}
-              onZoomChange={(zoom) => {
-                if (zoomFunctionsRef.current) {
-                  const { state, setTransform } = zoomFunctionsRef.current;
-                  setTransform(state.positionX, state.positionY, zoom);
-                  setZoomLevel(zoom);
-                }
-              }}
-              onUploadClick={() => fileInputRef.current?.click()}
-              hasMap={!!mapImage}
-              cinemaMode={cinemaMode}
-              onToggleCinemaMode={() => setCinemaMode(!cinemaMode)}
-              onClearSession={handleClearSession}
-              fogEnabled={fogEnabled}
-              onToggleFog={() => setFogEnabled(!fogEnabled)}
-              fogEditMode={fogEditMode}
-              onToggleFogEditMode={() => setFogEditMode(!fogEditMode)}
-              fogBrushSize={fogBrushSize}
-              onFogBrushSizeChange={setFogBrushSize}
-              onResetFog={() => setFogData(null)}
-            />
-
-            {/* Map area */}
-            <div className="flex-1 relative overflow-hidden bg-board-bg">
-              {!mapImage ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🗺️</div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">
-                      Carga tu mapa
-                    </h2>
-                    <p className="text-muted-foreground mb-4">
-                      Sube una imagen de hasta 20MB
-                    </p>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
-                    >
-                      Seleccionar mapa
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                renderMapContent()
-              )}
-            </div>
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+          ) : (
+            renderMapContent()
+          )}
+        </div>
+      </div>
 
       <input
         ref={fileInputRef}
@@ -733,7 +733,6 @@ export const MapViewer = () => {
                 />
               </div>
 
-              {/* Image upload */}
               <div>
                 <label className="text-sm font-medium text-card-foreground mb-2 block">
                   Imagen (opcional)
