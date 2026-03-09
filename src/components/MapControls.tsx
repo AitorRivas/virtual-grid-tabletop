@@ -322,8 +322,8 @@ export const MapControls = ({
                             <Slider
                               value={[fogBrushSize]}
                               onValueChange={(values) => onFogBrushSizeChange(values[0])}
-                              min={20}
-                              max={200}
+                              min={10}
+                              max={500}
                               step={10}
                             />
                           </div>
