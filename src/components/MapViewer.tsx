@@ -159,6 +159,16 @@ export const MapViewer = () => {
     feetPerCell: 5,
   }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
 
+  // Follow token with narrative light
+  useEffect(() => {
+    if (!narrativeLight.enabled || !narrativeLight.followTokenId) return;
+    const token = tokens.find(t => t.id === narrativeLight.followTokenId);
+    if (!token || mapDimensions.width === 0) return;
+    const px = (token.x / 100) * mapDimensions.width;
+    const py = (token.y / 100) * mapDimensions.height;
+    setNarrativeLight({ x: px, y: py });
+  }, [narrativeLight.enabled, narrativeLight.followTokenId, tokens, mapDimensions]);
+
   // Reset local UI state when switching maps
   useEffect(() => {
     setSelectedToken(null);

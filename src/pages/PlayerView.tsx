@@ -195,6 +195,17 @@ const PlayerView = () => {
               />
             )}
 
+            {/* Narrative Light layer */}
+            {narrativeLight.enabled && mapDimensions.width > 0 && (
+              <NarrativeLight
+                width={mapDimensions.width}
+                height={mapDimensions.height}
+                x={narrativeLight.x}
+                y={narrativeLight.y}
+                radius={narrativeLight.radius}
+              />
+            )}
+
             {tokens.map(token => (
               <Token
                 key={token.id}
