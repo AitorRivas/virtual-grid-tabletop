@@ -102,6 +102,8 @@ export const usePlayerBroadcastReceiver = (
         callbackRef.current(event.data.state);
       }
     };
+    // Request current state from GM on mount
+    channel.postMessage({ type: 'REQUEST_STATE' });
     return () => channel.close();
   }, []);
 };
