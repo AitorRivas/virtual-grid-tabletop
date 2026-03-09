@@ -60,7 +60,7 @@ export const MapViewer = () => {
     setActiveSceneId,
     narrativeOverlay,
     setNarrativeOverlay,
-  } = useSessionStorage();
+  } = useGameState();
 
   // Derive current map state from activeMap
   const mapImage = activeMap?.mapImage ?? null;
