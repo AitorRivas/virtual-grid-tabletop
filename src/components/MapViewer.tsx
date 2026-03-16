@@ -321,7 +321,7 @@ export const MapViewer = () => {
       imageUrl: newTokenImage,
     };
 
-    setTokens([...tokens, newToken]);
+    setTokens(prev => [...prev, newToken]);
     setPendingTokenPosition(null);
     setNewTokenName('');
     setNewTokenImage(undefined);
