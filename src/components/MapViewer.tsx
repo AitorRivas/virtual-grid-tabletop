@@ -211,12 +211,10 @@ export const MapViewer = () => {
   // Map update helpers
   const setMapImage = useCallback((img: string | null) => updateActiveMap({ mapImage: img }), [updateActiveMap]);
   const setTokens = useCallback((updater: TokenData[] | ((prev: TokenData[]) => TokenData[])) => {
-    if (typeof updater === 'function') {
-      updateActiveMap({ tokens: updater(tokens) });
-    } else {
-      updateActiveMap({ tokens: updater });
-    }
-  }, [updateActiveMap, tokens]);
+    updateActiveMap((currentMap) => ({
+      tokens: typeof updater === 'function' ? updater(currentMap?.tokens ?? []) : updater,
+    }));
+  }, [updateActiveMap]);
   const setShowGrid = useCallback((v: boolean) => updateActiveMap({ showGrid: v }), [updateActiveMap]);
   const setGridSize = useCallback((v: number) => updateActiveMap({ gridSize: v, gridCellSize: v }), [updateActiveMap]);
   const setGridColor = useCallback((v: string) => updateActiveMap({ gridColor: v }), [updateActiveMap]);
@@ -226,12 +224,10 @@ export const MapViewer = () => {
   const setGridOffsetX = useCallback((v: number) => updateActiveMap({ gridOffsetX: v }), [updateActiveMap]);
   const setGridOffsetY = useCallback((v: number) => updateActiveMap({ gridOffsetY: v }), [updateActiveMap]);
   const setCellStates = useCallback((updater: Record<string, CellState> | ((prev: Record<string, CellState>) => Record<string, CellState>)) => {
-    if (typeof updater === 'function') {
-      updateActiveMap({ cellStates: updater(cellStates) });
-    } else {
-      updateActiveMap({ cellStates: updater });
-    }
-  }, [updateActiveMap, cellStates]);
+    updateActiveMap((currentMap) => ({
+      cellStates: typeof updater === 'function' ? updater(currentMap?.cellStates ?? {}) : updater,
+    }));
+  }, [updateActiveMap]);
 
   // Initiative handlers
   const handleStartInitiative = useCallback(() => {
@@ -325,7 +321,7 @@ export const MapViewer = () => {
       imageUrl: newTokenImage,
     };
 
-    setTokens([...tokens, newToken]);
+    setTokens(prev => [...prev, newToken]);
     setPendingTokenPosition(null);
     setNewTokenName('');
     setNewTokenImage(undefined);
@@ -355,17 +351,15 @@ export const MapViewer = () => {
   };
 
   const handleTokenMove = (id: string, x: number, y: number) => {
-    setTokens(tokens.map(token => 
+    const movedToken = tokens.find(t => t.id === id);
+
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, x, y } : token
     ));
 
     // Auto-reveal fog around tokens that have exploration enabled
-    if (fogEnabled && mapDimensions.width > 0) {
-      const movedToken = tokens.find(t => t.id === id);
-      if (movedToken?.lightEnabled && movedToken.status === 'active') {
-        const radius = movedToken.lightRadius ?? 120;
-        autoRevealFog(x, y, radius);
-      }
+    if (fogEnabled && mapDimensions.width > 0 && movedToken?.lightEnabled && movedToken.status === 'active') {
+      autoRevealFog(x, y, movedToken.lightRadius ?? 120);
     }
   };
 
@@ -402,19 +396,19 @@ export const MapViewer = () => {
   }, [activeMap?.fogData, mapDimensions, setFogData]);
 
   const handleTokenRotation = (id: string, rotation: number) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, rotation } : token
     ));
   };
 
   const handleTokenNameChange = (id: string, name: string) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, name } : token
     ));
   };
 
   const handleStatusChange = (id: string, status: TokenStatus) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, status } : token
     ));
     
@@ -424,19 +418,19 @@ export const MapViewer = () => {
   };
 
   const handleTokenSizeChange = (id: string, size: number) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, size } : token
     ));
   };
 
   const handleTokenLightChange = (id: string, updates: { lightEnabled?: boolean; lightRadius?: number; lightSoftness?: number; lightFlicker?: boolean }) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, ...updates } : token
     ));
   };
 
   const handleHpChange = (id: string, hpCurrent: number, hpMax: number) => {
-    setTokens(tokens.map(token => {
+    setTokens(prev => prev.map(token => {
       if (token.id !== id) return token;
       const newHpCurrent = Math.max(0, Math.min(hpCurrent, hpMax));
       const newStatus = newHpCurrent <= 0 ? 'dead' : token.status === 'dead' ? 'active' : token.status;
@@ -445,7 +439,7 @@ export const MapViewer = () => {
   };
 
   const handleToggleCondition = (tokenId: string, conditionId: string) => {
-    setTokens(tokens.map(token => {
+    setTokens(prev => prev.map(token => {
       if (token.id !== tokenId) return token;
       const hasCondition = token.conditions.includes(conditionId);
       return {
@@ -458,7 +452,7 @@ export const MapViewer = () => {
   };
 
   const handleDeleteToken = (id: string) => {
-    setTokens(tokens.filter(token => token.id !== id));
+    setTokens(prev => prev.filter(token => token.id !== id));
     setSelectedToken(null);
     toast.success('Token eliminado');
   };
@@ -515,7 +509,7 @@ export const MapViewer = () => {
       speedFeet: character.speed,
       sizeInCells,
     };
-    setTokens([...tokens, newToken]);
+    setTokens(prev => [...prev, newToken]);
     toast.success(`${character.name} añadido al mapa`);
   };
 
@@ -539,7 +533,7 @@ export const MapViewer = () => {
       speedFeet: monster.speed,
       sizeInCells,
     };
-    setTokens([...tokens, newToken]);
+    setTokens(prev => [...prev, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
   };
 

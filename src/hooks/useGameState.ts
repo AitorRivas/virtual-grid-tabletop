@@ -8,6 +8,10 @@ import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData } fro
 
 export type { MapData, SceneData, GameState, NarrativeLightData };
 
+type MapUpdate =
+  | Partial<MapData>
+  | ((currentMap: MapData | null, fullState: GameState) => Partial<MapData> | null);
+
 export const createDefaultMap = (name = 'Mapa 1'): MapData => ({
   id: Date.now().toString() + Math.random().toString(36).slice(2),
   name,
@@ -42,15 +46,15 @@ export const useGameState = () => {
   );
 
   const isLoaded = gameStateStore.isLoaded();
-  const activeMap = state.maps.find(m => m.id === state.activeMapId) ?? null;
+  const activeMap = state.maps.find((m) => m.id === state.activeMapId) ?? null;
 
   const setActiveMapId = useCallback((id: string) => {
-    gameStateStore.setState(prev => ({ ...prev, activeMapId: id }));
+    gameStateStore.setState((prev) => ({ ...prev, activeMapId: id }));
   }, []);
 
   const addMap = useCallback((name?: string) => {
     const newMap = createDefaultMap(name || `Mapa ${gameStateStore.getState().maps.length + 1}`);
-    gameStateStore.setState(prev => ({
+    gameStateStore.setState((prev) => ({
       ...prev,
       maps: [...prev.maps, newMap],
       activeMapId: newMap.id,
@@ -59,8 +63,8 @@ export const useGameState = () => {
   }, []);
 
   const removeMap = useCallback((id: string) => {
-    gameStateStore.setState(prev => {
-      const remaining = prev.maps.filter(m => m.id !== id);
+    gameStateStore.setState((prev) => {
+      const remaining = prev.maps.filter((m) => m.id !== id);
       const newActiveId = prev.activeMapId === id
         ? (remaining[0]?.id ?? null)
         : prev.activeMapId;
@@ -69,25 +73,36 @@ export const useGameState = () => {
   }, []);
 
   const renameMap = useCallback((id: string, name: string) => {
-    gameStateStore.setState(prev => ({
+    gameStateStore.setState((prev) => ({
       ...prev,
-      maps: prev.maps.map(m => m.id === id ? { ...m, name } : m),
+      maps: prev.maps.map((m) => (m.id === id ? { ...m, name } : m)),
     }));
   }, []);
 
-  const updateActiveMap = useCallback((updates: Partial<MapData>) => {
-    gameStateStore.setState(prev => ({
-      ...prev,
-      maps: prev.maps.map(m =>
-        m.id === prev.activeMapId ? { ...m, ...updates } : m
-      ),
-    }));
+  const updateActiveMap = useCallback((updates: MapUpdate) => {
+    gameStateStore.setState((prev) => {
+      if (!prev.activeMapId) return prev;
+
+      const currentMap = prev.maps.find((m) => m.id === prev.activeMapId) ?? null;
+      const resolvedUpdates = typeof updates === 'function'
+        ? updates(currentMap, prev)
+        : updates;
+
+      if (!currentMap || !resolvedUpdates) return prev;
+
+      return {
+        ...prev,
+        maps: prev.maps.map((m) => (
+          m.id === prev.activeMapId ? { ...m, ...resolvedUpdates } : m
+        )),
+      };
+    });
   }, []);
 
   const addScene = useCallback((name: string) => {
     const currentState = gameStateStore.getState();
     const newScene = createDefaultScene(name, currentState.activeMapId);
-    gameStateStore.setState(prev => ({
+    gameStateStore.setState((prev) => ({
       ...prev,
       scenes: [...prev.scenes, newScene],
     }));
@@ -95,30 +110,30 @@ export const useGameState = () => {
   }, []);
 
   const removeScene = useCallback((id: string) => {
-    gameStateStore.setState(prev => ({
+    gameStateStore.setState((prev) => ({
       ...prev,
-      scenes: prev.scenes.filter(s => s.id !== id),
+      scenes: prev.scenes.filter((s) => s.id !== id),
       activeSceneId: prev.activeSceneId === id ? null : prev.activeSceneId,
     }));
   }, []);
 
   const updateScene = useCallback((id: string, updates: Partial<SceneData>) => {
-    gameStateStore.setState(prev => ({
+    gameStateStore.setState((prev) => ({
       ...prev,
-      scenes: prev.scenes.map(s => s.id === id ? { ...s, ...updates } : s),
+      scenes: prev.scenes.map((s) => (s.id === id ? { ...s, ...updates } : s)),
     }));
   }, []);
 
   const setActiveSceneId = useCallback((id: string | null) => {
-    gameStateStore.setState(prev => ({ ...prev, activeSceneId: id }));
+    gameStateStore.setState((prev) => ({ ...prev, activeSceneId: id }));
   }, []);
 
   const setNarrativeOverlay = useCallback((overlay: GameState['narrativeOverlay']) => {
-    gameStateStore.setState(prev => ({ ...prev, narrativeOverlay: overlay }));
+    gameStateStore.setState((prev) => ({ ...prev, narrativeOverlay: overlay }));
   }, []);
 
   const setNarrativeLight = useCallback((light: Partial<NarrativeLightData>) => {
-    gameStateStore.setState(prev => ({
+    gameStateStore.setState((prev) => ({
       ...prev,
       narrativeLight: { ...prev.narrativeLight, ...light },
     }));
