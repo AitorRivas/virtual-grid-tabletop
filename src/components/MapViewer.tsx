@@ -439,7 +439,7 @@ export const MapViewer = () => {
   };
 
   const handleToggleCondition = (tokenId: string, conditionId: string) => {
-    setTokens(tokens.map(token => {
+    setTokens(prev => prev.map(token => {
       if (token.id !== tokenId) return token;
       const hasCondition = token.conditions.includes(conditionId);
       return {
@@ -452,7 +452,7 @@ export const MapViewer = () => {
   };
 
   const handleDeleteToken = (id: string) => {
-    setTokens(tokens.filter(token => token.id !== id));
+    setTokens(prev => prev.filter(token => token.id !== id));
     setSelectedToken(null);
     toast.success('Token eliminado');
   };
