@@ -211,12 +211,10 @@ export const MapViewer = () => {
   // Map update helpers
   const setMapImage = useCallback((img: string | null) => updateActiveMap({ mapImage: img }), [updateActiveMap]);
   const setTokens = useCallback((updater: TokenData[] | ((prev: TokenData[]) => TokenData[])) => {
-    if (typeof updater === 'function') {
-      updateActiveMap({ tokens: updater(tokens) });
-    } else {
-      updateActiveMap({ tokens: updater });
-    }
-  }, [updateActiveMap, tokens]);
+    updateActiveMap((currentMap) => ({
+      tokens: typeof updater === 'function' ? updater(currentMap?.tokens ?? []) : updater,
+    }));
+  }, [updateActiveMap]);
   const setShowGrid = useCallback((v: boolean) => updateActiveMap({ showGrid: v }), [updateActiveMap]);
   const setGridSize = useCallback((v: number) => updateActiveMap({ gridSize: v, gridCellSize: v }), [updateActiveMap]);
   const setGridColor = useCallback((v: string) => updateActiveMap({ gridColor: v }), [updateActiveMap]);
@@ -226,12 +224,10 @@ export const MapViewer = () => {
   const setGridOffsetX = useCallback((v: number) => updateActiveMap({ gridOffsetX: v }), [updateActiveMap]);
   const setGridOffsetY = useCallback((v: number) => updateActiveMap({ gridOffsetY: v }), [updateActiveMap]);
   const setCellStates = useCallback((updater: Record<string, CellState> | ((prev: Record<string, CellState>) => Record<string, CellState>)) => {
-    if (typeof updater === 'function') {
-      updateActiveMap({ cellStates: updater(cellStates) });
-    } else {
-      updateActiveMap({ cellStates: updater });
-    }
-  }, [updateActiveMap, cellStates]);
+    updateActiveMap((currentMap) => ({
+      cellStates: typeof updater === 'function' ? updater(currentMap?.cellStates ?? {}) : updater,
+    }));
+  }, [updateActiveMap]);
 
   // Initiative handlers
   const handleStartInitiative = useCallback(() => {
