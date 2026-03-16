@@ -39,6 +39,10 @@ export interface TokenData {
   rotation?: number;
   speedFeet?: number;
   sizeInCells?: number;
+  lightEnabled?: boolean;
+  lightRadius?: number;
+  lightSoftness?: number;
+  lightFlicker?: boolean;
 }
 
 export const MapViewer = () => {
