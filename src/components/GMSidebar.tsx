@@ -81,6 +81,7 @@ export const GMSidebar = ({
   onTokenRotationChange,
   onToggleCondition,
   onHpChange,
+  onTokenLightChange,
   selectedColor,
   onColorChange,
   isAddingToken,
