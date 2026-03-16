@@ -351,17 +351,15 @@ export const MapViewer = () => {
   };
 
   const handleTokenMove = (id: string, x: number, y: number) => {
-    setTokens(tokens.map(token => 
+    const movedToken = tokens.find(t => t.id === id);
+
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, x, y } : token
     ));
 
     // Auto-reveal fog around tokens that have exploration enabled
-    if (fogEnabled && mapDimensions.width > 0) {
-      const movedToken = tokens.find(t => t.id === id);
-      if (movedToken?.lightEnabled && movedToken.status === 'active') {
-        const radius = movedToken.lightRadius ?? 120;
-        autoRevealFog(x, y, radius);
-      }
+    if (fogEnabled && mapDimensions.width > 0 && movedToken?.lightEnabled && movedToken.status === 'active') {
+      autoRevealFog(x, y, movedToken.lightRadius ?? 120);
     }
   };
 
