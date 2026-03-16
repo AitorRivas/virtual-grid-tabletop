@@ -112,17 +112,39 @@ function migrateState(raw: any): GameState {
 
 type Listener = () => void;
 
-/** Singleton reactive store with cross-window sync */
+const BROADCAST_CHANNEL = 'vtt-gamestate-sync';
+
+/** Singleton reactive store with cross-window sync via BroadcastChannel + localStorage */
 class GameStateStore {
   private state: GameState;
   private listeners = new Set<Listener>();
   private loaded = false;
+  private channel: BroadcastChannel;
+  private suppressBroadcast = false;
 
   constructor() {
     this.state = defaultState;
-    this.load();
+    this.channel = new BroadcastChannel(BROADCAST_CHANNEL);
 
-    // Cross-window sync: other tabs/windows writing to localStorage
+    // Primary sync: BroadcastChannel for instant cross-window updates
+    this.channel.onmessage = (event) => {
+      if (event.data?.type === 'STATE_UPDATE') {
+        this.suppressBroadcast = true;
+        this.state = migrateState(event.data.state);
+        this.notify();
+        this.suppressBroadcast = false;
+      } else if (event.data?.type === 'STATE_CLEAR') {
+        this.suppressBroadcast = true;
+        this.state = defaultState;
+        this.notify();
+        this.suppressBroadcast = false;
+      } else if (event.data?.type === 'REQUEST_STATE') {
+        // New window requesting current state
+        this.channel.postMessage({ type: 'STATE_UPDATE', state: this.state });
+      }
+    };
+
+    // Fallback sync: localStorage storage events (for edge cases)
     window.addEventListener('storage', (e) => {
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
@@ -134,6 +156,11 @@ class GameStateStore {
         this.notify();
       }
     });
+
+    this.load();
+
+    // Request current state from any existing window (e.g. GM already open)
+    this.channel.postMessage({ type: 'REQUEST_STATE' });
   }
 
   private load() {
@@ -156,6 +183,17 @@ class GameStateStore {
     }
   }
 
+  private broadcastState() {
+    if (!this.suppressBroadcast) {
+      try {
+        this.channel.postMessage({ type: 'STATE_UPDATE', state: this.state });
+      } catch (error) {
+        // BroadcastChannel may fail with very large payloads; localStorage fallback handles it
+        console.warn('BroadcastChannel send failed, relying on storage event fallback');
+      }
+    }
+  }
+
   private notify() {
     this.listeners.forEach(fn => fn());
   }
@@ -173,17 +211,21 @@ class GameStateStore {
     return () => this.listeners.delete(listener);
   }
 
-  /** Update state, persist, and notify all listeners in this window */
+  /** Update state, persist, broadcast to other windows, and notify local listeners */
   setState(updater: GameState | ((prev: GameState) => GameState)) {
     const newState = typeof updater === 'function' ? updater(this.state) : updater;
     this.state = newState;
     this.persist();
+    this.broadcastState();
     this.notify();
   }
 
   clear() {
     this.state = defaultState;
     localStorage.removeItem(STORAGE_KEY);
+    if (!this.suppressBroadcast) {
+      this.channel.postMessage({ type: 'STATE_CLEAR' });
+    }
     this.notify();
   }
 }
