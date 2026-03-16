@@ -411,12 +411,12 @@ export const TokenToolbar = ({
                               </div>
                             </div>
 
-                            {/* Token Light Controls */}
+                            {/* Token Exploration Auto-Reveal */}
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
                                 <label className="text-[10px] text-muted-foreground flex items-center gap-1">
                                   <Flame className="w-3 h-3" />
-                                  Luz de token
+                                  Auto-revelar niebla
                                 </label>
                                 <Button
                                   variant={token.lightEnabled ? "default" : "outline"}
@@ -424,50 +424,23 @@ export const TokenToolbar = ({
                                   className="h-5 px-2 text-[10px]"
                                   onClick={(e) => { e.stopPropagation(); onTokenLightChange(token.id, { lightEnabled: !token.lightEnabled }); }}
                                 >
-                                  {token.lightEnabled ? 'Encendida' : 'Apagada'}
+                                  {token.lightEnabled ? 'Activo' : 'Inactivo'}
                                 </Button>
                               </div>
                               {token.lightEnabled && (
-                                <div className="space-y-2 pl-1">
-                                  <div>
-                                    <div className="flex justify-between text-[10px] mb-0.5">
-                                      <span className="text-muted-foreground">Radio</span>
-                                      <span>{token.lightRadius ?? 150}px</span>
-                                    </div>
-                                    <Slider
-                                      value={[token.lightRadius ?? 150]}
-                                      onValueChange={(v) => onTokenLightChange(token.id, { lightRadius: v[0] })}
-                                      onClick={(e) => e.stopPropagation()}
-                                      min={30}
-                                      max={600}
-                                      step={10}
-                                    />
+                                <div className="pl-1">
+                                  <div className="flex justify-between text-[10px] mb-0.5">
+                                    <span className="text-muted-foreground">Radio de exploración</span>
+                                    <span>{token.lightRadius ?? 120}px</span>
                                   </div>
-                                  <div>
-                                    <div className="flex justify-between text-[10px] mb-0.5">
-                                      <span className="text-muted-foreground">Suavidad</span>
-                                      <span>{Math.round((token.lightSoftness ?? 0.6) * 100)}%</span>
-                                    </div>
-                                    <Slider
-                                      value={[Math.round((token.lightSoftness ?? 0.6) * 100)]}
-                                      onValueChange={(v) => onTokenLightChange(token.id, { lightSoftness: v[0] / 100 })}
-                                      onClick={(e) => e.stopPropagation()}
-                                      min={10}
-                                      max={95}
-                                      step={5}
-                                    />
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-muted-foreground">Parpadeo</span>
-                                    <Button
-                                      variant={token.lightFlicker ? "default" : "outline"}
-                                      size="sm"
-                                      className="h-5 px-2 text-[10px]"
-                                      onClick={(e) => { e.stopPropagation(); onTokenLightChange(token.id, { lightFlicker: !token.lightFlicker }); }}
-                                    >
-                                      {token.lightFlicker ? 'Sí' : 'No'}
-                                    </Button>
-                                  </div>
+                                  <Slider
+                                    value={[token.lightRadius ?? 120]}
+                                    onValueChange={(v) => onTokenLightChange(token.id, { lightRadius: v[0] })}
+                                    onClick={(e) => e.stopPropagation()}
+                                    min={30}
+                                    max={400}
+                                    step={10}
+                                  />
                                 </div>
                               )}
                             </div>

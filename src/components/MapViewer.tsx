@@ -359,11 +359,11 @@ export const MapViewer = () => {
       token.id === id ? { ...token, x, y } : token
     ));
 
-    // Auto-reveal fog around lit tokens
+    // Auto-reveal fog around tokens that have exploration enabled
     if (fogEnabled && mapDimensions.width > 0) {
       const movedToken = tokens.find(t => t.id === id);
-      if (movedToken?.lightEnabled) {
-        const radius = movedToken.lightRadius ?? 150;
+      if (movedToken?.lightEnabled && movedToken.status === 'active') {
+        const radius = movedToken.lightRadius ?? 120;
         autoRevealFog(x, y, radius);
       }
     }
