@@ -5,7 +5,7 @@ import { MapControls } from './MapControls';
 import { DiceRoller } from './DiceRoller';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FogOfWar } from './FogOfWar';
-import { DynamicLighting } from './DynamicLighting';
+
 import { NarrativeLight } from './NarrativeLight';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
