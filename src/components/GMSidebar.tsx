@@ -32,6 +32,7 @@ interface GMSidebarProps {
   onTokenRotationChange: (id: string, rotation: number) => void;
   onToggleCondition: (tokenId: string, conditionId: string) => void;
   onHpChange: (id: string, hpCurrent: number, hpMax: number) => void;
+  onTokenLightChange: (id: string, updates: { lightEnabled?: boolean; lightRadius?: number; lightSoftness?: number; lightFlicker?: boolean }) => void;
   selectedColor: TokenColor;
   onColorChange: (color: TokenColor) => void;
   isAddingToken: boolean;
