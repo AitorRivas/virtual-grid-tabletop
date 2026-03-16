@@ -246,6 +246,7 @@ export const GMSidebar = ({
                 onTokenRotationChange={onTokenRotationChange}
                 onToggleCondition={onToggleCondition}
                 onHpChange={onHpChange}
+                onTokenLightChange={onTokenLightChange}
                 defaultTokenSize={defaultTokenSize}
                 onDefaultTokenSizeChange={onDefaultTokenSizeChange}
                 onAddCharacterToMap={onAddCharacterToMap}
