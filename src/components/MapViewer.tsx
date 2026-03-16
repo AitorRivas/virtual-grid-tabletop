@@ -396,19 +396,19 @@ export const MapViewer = () => {
   }, [activeMap?.fogData, mapDimensions, setFogData]);
 
   const handleTokenRotation = (id: string, rotation: number) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, rotation } : token
     ));
   };
 
   const handleTokenNameChange = (id: string, name: string) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, name } : token
     ));
   };
 
   const handleStatusChange = (id: string, status: TokenStatus) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, status } : token
     ));
     
@@ -418,19 +418,19 @@ export const MapViewer = () => {
   };
 
   const handleTokenSizeChange = (id: string, size: number) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, size } : token
     ));
   };
 
   const handleTokenLightChange = (id: string, updates: { lightEnabled?: boolean; lightRadius?: number; lightSoftness?: number; lightFlicker?: boolean }) => {
-    setTokens(tokens.map(token => 
+    setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, ...updates } : token
     ));
   };
 
   const handleHpChange = (id: string, hpCurrent: number, hpMax: number) => {
-    setTokens(tokens.map(token => {
+    setTokens(prev => prev.map(token => {
       if (token.id !== id) return token;
       const newHpCurrent = Math.max(0, Math.min(hpCurrent, hpMax));
       const newStatus = newHpCurrent <= 0 ? 'dead' : token.status === 'dead' ? 'active' : token.status;
