@@ -429,6 +429,12 @@ export const MapViewer = () => {
     ));
   };
 
+  const handleTokenLightChange = (id: string, updates: { lightEnabled?: boolean; lightRadius?: number; lightSoftness?: number; lightFlicker?: boolean }) => {
+    setTokens(tokens.map(token => 
+      token.id === id ? { ...token, ...updates } : token
+    ));
+  };
+
   const handleHpChange = (id: string, hpCurrent: number, hpMax: number) => {
     setTokens(tokens.map(token => {
       if (token.id !== id) return token;
