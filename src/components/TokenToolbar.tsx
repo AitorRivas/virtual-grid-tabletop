@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Skull, RotateCcw, RotateCw, Ruler, Sparkles, ChevronDown, ChevronUp, Database, Heart, MinusCircle, PlusCircle } from 'lucide-react';
+import { Plus, Trash2, Users, Skull, RotateCcw, RotateCw, Ruler, Sparkles, ChevronDown, ChevronUp, Database, Heart, MinusCircle, PlusCircle, Flame } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
