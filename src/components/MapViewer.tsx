@@ -746,6 +746,7 @@ export const MapViewer = () => {
         onTokenRotationChange={handleTokenRotation}
         onToggleCondition={handleToggleCondition}
         onHpChange={handleHpChange}
+        onTokenLightChange={handleTokenLightChange}
         selectedColor={newTokenColor}
         onColorChange={setNewTokenColor}
         isAddingToken={isAddingToken}
