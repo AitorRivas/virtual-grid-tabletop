@@ -29,6 +29,7 @@ interface TokenToolbarProps {
   onTokenRotationChange: (id: string, rotation: number) => void;
   onToggleCondition: (tokenId: string, conditionId: string) => void;
   onHpChange: (id: string, hpCurrent: number, hpMax: number) => void;
+  onTokenLightChange: (id: string, updates: { lightEnabled?: boolean; lightRadius?: number; lightSoftness?: number; lightFlicker?: boolean }) => void;
   defaultTokenSize: number;
   onDefaultTokenSizeChange: (size: number) => void;
   onAddCharacterToMap: (character: Character) => void;
