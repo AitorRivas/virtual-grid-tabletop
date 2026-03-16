@@ -626,7 +626,7 @@ export const MapViewer = () => {
               />
             )}
 
-            {/* Fog of War layer */}
+            {/* Fog of War layer (z-index 20) */}
             {fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
                 key={activeMapId ?? 'no-map'}
@@ -638,6 +638,15 @@ export const MapViewer = () => {
                 onFogChange={setFogData}
                 fogTool={fogTool}
                 fogMode={fogMode}
+              />
+            )}
+
+            {/* Dynamic Lighting layer (z-index 25) */}
+            {mapDimensions.width > 0 && (
+              <DynamicLighting
+                width={mapDimensions.width}
+                height={mapDimensions.height}
+                tokens={tokens}
               />
             )}
 
