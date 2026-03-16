@@ -63,6 +63,7 @@ export const TokenToolbar = ({
   onTokenRotationChange,
   onToggleCondition,
   onHpChange,
+  onTokenLightChange,
   defaultTokenSize,
   onDefaultTokenSizeChange,
   onAddCharacterToMap,
