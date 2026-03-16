@@ -647,14 +647,6 @@ export const MapViewer = () => {
               />
             )}
 
-            {/* Dynamic Lighting layer (z-index 25) */}
-            {mapDimensions.width > 0 && (
-              <DynamicLighting
-                width={mapDimensions.width}
-                height={mapDimensions.height}
-                tokens={tokens}
-              />
-            )}
 
             {/* Narrative Light layer */}
             {narrativeLight.enabled && mapDimensions.width > 0 && (
