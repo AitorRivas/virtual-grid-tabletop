@@ -509,7 +509,7 @@ export const MapViewer = () => {
       speedFeet: character.speed,
       sizeInCells,
     };
-    setTokens([...tokens, newToken]);
+    setTokens(prev => [...prev, newToken]);
     toast.success(`${character.name} añadido al mapa`);
   };
 
@@ -533,7 +533,7 @@ export const MapViewer = () => {
       speedFeet: monster.speed,
       sizeInCells,
     };
-    setTokens([...tokens, newToken]);
+    setTokens(prev => [...prev, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
   };
 

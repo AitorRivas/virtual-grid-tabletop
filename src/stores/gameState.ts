@@ -1,12 +1,13 @@
 /**
- * Centralized GameState store shared across windows via localStorage + storage events.
+ * Centralized GameState store shared across windows via BroadcastChannel + localStorage.
  * Both GM and Player views subscribe to the same reactive state.
  */
 
-import { TokenData } from '@/components/MapViewer';
-import { CellState } from '@/lib/gridEngine/types';
+import type { TokenData } from '@/components/MapViewer';
+import type { CellState } from '@/lib/gridEngine/types';
 
 const STORAGE_KEY = 'dnd-session';
+const BROADCAST_CHANNEL = 'vtt-gamestate-sync';
 
 export interface MapData {
   id: string;
@@ -44,6 +45,8 @@ export interface NarrativeLightData {
 }
 
 export interface GameState {
+  revision: number;
+  updatedAt: number;
   maps: MapData[];
   activeMapId: string | null;
   scenes: SceneData[];
@@ -57,10 +60,16 @@ export interface GameState {
 }
 
 const defaultNarrativeLight: NarrativeLightData = {
-  enabled: false, x: 500, y: 500, radius: 200, followTokenId: null,
+  enabled: false,
+  x: 500,
+  y: 500,
+  radius: 200,
+  followTokenId: null,
 };
 
 const defaultState: GameState = {
+  revision: 0,
+  updatedAt: 0,
   maps: [],
   activeMapId: null,
   scenes: [],
@@ -73,6 +82,8 @@ const defaultState: GameState = {
 function migrateState(raw: any): GameState {
   if (raw && Array.isArray(raw.maps)) {
     return {
+      revision: Number(raw.revision ?? 0),
+      updatedAt: Number(raw.updatedAt ?? 0),
       maps: raw.maps,
       activeMapId: raw.activeMapId ?? null,
       scenes: raw.scenes ?? [],
@@ -81,6 +92,7 @@ function migrateState(raw: any): GameState {
       narrativeLight: raw.narrativeLight ?? defaultNarrativeLight,
     };
   }
+
   if (raw && (raw.mapImage !== undefined || raw.tokens !== undefined)) {
     const migratedMap: MapData = {
       id: 'migrated-1',
@@ -98,7 +110,10 @@ function migrateState(raw: any): GameState {
       gridOffsetY: raw.gridOffsetY ?? 0,
       cellStates: raw.cellStates ?? {},
     };
+
     return {
+      revision: 0,
+      updatedAt: 0,
       maps: [migratedMap],
       activeMapId: migratedMap.id,
       scenes: [],
@@ -107,60 +122,121 @@ function migrateState(raw: any): GameState {
       narrativeLight: defaultNarrativeLight,
     };
   }
+
   return defaultState;
 }
 
 type Listener = () => void;
 
-const BROADCAST_CHANNEL = 'vtt-gamestate-sync';
+type SyncMessage =
+  | {
+      type: 'REQUEST_STATE';
+      sourceId: string;
+      revision: number;
+      updatedAt: number;
+    }
+  | {
+      type: 'STATE_UPDATE';
+      sourceId: string;
+      state: GameState;
+    };
 
 /** Singleton reactive store with cross-window sync via BroadcastChannel + localStorage */
 class GameStateStore {
   private state: GameState;
   private listeners = new Set<Listener>();
   private loaded = false;
-  private channel: BroadcastChannel;
-  private suppressBroadcast = false;
+  private channel: BroadcastChannel | null = null;
+  private instanceId: string;
 
   constructor() {
     this.state = defaultState;
-    this.channel = new BroadcastChannel(BROADCAST_CHANNEL);
-
-    // Primary sync: BroadcastChannel for instant cross-window updates
-    this.channel.onmessage = (event) => {
-      if (event.data?.type === 'STATE_UPDATE') {
-        this.suppressBroadcast = true;
-        this.state = migrateState(event.data.state);
-        this.notify();
-        this.suppressBroadcast = false;
-      } else if (event.data?.type === 'STATE_CLEAR') {
-        this.suppressBroadcast = true;
-        this.state = defaultState;
-        this.notify();
-        this.suppressBroadcast = false;
-      } else if (event.data?.type === 'REQUEST_STATE') {
-        // New window requesting current state
-        this.channel.postMessage({ type: 'STATE_UPDATE', state: this.state });
-      }
-    };
-
-    // Fallback sync: localStorage storage events (for edge cases)
-    window.addEventListener('storage', (e) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          this.state = migrateState(JSON.parse(e.newValue));
-          this.notify();
-        } catch {}
-      } else if (e.key === STORAGE_KEY && !e.newValue) {
-        this.state = defaultState;
-        this.notify();
-      }
-    });
+    this.instanceId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     this.load();
+    this.attachBroadcastChannel();
 
-    // Request current state from any existing window (e.g. GM already open)
-    this.channel.postMessage({ type: 'REQUEST_STATE' });
+    window.addEventListener('storage', this.handleStorageEvent);
+    this.requestLatestState();
+  }
+
+  private attachBroadcastChannel() {
+    if (typeof BroadcastChannel === 'undefined') return;
+
+    this.channel = new BroadcastChannel(BROADCAST_CHANNEL);
+    this.channel.onmessage = (event: MessageEvent<SyncMessage>) => {
+      const message = event.data;
+      if (!message || message.sourceId === this.instanceId) return;
+
+      if (message.type === 'REQUEST_STATE') {
+        if (this.isStateNewerThan(message.revision, message.updatedAt)) {
+          this.channel?.postMessage({
+            type: 'STATE_UPDATE',
+            sourceId: this.instanceId,
+            state: this.state,
+          } satisfies SyncMessage);
+        }
+        return;
+      }
+
+      if (message.type === 'STATE_UPDATE') {
+        this.applyIncomingState(migrateState(message.state));
+      }
+    };
+  }
+
+  private handleStorageEvent = (e: StorageEvent) => {
+    if (e.key !== STORAGE_KEY) return;
+
+    if (e.newValue) {
+      try {
+        this.applyIncomingState(migrateState(JSON.parse(e.newValue)));
+      } catch {
+        // Ignore invalid cross-window payloads.
+      }
+      return;
+    }
+
+    this.state = {
+      ...defaultState,
+      revision: this.state.revision + 1,
+      updatedAt: Date.now(),
+    };
+    this.notify();
+  };
+
+  private requestLatestState() {
+    this.channel?.postMessage({
+      type: 'REQUEST_STATE',
+      sourceId: this.instanceId,
+      revision: this.state.revision,
+      updatedAt: this.state.updatedAt,
+    } satisfies SyncMessage);
+  }
+
+  private isStateNewerThan(revision: number, updatedAt: number) {
+    if (this.state.revision !== revision) {
+      return this.state.revision > revision;
+    }
+
+    return this.state.updatedAt > updatedAt;
+  }
+
+  private shouldApplyIncomingState(incoming: GameState) {
+    if (incoming.revision !== this.state.revision) {
+      return incoming.revision > this.state.revision;
+    }
+
+    return incoming.updatedAt > this.state.updatedAt;
+  }
+
+  private applyIncomingState(incoming: GameState) {
+    if (!this.shouldApplyIncomingState(incoming)) return;
+
+    this.state = incoming;
+    this.notify();
   }
 
   private load() {
@@ -184,18 +260,19 @@ class GameStateStore {
   }
 
   private broadcastState() {
-    if (!this.suppressBroadcast) {
-      try {
-        this.channel.postMessage({ type: 'STATE_UPDATE', state: this.state });
-      } catch (error) {
-        // BroadcastChannel may fail with very large payloads; localStorage fallback handles it
-        console.warn('BroadcastChannel send failed, relying on storage event fallback');
-      }
+    try {
+      this.channel?.postMessage({
+        type: 'STATE_UPDATE',
+        sourceId: this.instanceId,
+        state: this.state,
+      } satisfies SyncMessage);
+    } catch {
+      // localStorage storage events remain as a fallback.
     }
   }
 
   private notify() {
-    this.listeners.forEach(fn => fn());
+    this.listeners.forEach((fn) => fn());
   }
 
   getState(): GameState {
@@ -213,19 +290,29 @@ class GameStateStore {
 
   /** Update state, persist, broadcast to other windows, and notify local listeners */
   setState(updater: GameState | ((prev: GameState) => GameState)) {
-    const newState = typeof updater === 'function' ? updater(this.state) : updater;
-    this.state = newState;
+    const nextBaseState = typeof updater === 'function' ? updater(this.state) : updater;
+    if (Object.is(nextBaseState, this.state)) return;
+
+    this.state = {
+      ...nextBaseState,
+      revision: this.state.revision + 1,
+      updatedAt: Date.now(),
+    };
+
     this.persist();
     this.broadcastState();
     this.notify();
   }
 
   clear() {
-    this.state = defaultState;
+    this.state = {
+      ...defaultState,
+      revision: this.state.revision + 1,
+      updatedAt: Date.now(),
+    };
+
     localStorage.removeItem(STORAGE_KEY);
-    if (!this.suppressBroadcast) {
-      this.channel.postMessage({ type: 'STATE_CLEAR' });
-    }
+    this.broadcastState();
     this.notify();
   }
 }
