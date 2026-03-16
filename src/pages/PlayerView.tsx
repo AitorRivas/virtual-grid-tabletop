@@ -196,6 +196,15 @@ const PlayerView = () => {
               />
             )}
 
+            {/* Dynamic Lighting layer */}
+            {mapDimensions.width > 0 && (
+              <DynamicLighting
+                width={mapDimensions.width}
+                height={mapDimensions.height}
+                tokens={tokens}
+              />
+            )}
+
             {/* Narrative Light layer */}
             {narrativeLight.enabled && mapDimensions.width > 0 && (
               <NarrativeLight
