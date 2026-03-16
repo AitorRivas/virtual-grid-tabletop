@@ -5,7 +5,7 @@ import { MapControls } from './MapControls';
 import { DiceRoller } from './DiceRoller';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FogOfWar } from './FogOfWar';
-import { DynamicLighting } from './DynamicLighting';
+
 import { NarrativeLight } from './NarrativeLight';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
@@ -359,11 +359,11 @@ export const MapViewer = () => {
       token.id === id ? { ...token, x, y } : token
     ));
 
-    // Auto-reveal fog around lit tokens
+    // Auto-reveal fog around tokens that have exploration enabled
     if (fogEnabled && mapDimensions.width > 0) {
       const movedToken = tokens.find(t => t.id === id);
-      if (movedToken?.lightEnabled) {
-        const radius = movedToken.lightRadius ?? 150;
+      if (movedToken?.lightEnabled && movedToken.status === 'active') {
+        const radius = movedToken.lightRadius ?? 120;
         autoRevealFog(x, y, radius);
       }
     }
@@ -647,14 +647,6 @@ export const MapViewer = () => {
               />
             )}
 
-            {/* Dynamic Lighting layer (z-index 25) */}
-            {mapDimensions.width > 0 && (
-              <DynamicLighting
-                width={mapDimensions.width}
-                height={mapDimensions.height}
-                tokens={tokens}
-              />
-            )}
 
             {/* Narrative Light layer */}
             {narrativeLight.enabled && mapDimensions.width > 0 && (

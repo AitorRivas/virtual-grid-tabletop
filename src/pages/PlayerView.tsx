@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from '@/components/Token';
 import { FogOfWar } from '@/components/FogOfWar';
-import { DynamicLighting } from '@/components/DynamicLighting';
+
 import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { useGameState } from '@/hooks/useGameState';
@@ -196,14 +196,6 @@ const PlayerView = () => {
               />
             )}
 
-            {/* Dynamic Lighting layer */}
-            {mapDimensions.width > 0 && (
-              <DynamicLighting
-                width={mapDimensions.width}
-                height={mapDimensions.height}
-                tokens={tokens}
-              />
-            )}
 
             {/* Narrative Light layer */}
             {narrativeLight.enabled && mapDimensions.width > 0 && (
