@@ -367,7 +367,48 @@ export const MapViewer = () => {
     setTokens(tokens.map(token => 
       token.id === id ? { ...token, x, y } : token
     ));
+
+    // Auto-reveal fog around lit tokens
+    if (fogEnabled && mapDimensions.width > 0) {
+      const movedToken = tokens.find(t => t.id === id);
+      if (movedToken?.lightEnabled) {
+        const radius = movedToken.lightRadius ?? 150;
+        autoRevealFog(x, y, radius);
+      }
+    }
   };
+
+  const autoRevealFog = useCallback((xPercent: number, yPercent: number, radius: number) => {
+    const fogDataCurrent = activeMap?.fogData;
+    if (!fogDataCurrent || mapDimensions.width === 0) return;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = mapDimensions.width;
+    offscreen.height = mapDimensions.height;
+    const ctx = offscreen.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, mapDimensions.width, mapDimensions.height);
+      // Reveal a circle using destination-out
+      ctx.globalCompositeOperation = 'destination-out';
+      const px = (xPercent / 100) * mapDimensions.width;
+      const py = (yPercent / 100) * mapDimensions.height;
+      const gradient = ctx.createRadialGradient(px, py, radius * 0.5, px, py, radius);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+
+      const newDataUrl = offscreen.toDataURL('image/png', 0.6);
+      setFogData(newDataUrl);
+    };
+    img.src = fogDataCurrent;
+  }, [activeMap?.fogData, mapDimensions, setFogData]);
 
   const handleTokenRotation = (id: string, rotation: number) => {
     setTokens(tokens.map(token => 
