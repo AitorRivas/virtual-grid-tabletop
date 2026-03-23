@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Sword, Shield, Key, LogOut } from 'lucide-react';
+import { Loader2, Sword, Shield, Key, LogOut, UserX } from 'lucide-react';
 
 export default function Auth() {
   const [username, setUsername] = useState('');
@@ -17,7 +17,7 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const { signIn, signUp, signOut, updatePassword, user, isApproved, isAdmin, loading: authLoading } = useAuth();
+  const { signIn, signUp, signOut, signInAsGuest, updatePassword, user, isApproved, isAdmin, isGuest, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,6 +82,11 @@ export default function Auth() {
     }
   };
 
+  const handleGuestAccess = () => {
+    signInAsGuest();
+    navigate('/');
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword || !confirmPassword) {
@@ -114,7 +119,7 @@ export default function Auth() {
   // Show waiting for approval message if logged in but not approved
   if (user && !isApproved && !isAdmin) {
     return (
-      <div className="min-h-screen bg-board-bg flex items-center justify-center p-4">
+      <div className="min-h-screen bg-board-bg flex flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md bg-card border-border">
           <CardHeader className="text-center">
             <div className="flex justify-center gap-2 mb-2">
@@ -175,12 +180,13 @@ export default function Auth() {
             </Button>
           </CardContent>
         </Card>
+        <p className="mt-6 text-xs text-muted-foreground">© Credo por diFFFerent</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-board-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-board-bg flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md bg-card border-border">
         <CardHeader className="text-center">
           <div className="flex justify-center gap-2 mb-2">
@@ -194,7 +200,7 @@ export default function Auth() {
             Gestiona tus personajes y monstruos
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
@@ -281,8 +287,30 @@ export default function Auth() {
               </form>
             </TabsContent>
           </Tabs>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">o</span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGuestAccess}
+          >
+            <UserX className="mr-2 h-4 w-4" />
+            Entrar como invitado
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            Acceso limitado · Los datos no se guardarán
+          </p>
         </CardContent>
       </Card>
+      <p className="mt-6 text-xs text-muted-foreground">© Credo por diFFFerent</p>
     </div>
   );
 }
