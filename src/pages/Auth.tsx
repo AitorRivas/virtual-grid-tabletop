@@ -310,7 +310,7 @@ export default function Auth() {
           </p>
         </CardContent>
       </Card>
-      <p className="mt-6 text-xs text-muted-foreground">© Credo por diFFFerent</p>
+      <p className="mt-6 text-xs text-muted-foreground">© Creado por diFFFerent</p>
     </div>
   );
 }
