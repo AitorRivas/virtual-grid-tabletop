@@ -5,18 +5,18 @@ import { MapViewer } from '@/components/MapViewer';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user, isApproved, isAdmin, loading } = useAuth();
+  const { user, isApproved, isAdmin, isGuest, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading) {
-      if (!user) {
+      if (!user && !isGuest) {
         navigate('/auth');
-      } else if (!isApproved && !isAdmin) {
+      } else if (user && !isApproved && !isAdmin) {
         navigate('/auth');
       }
     }
-  }, [user, isApproved, isAdmin, loading, navigate]);
+  }, [user, isApproved, isAdmin, isGuest, loading, navigate]);
 
   if (loading) {
     return (
@@ -26,7 +26,7 @@ const Index = () => {
     );
   }
 
-  if (!user || (!isApproved && !isAdmin)) {
+  if (!isGuest && (!user || (!isApproved && !isAdmin))) {
     return null;
   }
 
