@@ -16,9 +16,11 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isApproved: boolean;
+  isGuest: boolean;
   signIn: (username: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (username: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  signInAsGuest: () => void;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
 }
@@ -31,6 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
@@ -43,7 +46,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(profileData as Profile);
     }
 
-    // Check if user is admin
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
@@ -67,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          setIsGuest(false);
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
@@ -92,7 +95,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (username: string, password: string) => {
-    // Convert username to internal email format
     const email = `${username.toLowerCase()}@dnd-tabletop.internal`;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
@@ -100,18 +102,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error };
     }
     
-    // Verify the username case matches exactly
     const storedUsername = data.user?.user_metadata?.username;
     if (storedUsername && storedUsername !== username) {
       await supabase.auth.signOut();
       return { error: new Error('Usuario o contraseña incorrectos') };
     }
     
+    setIsGuest(false);
     return { error: null };
   };
 
   const signUp = async (username: string, password: string) => {
-    // Check if username is already taken
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('username')
@@ -137,7 +138,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const signInAsGuest = () => {
+    setIsGuest(true);
+  };
+
   const signOut = async () => {
+    if (isGuest) {
+      setIsGuest(false);
+      return;
+    }
     await supabase.auth.signOut();
     setProfile(null);
     setIsAdmin(false);
@@ -158,9 +167,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loading, 
       isAdmin,
       isApproved,
+      isGuest,
       signIn, 
       signUp, 
       signOut,
+      signInAsGuest,
       updatePassword,
       refreshProfile
     }}>
