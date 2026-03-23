@@ -48,6 +48,7 @@ export interface TokenData {
 }
 
 export const MapViewer = () => {
+  const { isGuest, signOut } = useAuth();
   const {
     maps,
     activeMapId,
