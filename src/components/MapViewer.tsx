@@ -943,6 +943,29 @@ export const MapViewer = () => {
 
       {/* Ambient Player */}
       <AmbientPlayer />
+
+      {/* Copyright */}
+      <div className="fixed bottom-1 right-2 text-[10px] text-muted-foreground/50 pointer-events-none select-none z-10">
+        © Credo por diFFFerent
+      </div>
+
+      {/* Guest mode indicator */}
+      {isGuest && (
+        <div className="fixed top-2 right-2 z-50 flex items-center gap-2 bg-card/90 backdrop-blur border border-border rounded-lg px-3 py-1.5 shadow-lg">
+          <span className="text-xs text-muted-foreground">Modo invitado</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => {
+              signOut();
+              window.location.href = '/auth';
+            }}
+          >
+            Iniciar sesión
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
