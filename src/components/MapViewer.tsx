@@ -948,7 +948,7 @@ export const MapViewer = () => {
 
       {/* Copyright */}
       <div className="fixed bottom-1 right-2 text-[10px] text-muted-foreground/50 pointer-events-none select-none z-10">
-        © Credo por diFFFerent
+        © Creado por diFFFerent
       </div>
 
       {/* Guest mode indicator */}
