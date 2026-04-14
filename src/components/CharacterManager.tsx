@@ -851,14 +851,66 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             </DialogContent>
           </Dialog>
 
+          {/* Search & Filter Controls */}
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar monstruo..." 
+                value={monsterSearch} 
+                onChange={e => setMonsterSearch(e.target.value)}
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
+            <div className="flex gap-1.5 items-center">
+              <Select value={monsterTypeFilter} onValueChange={setMonsterTypeFilter}>
+                <SelectTrigger className="h-7 text-xs flex-1">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  {MONSTER_TYPES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={monsterCrFilter} onValueChange={setMonsterCrFilter}>
+                <SelectTrigger className="h-7 text-xs w-20">
+                  <SelectValue placeholder="CR" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">CR</SelectItem>
+                  {CHALLENGE_RATINGS.map(cr => (
+                    <SelectItem key={cr} value={cr}>{cr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={monsterSortField} onValueChange={(v) => setMonsterSortField(v as any)}>
+                <SelectTrigger className="h-7 text-xs w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Nombre</SelectItem>
+                  <SelectItem value="cr">CR</SelectItem>
+                  <SelectItem value="type">Tipo</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => setMonsterSortAsc(!monsterSortAsc)}>
+                {monsterSortAsc ? <SortAsc className="w-3.5 h-3.5" /> : <SortDesc className="w-3.5 h-3.5" />}
+              </Button>
+            </div>
+          </div>
+
           <ScrollArea className="h-[300px]">
             {loadingMonsters ? (
               <p className="text-center text-muted-foreground py-4">Cargando...</p>
-            ) : monsters.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">No tienes monstruos</p>
+            ) : filteredMonsters.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                {monsters.length === 0 ? 'No tienes monstruos' : 'Sin resultados'}
+              </p>
             ) : (
               <div className="space-y-2">
-                {monsters.map(monster => (
+                {filteredMonsters.map(monster => (
                   <div key={monster.id} className="p-3 bg-muted/50 rounded-lg border border-border hover:border-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <button 
@@ -869,15 +921,20 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                           <img 
                             src={monster.image_url} 
                             alt={monster.name}
-                            className="w-6 h-6 rounded-full border-2 border-foreground/30 object-cover"
+                            className="w-8 h-8 rounded-full border-2 border-foreground/30 object-cover flex-shrink-0"
                           />
                         ) : (
                           <div
-                            className="w-6 h-6 rounded-full border-2 border-foreground/30"
+                            className="w-8 h-8 rounded-full border-2 border-foreground/30 flex-shrink-0"
                             style={{ backgroundColor: monster.token_color === 'black' ? '#1a1a1a' : monster.token_color }}
                           />
                         )}
-                        <span className="font-semibold text-sm truncate">{monster.name}</span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-sm block truncate">{monster.name}</span>
+                          <span className="text-xs text-muted-foreground block">
+                            {getMonsterTypeLabel(monster.type)} {getCreatureSizeLabel(monster.size)} · CR {monster.challenge_rating}
+                          </span>
+                        </div>
                       </button>
                       <div className="flex gap-1 flex-shrink-0">
                         <Button 
@@ -900,12 +957,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         </Button>
                         <Button 
                           size="icon" 
-                          variant="ghost" 
+                          variant="default" 
                           className="h-7 w-7" 
                           title="Añadir al mapa"
                           onClick={() => onAddMonsterToMap(monster as any)}
                         >
-                          <Plus className="w-4 h-4" />
+                          <MapPin className="w-4 h-4" />
                         </Button>
                         <Button 
                           size="icon" 
@@ -918,10 +975,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         </Button>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {getMonsterTypeLabel(monster.type)} {getCreatureSizeLabel(monster.size)} · CR {monster.challenge_rating}
-                    </div>
-                    <div className="flex gap-3 mt-1 text-xs">
+                    <div className="flex gap-3 text-xs">
                       <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> CA {monster.armor_class}</span>
                       <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> PG {monster.hit_points}</span>
                       <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {monster.speed}ft</span>
