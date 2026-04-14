@@ -102,6 +102,31 @@ export const AmbientPlayer = () => {
     }
   }, [channel2.isLooping]);
 
+  // Listen for scene audio events
+  useEffect(() => {
+    const handleSceneAudio = (e: Event) => {
+      const { channel, name, data } = (e as CustomEvent).detail as { channel: 1 | 2; name: string; data: string };
+      const audioRef = channel === 1 ? audioRef1 : audioRef2;
+      const setChannel = channel === 1 ? setChannel1 : setChannel2;
+
+      const newTrack: Track = { id: `scene-${Date.now()}`, name: name || 'Escena', url: data };
+      
+      // Add track and play it
+      setChannel(prev => {
+        const filtered = prev.tracks.filter(t => t.name !== name);
+        return { ...prev, tracks: [...filtered, newTrack], currentTrack: newTrack, isPlaying: true };
+      });
+
+      if (audioRef.current) {
+        audioRef.current.src = data;
+        audioRef.current.play();
+      }
+    };
+
+    window.addEventListener('scene-play-audio', handleSceneAudio);
+    return () => window.removeEventListener('scene-play-audio', handleSceneAudio);
+  }, []);
+
   // Update current time for channel 1
   useEffect(() => {
     const audio = audioRef1.current;
