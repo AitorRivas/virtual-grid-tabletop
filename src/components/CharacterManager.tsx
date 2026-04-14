@@ -306,17 +306,9 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   };
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Template Manager Button */}
-      <TemplateManager
-        onApplyCharacterTemplate={handleApplyCharacterTemplate}
-        onApplyMonsterTemplate={handleApplyMonsterTemplate}
-        currentCharacter={selectedCharacter}
-        currentMonster={selectedMonster}
-      />
-
-      <Tabs defaultValue="characters" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+    <div className="flex flex-col h-full overflow-hidden">
+      <Tabs defaultValue="characters" className="flex-1 flex flex-col min-h-0">
+        <TabsList className="grid w-full grid-cols-2 shrink-0 mx-3 mt-3 w-[calc(100%-1.5rem)]">
           <TabsTrigger value="characters" className="gap-1">
             <User className="w-4 h-4" />
             Personajes
