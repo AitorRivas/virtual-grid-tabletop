@@ -319,7 +319,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="characters" className="flex-1 flex flex-col m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=active]:flex">
+        <TabsContent value="characters" className="m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
           <Dialog open={showNewCharacter} onOpenChange={setShowNewCharacter}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2">
@@ -646,7 +646,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="monsters" className="flex-1 flex flex-col m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=active]:flex">
+        <TabsContent value="monsters" className="m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
           <Dialog open={showNewMonster} onOpenChange={setShowNewMonster}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2" variant="secondary">
