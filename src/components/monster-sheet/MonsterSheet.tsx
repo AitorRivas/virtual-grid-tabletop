@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload, Bookmark } from 'lucide-react';
+import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload, Bookmark, Image, Link, Trash2 } from 'lucide-react';
+import { SharedImagePicker } from '@/components/SharedImagePicker';
 import { useTemplates } from '@/hooks/useTemplates';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MonsterSheetHeader } from './MonsterSheetHeader';
