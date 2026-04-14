@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload, Bookmark } from 'lucide-react';
+import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload, Bookmark, Image, Link, Trash2 } from 'lucide-react';
+import { SharedImagePicker } from '@/components/SharedImagePicker';
 import { useTemplates } from '@/hooks/useTemplates';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MonsterSheetHeader } from './MonsterSheetHeader';
@@ -43,6 +44,8 @@ export const MonsterSheet = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const imageFileRef = useRef<HTMLInputElement>(null);
   const { createMonsterTemplate } = useTemplates();
 
   const updateMonster = <K extends keyof ExtendedMonster>(
@@ -129,8 +132,23 @@ export const MonsterSheet = ({
     languages: monster.languages
   }), [monster.saves, monster.skills, monster.languages]);
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Sube una imagen válida'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Máximo 5MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      updateMonster('image_url', e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    if (imageFileRef.current) imageFileRef.current.value = '';
+  };
+
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 overflow-hidden">
+      <input ref={imageFileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-card/50">
         <div className="flex items-center gap-2">
@@ -214,6 +232,51 @@ export const MonsterSheet = ({
             onChange={(updates) => updateMultiple(updates as Partial<ExtendedMonster>)}
             readOnly={readOnly}
           />
+
+          {/* Image editing section (only in edit mode) */}
+          {!readOnly && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1">
+                <Image className="w-4 h-4" /> Imagen
+              </Label>
+              {monster.image_url && (
+                <div className="relative group w-24 h-24">
+                  <img src={monster.image_url} alt="" className="w-full h-full object-cover rounded-lg border border-border" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => updateMonster('image_url', null)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-1 mb-1">
+                <Button type="button" size="sm" variant={imageInputMode === 'upload' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('upload')}>
+                  <Upload className="w-3 h-3 mr-1" /> Archivo
+                </Button>
+                <Button type="button" size="sm" variant={imageInputMode === 'url' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('url')}>
+                  <Link className="w-3 h-3 mr-1" /> URL
+                </Button>
+              </div>
+              {imageInputMode === 'upload' ? (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1 flex-1" onClick={() => imageFileRef.current?.click()}>
+                    <Upload className="w-3 h-3" /> Subir imagen
+                  </Button>
+                  <SharedImagePicker category="monster" onSelect={(data) => updateMonster('image_url', data)} selectedImage={monster.image_url || undefined} />
+                </div>
+              ) : (
+                <Input
+                  value={monster.image_url || ''}
+                  onChange={(e) => updateMonster('image_url', e.target.value || null)}
+                  placeholder="https://..."
+                  className="h-7 text-xs"
+                />
+              )}
+            </div>
+          )}
 
           {/* Combat Stats */}
           <div className="grid grid-cols-4 gap-3">

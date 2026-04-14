@@ -4,7 +4,7 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
 import { SceneData, MapData } from '@/hooks/useGameState';
-import { Plus, Trash2, Pencil, Check, X, Play, Image, Map, Music, Type, Upload } from 'lucide-react';
+import { Plus, Trash2, Pencil, Check, X, Play, Image, Map, Music, Type, Upload, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -31,6 +31,8 @@ export const SceneManager = ({
   const [editName, setEditName] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const musicInputRef = useRef<HTMLInputElement>(null);
+  const ambientInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   const startRename = (scene: SceneData) => {
@@ -81,15 +83,38 @@ export const SceneManager = ({
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
+  const handleAudioUpload = (event: React.ChangeEvent<HTMLInputElement>, channel: 'music' | 'ambient') => {
+    const file = event.target.files?.[0];
+    if (!file || !uploadTargetId) return;
+    if (!file.type.startsWith('audio/')) {
+      toast.error('Sube un archivo de audio válido');
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Máximo 15MB por pista de audio');
+      return;
+    }
+    const trackName = file.name.replace(/\.[^/.]+$/, '');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = e.target?.result as string;
+      if (channel === 'music') {
+        onUpdateScene(uploadTargetId, { musicTrackName: trackName, musicTrackData: data });
+      } else {
+        onUpdateScene(uploadTargetId, { ambientTrackName: trackName, ambientTrackData: data });
+      }
+      toast.success(`Pista "${trackName}" añadida`);
+    };
+    reader.readAsDataURL(file);
+    if (channel === 'music' && musicInputRef.current) musicInputRef.current.value = '';
+    if (channel === 'ambient' && ambientInputRef.current) ambientInputRef.current.value = '';
+  };
+
   return (
     <div className="p-2 space-y-1">
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="hidden"
-      />
+      <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+      <input ref={musicInputRef} type="file" accept="audio/*" onChange={(e) => handleAudioUpload(e, 'music')} className="hidden" />
+      <input ref={ambientInputRef} type="file" accept="audio/*" onChange={(e) => handleAudioUpload(e, 'ambient')} className="hidden" />
 
       <div className="flex items-center justify-between px-1 mb-2">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Escenas</span>
@@ -136,7 +161,8 @@ export const SceneManager = ({
                 <div className="flex items-center gap-1 shrink-0">
                   {scene.mapId && <Map className="w-3 h-3 text-muted-foreground/50" />}
                   {scene.narrativeImage && <Image className="w-3 h-3 text-muted-foreground/50" />}
-                  {scene.musicTrackName && <Music className="w-3 h-3 text-muted-foreground/50" />}
+                  {scene.musicTrackData && <Music className="w-3 h-3 text-muted-foreground/50" />}
+                  {scene.ambientTrackData && <Wind className="w-3 h-3 text-muted-foreground/50" />}
                 </div>
                 <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
                   <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={(e) => { e.stopPropagation(); startRename(scene); }}>
@@ -233,17 +259,50 @@ export const SceneManager = ({
                 />
               </div>
 
-              {/* Music track name reference */}
+              {/* Music track */}
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                  <Music className="w-3 h-3" /> Nombre pista musical
+                  <Music className="w-3 h-3" /> Música
                 </label>
-                <Input
-                  value={scene.musicTrackName ?? ''}
-                  onChange={(e) => onUpdateScene(scene.id, { musicTrackName: e.target.value || null })}
-                  placeholder="Nombre de la pista..."
-                  className="h-7 text-xs"
-                />
+                {scene.musicTrackData ? (
+                  <div className="flex items-center gap-1.5 p-1.5 bg-secondary/30 rounded-md">
+                    <Music className="w-3 h-3 text-primary shrink-0" />
+                    <span className="text-xs truncate flex-1">{scene.musicTrackName}</span>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:text-destructive" onClick={() => onUpdateScene(scene.id, { musicTrackName: null, musicTrackData: null })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline" size="sm" className="w-full h-7 text-xs gap-1"
+                    onClick={() => { setUploadTargetId(scene.id); musicInputRef.current?.click(); }}
+                  >
+                    <Upload className="w-3 h-3" /> Subir música
+                  </Button>
+                )}
+              </div>
+
+              {/* Ambient track */}
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <Wind className="w-3 h-3" /> Ambiente
+                </label>
+                {scene.ambientTrackData ? (
+                  <div className="flex items-center gap-1.5 p-1.5 bg-secondary/30 rounded-md">
+                    <Wind className="w-3 h-3 text-primary shrink-0" />
+                    <span className="text-xs truncate flex-1">{scene.ambientTrackName}</span>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:text-destructive" onClick={() => onUpdateScene(scene.id, { ambientTrackName: null, ambientTrackData: null })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline" size="sm" className="w-full h-7 text-xs gap-1"
+                    onClick={() => { setUploadTargetId(scene.id); ambientInputRef.current?.click(); }}
+                  >
+                    <Upload className="w-3 h-3" /> Subir ambiente
+                  </Button>
+                )}
               </div>
 
               {/* Activate button */}

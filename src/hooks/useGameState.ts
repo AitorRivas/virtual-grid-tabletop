@@ -37,6 +37,8 @@ export const createDefaultScene = (name: string, mapId: string | null = null): S
   narrativeText: '',
   musicTrackName: null,
   ambientTrackName: null,
+  musicTrackData: null,
+  ambientTrackData: null,
 });
 
 export const useGameState = () => {
