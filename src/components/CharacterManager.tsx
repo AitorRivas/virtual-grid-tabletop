@@ -998,6 +998,16 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </Dialog>
         </TabsContent>
       </Tabs>
+
+      {/* Template Manager at the bottom */}
+      <div className="shrink-0 p-3 border-t border-border/50">
+        <TemplateManager
+          onApplyCharacterTemplate={handleApplyCharacterTemplate}
+          onApplyMonsterTemplate={handleApplyMonsterTemplate}
+          currentCharacter={selectedCharacter}
+          currentMonster={selectedMonster}
+        />
+      </div>
     </div>
   );
 };
