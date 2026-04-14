@@ -233,6 +233,51 @@ export const MonsterSheet = ({
             readOnly={readOnly}
           />
 
+          {/* Image editing section (only in edit mode) */}
+          {!readOnly && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1">
+                <Image className="w-4 h-4" /> Imagen
+              </Label>
+              {monster.image_url && (
+                <div className="relative group w-24 h-24">
+                  <img src={monster.image_url} alt="" className="w-full h-full object-cover rounded-lg border border-border" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => updateMonster('image_url', null)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-1 mb-1">
+                <Button type="button" size="sm" variant={imageInputMode === 'upload' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('upload')}>
+                  <Upload className="w-3 h-3 mr-1" /> Archivo
+                </Button>
+                <Button type="button" size="sm" variant={imageInputMode === 'url' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('url')}>
+                  <Link className="w-3 h-3 mr-1" /> URL
+                </Button>
+              </div>
+              {imageInputMode === 'upload' ? (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1 flex-1" onClick={() => imageFileRef.current?.click()}>
+                    <Upload className="w-3 h-3" /> Subir imagen
+                  </Button>
+                  <SharedImagePicker category="monster" onSelect={(data) => updateMonster('image_url', data)} selectedImage={monster.image_url || undefined} />
+                </div>
+              ) : (
+                <Input
+                  value={monster.image_url || ''}
+                  onChange={(e) => updateMonster('image_url', e.target.value || null)}
+                  placeholder="https://..."
+                  className="h-7 text-xs"
+                />
+              )}
+            </div>
+          )}
+
           {/* Combat Stats */}
           <div className="grid grid-cols-4 gap-3">
             <div className="p-3 bg-card border rounded-lg text-center">
