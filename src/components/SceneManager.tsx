@@ -258,17 +258,50 @@ export const SceneManager = ({
                 />
               </div>
 
-              {/* Music track name reference */}
+              {/* Music track */}
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                  <Music className="w-3 h-3" /> Nombre pista musical
+                  <Music className="w-3 h-3" /> Música
                 </label>
-                <Input
-                  value={scene.musicTrackName ?? ''}
-                  onChange={(e) => onUpdateScene(scene.id, { musicTrackName: e.target.value || null })}
-                  placeholder="Nombre de la pista..."
-                  className="h-7 text-xs"
-                />
+                {scene.musicTrackData ? (
+                  <div className="flex items-center gap-1.5 p-1.5 bg-secondary/30 rounded-md">
+                    <Music className="w-3 h-3 text-primary shrink-0" />
+                    <span className="text-xs truncate flex-1">{scene.musicTrackName}</span>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:text-destructive" onClick={() => onUpdateScene(scene.id, { musicTrackName: null, musicTrackData: null })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline" size="sm" className="w-full h-7 text-xs gap-1"
+                    onClick={() => { setUploadTargetId(scene.id); musicInputRef.current?.click(); }}
+                  >
+                    <Upload className="w-3 h-3" /> Subir música
+                  </Button>
+                )}
+              </div>
+
+              {/* Ambient track */}
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <Wind className="w-3 h-3" /> Ambiente
+                </label>
+                {scene.ambientTrackData ? (
+                  <div className="flex items-center gap-1.5 p-1.5 bg-secondary/30 rounded-md">
+                    <Wind className="w-3 h-3 text-primary shrink-0" />
+                    <span className="text-xs truncate flex-1">{scene.ambientTrackName}</span>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:text-destructive" onClick={() => onUpdateScene(scene.id, { ambientTrackName: null, ambientTrackData: null })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline" size="sm" className="w-full h-7 text-xs gap-1"
+                    onClick={() => { setUploadTargetId(scene.id); ambientInputRef.current?.click(); }}
+                  >
+                    <Upload className="w-3 h-3" /> Subir ambiente
+                  </Button>
+                )}
               </div>
 
               {/* Activate button */}
