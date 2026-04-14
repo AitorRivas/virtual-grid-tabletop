@@ -34,6 +34,8 @@ export interface SceneData {
   narrativeText: string;
   musicTrackName: string | null;
   ambientTrackName: string | null;
+  musicTrackData: string | null;   // base64 audio data for music
+  ambientTrackData: string | null; // base64 audio data for ambient
 }
 
 export interface NarrativeLightData {
