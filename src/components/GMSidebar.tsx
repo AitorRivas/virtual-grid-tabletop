@@ -125,7 +125,7 @@ export const GMSidebar = ({
   return (
     <div className={cn(
       "h-full flex bg-card/95 backdrop-blur-sm border-r border-border/50 transition-all duration-300",
-      collapsed ? "w-14" : "w-80"
+      collapsed ? "w-14" : "w-96"
     )}>
       {/* Icon nav strip */}
       <div className="w-14 shrink-0 flex flex-col items-center py-2 gap-1 border-r border-border/30">
