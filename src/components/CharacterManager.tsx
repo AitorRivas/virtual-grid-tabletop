@@ -41,6 +41,60 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   const charFileInputRef = useRef<HTMLInputElement>(null);
   const monsterFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Search & filter state
+  const [charSearch, setCharSearch] = useState('');
+  const [charSortField, setCharSortField] = useState<'name' | 'level' | 'class'>('name');
+  const [charSortAsc, setCharSortAsc] = useState(true);
+  const [monsterSearch, setMonsterSearch] = useState('');
+  const [monsterSortField, setMonsterSortField] = useState<'name' | 'cr' | 'type'>('name');
+  const [monsterSortAsc, setMonsterSortAsc] = useState(true);
+  const [monsterTypeFilter, setMonsterTypeFilter] = useState<string>('all');
+  const [monsterCrFilter, setMonsterCrFilter] = useState<string>('all');
+
+  // Filtered and sorted characters
+  const filteredCharacters = useMemo(() => {
+    let list = [...characters];
+    if (charSearch.trim()) {
+      const q = charSearch.toLowerCase();
+      list = list.filter(c => 
+        c.name.toLowerCase().includes(q) || 
+        getClassLabel(c.class).toLowerCase().includes(q) ||
+        getRaceLabel(c.race).toLowerCase().includes(q)
+      );
+    }
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (charSortField === 'name') cmp = a.name.localeCompare(b.name);
+      else if (charSortField === 'level') cmp = a.level - b.level;
+      else if (charSortField === 'class') cmp = a.class.localeCompare(b.class);
+      return charSortAsc ? cmp : -cmp;
+    });
+    return list;
+  }, [characters, charSearch, charSortField, charSortAsc]);
+
+  // Filtered and sorted monsters
+  const filteredMonsters = useMemo(() => {
+    let list = [...monsters];
+    if (monsterSearch.trim()) {
+      const q = monsterSearch.toLowerCase();
+      list = list.filter(m => m.name.toLowerCase().includes(q));
+    }
+    if (monsterTypeFilter !== 'all') {
+      list = list.filter(m => m.type === monsterTypeFilter);
+    }
+    if (monsterCrFilter !== 'all') {
+      list = list.filter(m => m.challenge_rating === monsterCrFilter);
+    }
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (monsterSortField === 'name') cmp = a.name.localeCompare(b.name);
+      else if (monsterSortField === 'cr') cmp = parseFloat(a.challenge_rating) - parseFloat(b.challenge_rating);
+      else if (monsterSortField === 'type') cmp = a.type.localeCompare(b.type);
+      return monsterSortAsc ? cmp : -cmp;
+    });
+    return list;
+  }, [monsters, monsterSearch, monsterSortField, monsterSortAsc, monsterTypeFilter, monsterCrFilter]);
+
   const handleCharImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
