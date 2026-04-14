@@ -144,6 +144,18 @@ export const MapViewer = () => {
       });
     }
 
+    // Play scene audio tracks
+    if (scene.musicTrackData) {
+      window.dispatchEvent(new CustomEvent('scene-play-audio', {
+        detail: { channel: 1, name: scene.musicTrackName, data: scene.musicTrackData }
+      }));
+    }
+    if (scene.ambientTrackData) {
+      window.dispatchEvent(new CustomEvent('scene-play-audio', {
+        detail: { channel: 2, name: scene.ambientTrackName, data: scene.ambientTrackData }
+      }));
+    }
+
     toast.success(`Escena "${scene.name}" activada`);
   }, [scenes, activeMapId, setActiveMapId, setActiveSceneId, setNarrativeOverlay]);
 
