@@ -83,15 +83,38 @@ export const SceneManager = ({
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
+  const handleAudioUpload = (event: React.ChangeEvent<HTMLInputElement>, channel: 'music' | 'ambient') => {
+    const file = event.target.files?.[0];
+    if (!file || !uploadTargetId) return;
+    if (!file.type.startsWith('audio/')) {
+      toast.error('Sube un archivo de audio válido');
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Máximo 15MB por pista de audio');
+      return;
+    }
+    const trackName = file.name.replace(/\.[^/.]+$/, '');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = e.target?.result as string;
+      if (channel === 'music') {
+        onUpdateScene(uploadTargetId, { musicTrackName: trackName, musicTrackData: data });
+      } else {
+        onUpdateScene(uploadTargetId, { ambientTrackName: trackName, ambientTrackData: data });
+      }
+      toast.success(`Pista "${trackName}" añadida`);
+    };
+    reader.readAsDataURL(file);
+    if (channel === 'music' && musicInputRef.current) musicInputRef.current.value = '';
+    if (channel === 'ambient' && ambientInputRef.current) ambientInputRef.current.value = '';
+  };
+
   return (
     <div className="p-2 space-y-1">
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="hidden"
-      />
+      <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+      <input ref={musicInputRef} type="file" accept="audio/*" onChange={(e) => handleAudioUpload(e, 'music')} className="hidden" />
+      <input ref={ambientInputRef} type="file" accept="audio/*" onChange={(e) => handleAudioUpload(e, 'ambient')} className="hidden" />
 
       <div className="flex items-center justify-between px-1 mb-2">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Escenas</span>
