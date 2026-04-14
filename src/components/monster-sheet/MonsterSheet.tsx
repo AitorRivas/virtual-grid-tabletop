@@ -44,6 +44,8 @@ export const MonsterSheet = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const imageFileRef = useRef<HTMLInputElement>(null);
   const { createMonsterTemplate } = useTemplates();
 
   const updateMonster = <K extends keyof ExtendedMonster>(
