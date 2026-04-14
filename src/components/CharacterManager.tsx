@@ -923,24 +923,6 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                       <div className="flex gap-1 flex-shrink-0">
                         <Button 
                           size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7" 
-                          title="Ver ficha"
-                          onClick={() => setSelectedMonster(monster)}
-                        >
-                          <FileText className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7" 
-                          title="Clonar"
-                          onClick={() => cloneMonster(monster)}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
                           variant="default" 
                           className="h-7 w-7" 
                           title="Añadir al mapa"
@@ -948,15 +930,24 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         >
                           <MapPin className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7 text-destructive" 
-                          title="Eliminar"
-                          onClick={() => deleteMonster(monster.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSelectedMonster(monster)}>
+                              <FileText className="w-4 h-4 mr-2" /> Ver ficha
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => cloneMonster(monster)}>
+                              <Copy className="w-4 h-4 mr-2" /> Clonar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => deleteMonster(monster.id)}>
+                              <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     <div className="flex gap-3 text-xs">
