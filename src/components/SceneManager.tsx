@@ -174,6 +174,7 @@ export const SceneManager = ({
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <Image className="w-3 h-3" /> Imagen narrativa
+                  <span className="ml-auto text-[9px] font-normal normal-case">Se muestra a pantalla completa al activar la escena</span>
                 </label>
                 {scene.narrativeImage ? (
                   <div className="relative group/img">
@@ -182,14 +183,26 @@ export const SceneManager = ({
                       alt="Narrativa"
                       className="w-full h-20 object-cover rounded-md border border-border"
                     />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover/img:opacity-100 transition-opacity"
-                      onClick={() => onUpdateScene(scene.id, { narrativeImage: null })}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover/img:opacity-100 transition-opacity">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-5 px-1.5 text-[10px] gap-0.5"
+                        onClick={() => onActivateScene(scene.id)}
+                        title="Mostrar a jugadores"
+                      >
+                        <Play className="w-3 h-3" />
+                        Mostrar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-5 w-5 p-0"
+                        onClick={() => onUpdateScene(scene.id, { narrativeImage: null })}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <Button

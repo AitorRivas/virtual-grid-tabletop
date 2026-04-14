@@ -940,6 +940,28 @@ export const MapViewer = () => {
         </div>
       )}
 
+      {/* Narrative Overlay (GM preview) */}
+      {narrativeOverlay.visible && narrativeOverlay.image && (
+        <div 
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 cursor-pointer animate-fade-in"
+          onClick={handleHideNarrativeImage}
+        >
+          <div className="relative max-w-3xl max-h-[80vh] flex flex-col items-center gap-4">
+            <img 
+              src={narrativeOverlay.image} 
+              alt="Imagen narrativa" 
+              className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+            />
+            {narrativeOverlay.text && (
+              <p className="text-foreground/90 text-lg text-center max-w-xl px-4 italic">
+                {narrativeOverlay.text}
+              </p>
+            )}
+            <p className="text-muted-foreground text-xs">Haz clic para cerrar</p>
+          </div>
+        </div>
+      )}
+
       {/* Dice Roller */}
       <DiceRoller />
 

@@ -306,17 +306,9 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   };
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Template Manager Button */}
-      <TemplateManager
-        onApplyCharacterTemplate={handleApplyCharacterTemplate}
-        onApplyMonsterTemplate={handleApplyMonsterTemplate}
-        currentCharacter={selectedCharacter}
-        currentMonster={selectedMonster}
-      />
-
-      <Tabs defaultValue="characters" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+    <div className="flex flex-col h-full overflow-hidden">
+      <Tabs defaultValue="characters" className="flex-1 flex flex-col min-h-0">
+        <TabsList className="grid w-full grid-cols-2 shrink-0 mx-3 mt-3 w-[calc(100%-1.5rem)]">
           <TabsTrigger value="characters" className="gap-1">
             <User className="w-4 h-4" />
             Personajes
@@ -327,7 +319,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="characters" className="space-y-3">
+        <TabsContent value="characters" className="flex-1 flex flex-col m-0 px-3 pt-3 space-y-3 min-h-0 overflow-hidden">
           <Dialog open={showNewCharacter} onOpenChange={setShowNewCharacter}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2">
@@ -654,7 +646,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="monsters" className="space-y-3">
+        <TabsContent value="monsters" className="flex-1 flex flex-col m-0 px-3 pt-3 space-y-3 min-h-0 overflow-hidden">
           <Dialog open={showNewMonster} onOpenChange={setShowNewMonster}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2" variant="secondary">
@@ -1006,6 +998,16 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </Dialog>
         </TabsContent>
       </Tabs>
+
+      {/* Template Manager at the bottom */}
+      <div className="shrink-0 p-3 border-t border-border/50">
+        <TemplateManager
+          onApplyCharacterTemplate={handleApplyCharacterTemplate}
+          onApplyMonsterTemplate={handleApplyMonsterTemplate}
+          currentCharacter={selectedCharacter}
+          currentMonster={selectedMonster}
+        />
+      </div>
     </div>
   );
 };
