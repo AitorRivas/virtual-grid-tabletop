@@ -31,6 +31,8 @@ export const SceneManager = ({
   const [editName, setEditName] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const musicInputRef = useRef<HTMLInputElement>(null);
+  const ambientInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   const startRename = (scene: SceneData) => {
