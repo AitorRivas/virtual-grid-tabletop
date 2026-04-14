@@ -580,24 +580,6 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                       <div className="flex gap-1 flex-shrink-0">
                         <Button 
                           size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7" 
-                          title="Ver ficha"
-                          onClick={() => setSelectedCharacter(char as ExtendedCharacter)}
-                        >
-                          <FileText className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7" 
-                          title="Clonar"
-                          onClick={() => cloneCharacter(char as ExtendedCharacter)}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
                           variant="default" 
                           className="h-7 w-7" 
                           title="Añadir al mapa"
@@ -605,15 +587,24 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         >
                           <MapPin className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7 text-destructive" 
-                          title="Eliminar"
-                          onClick={() => deleteCharacter(char.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-7 w-7">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSelectedCharacter(char as ExtendedCharacter)}>
+                              <FileText className="w-4 h-4 mr-2" /> Ver ficha
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => cloneCharacter(char as ExtendedCharacter)}>
+                              <Copy className="w-4 h-4 mr-2" /> Clonar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => deleteCharacter(char.id)}>
+                              <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     <div className="flex gap-3 text-xs">
