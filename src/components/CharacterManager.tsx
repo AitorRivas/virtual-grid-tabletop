@@ -521,14 +521,44 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             </DialogContent>
           </Dialog>
 
+          {/* Search & Sort Controls */}
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar personaje..." 
+                value={charSearch} 
+                onChange={e => setCharSearch(e.target.value)}
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
+            <div className="flex gap-1.5 items-center">
+              <Select value={charSortField} onValueChange={(v) => setCharSortField(v as any)}>
+                <SelectTrigger className="h-7 text-xs flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Nombre</SelectItem>
+                  <SelectItem value="level">Nivel</SelectItem>
+                  <SelectItem value="class">Clase</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => setCharSortAsc(!charSortAsc)}>
+                {charSortAsc ? <SortAsc className="w-3.5 h-3.5" /> : <SortDesc className="w-3.5 h-3.5" />}
+              </Button>
+            </div>
+          </div>
+
           <ScrollArea className="h-[300px]">
             {loadingChars ? (
               <p className="text-center text-muted-foreground py-4">Cargando...</p>
-            ) : characters.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">No tienes personajes</p>
+            ) : filteredCharacters.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                {characters.length === 0 ? 'No tienes personajes' : 'Sin resultados'}
+              </p>
             ) : (
               <div className="space-y-2">
-                {characters.map(char => (
+                {filteredCharacters.map(char => (
                   <div key={char.id} className="p-3 bg-muted/50 rounded-lg border border-border hover:border-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <button 
@@ -575,12 +605,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         </Button>
                         <Button 
                           size="icon" 
-                          variant="ghost" 
+                          variant="default" 
                           className="h-7 w-7" 
                           title="Añadir al mapa"
                           onClick={() => onAddCharacterToMap(char)}
                         >
-                          <Plus className="w-4 h-4" />
+                          <MapPin className="w-4 h-4" />
                         </Button>
                         <Button 
                           size="icon" 
