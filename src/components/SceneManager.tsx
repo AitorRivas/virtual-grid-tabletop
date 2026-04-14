@@ -161,7 +161,8 @@ export const SceneManager = ({
                 <div className="flex items-center gap-1 shrink-0">
                   {scene.mapId && <Map className="w-3 h-3 text-muted-foreground/50" />}
                   {scene.narrativeImage && <Image className="w-3 h-3 text-muted-foreground/50" />}
-                  {scene.musicTrackName && <Music className="w-3 h-3 text-muted-foreground/50" />}
+                  {scene.musicTrackData && <Music className="w-3 h-3 text-muted-foreground/50" />}
+                  {scene.ambientTrackData && <Wind className="w-3 h-3 text-muted-foreground/50" />}
                 </div>
                 <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
                   <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={(e) => { e.stopPropagation(); startRename(scene); }}>
