@@ -319,7 +319,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="characters" className="space-y-3">
+        <TabsContent value="characters" className="flex-1 flex flex-col m-0 px-3 pt-3 space-y-3 min-h-0 overflow-hidden">
           <Dialog open={showNewCharacter} onOpenChange={setShowNewCharacter}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2">
