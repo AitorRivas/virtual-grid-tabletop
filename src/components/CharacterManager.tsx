@@ -541,7 +541,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             </div>
           </div>
 
-          <ScrollArea className="h-[300px]">
+          <ScrollArea className="flex-1 min-h-0">
             {loadingChars ? (
               <p className="text-center text-muted-foreground py-4">Cargando...</p>
             ) : filteredCharacters.length === 0 ? (
@@ -646,7 +646,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="monsters" className="flex-1 flex flex-col m-0 px-3 pt-3 space-y-3 min-h-0 overflow-hidden">
+        <TabsContent value="monsters" className="flex-1 flex flex-col m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=active]:flex">
           <Dialog open={showNewMonster} onOpenChange={setShowNewMonster}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2" variant="secondary">
@@ -893,7 +893,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             </div>
           </div>
 
-          <ScrollArea className="h-[300px]">
+          <ScrollArea className="flex-1 min-h-0">
             {loadingMonsters ? (
               <p className="text-center text-muted-foreground py-4">Cargando...</p>
             ) : filteredMonsters.length === 0 ? (
