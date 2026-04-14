@@ -104,7 +104,7 @@ export const TokenToolbar = ({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tokens" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden data-[state=active]:flex-1">
+        <TabsContent value="tokens" className="m-0 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
           {/* Add Token Section - Collapsible */}
           <Collapsible defaultOpen={tokens.length === 0}>
             <CollapsibleTrigger asChild>
@@ -479,7 +479,7 @@ export const TokenToolbar = ({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="library" className="flex-1 m-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+        <TabsContent value="library" className="m-0 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
           {user ? (
             <CharacterManager
               onAddCharacterToMap={onAddCharacterToMap}
