@@ -46,6 +46,23 @@ export interface NarrativeLightData {
   followTokenId: string | null;
 }
 
+export interface PlayerViewConfig {
+  syncCamera: boolean;
+  syncZoom: boolean;
+  syncSelection: boolean;
+}
+
+export interface DmCameraState {
+  /** Position from react-zoom-pan-pinch (positionX in screen px applied to content) */
+  positionX: number;
+  positionY: number;
+  scale: number;
+  /** Map this camera state belongs to (avoids cross-map application) */
+  mapId: string | null;
+  /** Monotonic counter so PlayerView can react to repeated identical values (e.g. re-center). */
+  tick: number;
+}
+
 export interface GameState {
   revision: number;
   updatedAt: number;
@@ -61,6 +78,12 @@ export interface GameState {
   narrativeLight: NarrativeLightData;
   /** ID of the token currently taking its turn in combat (null if no combat active). Synced to Player View. */
   activeInitiativeTokenId: string | null;
+  /** Phase 2: Configurable sync flags between DM and Player View */
+  playerViewConfig: PlayerViewConfig;
+  /** DM camera snapshot, broadcast for syncCamera/syncZoom */
+  dmCamera: DmCameraState;
+  /** Token selected by DM, broadcast for syncSelection (centers Player View on it) */
+  dmSelectedTokenId: string | null;
 }
 
 const defaultNarrativeLight: NarrativeLightData = {
@@ -69,6 +92,20 @@ const defaultNarrativeLight: NarrativeLightData = {
   y: 500,
   radius: 200,
   followTokenId: null,
+};
+
+const defaultPlayerViewConfig: PlayerViewConfig = {
+  syncCamera: false,
+  syncZoom: false,
+  syncSelection: false,
+};
+
+const defaultDmCamera: DmCameraState = {
+  positionX: 0,
+  positionY: 0,
+  scale: 1,
+  mapId: null,
+  tick: 0,
 };
 
 const defaultState: GameState = {
@@ -81,6 +118,9 @@ const defaultState: GameState = {
   narrativeOverlay: { image: null, text: '', visible: false },
   narrativeLight: defaultNarrativeLight,
   activeInitiativeTokenId: null,
+  playerViewConfig: defaultPlayerViewConfig,
+  dmCamera: defaultDmCamera,
+  dmSelectedTokenId: null,
 };
 
 // Migrate old session formats
@@ -96,6 +136,9 @@ function migrateState(raw: any): GameState {
       narrativeOverlay: raw.narrativeOverlay ?? { image: null, text: '', visible: false },
       narrativeLight: raw.narrativeLight ?? defaultNarrativeLight,
       activeInitiativeTokenId: raw.activeInitiativeTokenId ?? null,
+      playerViewConfig: { ...defaultPlayerViewConfig, ...(raw.playerViewConfig ?? {}) },
+      dmCamera: raw.dmCamera ?? defaultDmCamera,
+      dmSelectedTokenId: raw.dmSelectedTokenId ?? null,
     };
   }
 
@@ -127,6 +170,9 @@ function migrateState(raw: any): GameState {
       narrativeOverlay: { image: null, text: '', visible: false },
       narrativeLight: defaultNarrativeLight,
       activeInitiativeTokenId: null,
+      playerViewConfig: defaultPlayerViewConfig,
+      dmCamera: defaultDmCamera,
+      dmSelectedTokenId: null,
     };
   }
 

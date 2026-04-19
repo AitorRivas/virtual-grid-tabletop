@@ -7,7 +7,8 @@ import { MapManager } from './MapManager';
 import { TokenToolbar } from './TokenToolbar';
 import { SceneManager } from './SceneManager';
 import { CombatTracker, type CombatEntry } from './CombatTracker';
-import { MapData, SceneData } from '@/hooks/useGameState';
+import { PlayerViewConfigPanel } from './PlayerViewConfigPanel';
+import { MapData, SceneData, PlayerViewConfig } from '@/hooks/useGameState';
 import { TokenData, TokenColor, TokenStatus } from './MapViewer';
 import { Character, Monster } from '@/types/dnd';
 import { cn } from '@/lib/utils';
@@ -69,6 +70,9 @@ interface GMSidebarProps {
   narrativeOverlay: { image: string | null; text: string; visible: boolean };
   onShowNarrativeImage: (image: string, text?: string) => void;
   onHideNarrativeImage: () => void;
+  // Player view sync config
+  playerViewConfig: PlayerViewConfig;
+  onPlayerViewConfigChange: (updates: Partial<PlayerViewConfig>) => void;
 }
 
 export const GMSidebar = ({
@@ -120,6 +124,8 @@ export const GMSidebar = ({
   narrativeOverlay,
   onShowNarrativeImage,
   onHideNarrativeImage,
+  playerViewConfig,
+  onPlayerViewConfigChange,
 }: GMSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<SidebarSection>('tokens');
@@ -153,7 +159,7 @@ export const GMSidebar = ({
             <Button
               variant="ghost"
               size="sm"
-              className="w-10 h-10 p-0 mb-2"
+              className="w-10 h-10 p-0 mb-1"
               onClick={onOpenPlayerView}
             >
               <Monitor className="w-5 h-5 text-primary" />
@@ -162,7 +168,13 @@ export const GMSidebar = ({
           <TooltipContent side="right">Vista de jugadores</TooltipContent>
         </Tooltip>
 
-        <div className="h-px w-8 bg-border/50 mb-1" />
+        {/* Player view sync config */}
+        <PlayerViewConfigPanel
+          config={playerViewConfig}
+          onChange={onPlayerViewConfigChange}
+        />
+
+        <div className="h-px w-8 bg-border/50 my-1" />
 
         {navItems.map(item => (
           <Tooltip key={item.id}>

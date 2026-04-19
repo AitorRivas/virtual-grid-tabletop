@@ -74,6 +74,10 @@ export const MapViewer = () => {
     narrativeLight,
     setNarrativeLight,
     setActiveInitiativeTokenId,
+    playerViewConfig,
+    setPlayerViewConfig,
+    setDmCamera,
+    setDmSelectedTokenId,
   } = useGameState();
 
   // Derive current map state from activeMap
@@ -330,6 +334,30 @@ export const MapViewer = () => {
   useEffect(() => {
     setActiveInitiativeTokenId(activeInitiativeTokenId);
   }, [activeInitiativeTokenId, setActiveInitiativeTokenId]);
+
+  // Broadcast DM camera state for syncCamera/syncZoom (rAF throttled)
+  const cameraRafRef = useRef<number | null>(null);
+  const pendingCameraRef = useRef<{ x: number; y: number; s: number } | null>(null);
+  const broadcastCamera = useCallback((x: number, y: number, s: number) => {
+    pendingCameraRef.current = { x, y, s };
+    if (cameraRafRef.current !== null) return;
+    cameraRafRef.current = requestAnimationFrame(() => {
+      cameraRafRef.current = null;
+      const p = pendingCameraRef.current;
+      if (!p) return;
+      setDmCamera({ positionX: p.x, positionY: p.y, scale: p.s, mapId: activeMapId });
+    });
+  }, [activeMapId, setDmCamera]);
+
+  useEffect(() => () => {
+    if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
+  }, []);
+
+  // Broadcast selected token for syncSelection
+  useEffect(() => {
+    setDmSelectedTokenId(selectedToken);
+  }, [selectedToken, setDmSelectedTokenId]);
+
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -616,12 +644,15 @@ export const MapViewer = () => {
       onZoom={(ref) => {
         setZoomLevel(ref.state.scale);
         zoomFunctionsRef.current = ref;
+        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
       onPanning={(ref) => {
         zoomFunctionsRef.current = ref;
+        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
+        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
     >
       {({ zoomIn, zoomOut, resetTransform, zoomToElement, ...rest }) => (
@@ -836,6 +867,8 @@ export const MapViewer = () => {
         narrativeOverlay={narrativeOverlay}
         onShowNarrativeImage={handleShowNarrativeImage}
         onHideNarrativeImage={handleHideNarrativeImage}
+        playerViewConfig={playerViewConfig}
+        onPlayerViewConfigChange={setPlayerViewConfig}
       />
 
       {/* Main content */}
