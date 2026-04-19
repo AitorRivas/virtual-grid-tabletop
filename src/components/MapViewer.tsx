@@ -335,6 +335,30 @@ export const MapViewer = () => {
     setActiveInitiativeTokenId(activeInitiativeTokenId);
   }, [activeInitiativeTokenId, setActiveInitiativeTokenId]);
 
+  // Broadcast DM camera state for syncCamera/syncZoom (rAF throttled)
+  const cameraRafRef = useRef<number | null>(null);
+  const pendingCameraRef = useRef<{ x: number; y: number; s: number } | null>(null);
+  const broadcastCamera = useCallback((x: number, y: number, s: number) => {
+    pendingCameraRef.current = { x, y, s };
+    if (cameraRafRef.current !== null) return;
+    cameraRafRef.current = requestAnimationFrame(() => {
+      cameraRafRef.current = null;
+      const p = pendingCameraRef.current;
+      if (!p) return;
+      setDmCamera({ positionX: p.x, positionY: p.y, scale: p.s, mapId: activeMapId });
+    });
+  }, [activeMapId, setDmCamera]);
+
+  useEffect(() => () => {
+    if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
+  }, []);
+
+  // Broadcast selected token for syncSelection
+  useEffect(() => {
+    setDmSelectedTokenId(selectedToken);
+  }, [selectedToken, setDmSelectedTokenId]);
+
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
