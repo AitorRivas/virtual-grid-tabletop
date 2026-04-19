@@ -770,7 +770,7 @@ export const MapViewer = () => {
               />
             )}
 
-            {/* Fog of War layer (z-index 20) */}
+            {/* Fog of War layer (z-index 20) — DM sees it semi-transparent */}
             {fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
                 key={activeMapId ?? 'no-map'}
@@ -782,6 +782,7 @@ export const MapViewer = () => {
                 onFogChange={setFogData}
                 fogTool={fogTool}
                 fogMode={fogMode}
+                opacity={0.45}
               />
             )}
 
