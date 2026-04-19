@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Map, Users, Swords, ChevronRight, ChevronLeft, Monitor, Layers, Clapperboard, Image, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MapManager } from './MapManager';
 import { TokenToolbar } from './TokenToolbar';
 import { SceneManager } from './SceneManager';
+import { CombatTracker, type CombatEntry } from './CombatTracker';
 import { MapData, SceneData } from '@/hooks/useGameState';
 import { TokenData, TokenColor, TokenStatus } from './MapViewer';
 import { Character, Monster } from '@/types/dnd';
@@ -44,13 +45,19 @@ interface GMSidebarProps {
   onAddMonsterToMap: (monster: Monster) => void;
   // Player view
   onOpenPlayerView: () => void;
-  // Initiative
-  initiativeOrder: string[];
+  // Combat / Initiative
+  combatEntries: CombatEntry[];
+  onCombatEntriesChange: (entries: CombatEntry[]) => void;
   activeInitiativeIndex: number;
+  onActiveInitiativeIndexChange: (index: number) => void;
   onStartInitiative: () => void;
   onNextTurn: () => void;
+  onPrevTurn: () => void;
   onEndInitiative: () => void;
+  onAddFromMapToCombat: () => void;
   isInitiativeActive: boolean;
+  combatMode: boolean;
+  onToggleCombatMode: () => void;
   // Scenes
   scenes: SceneData[];
   activeSceneId: string | null;
@@ -92,12 +99,18 @@ export const GMSidebar = ({
   onAddCharacterToMap,
   onAddMonsterToMap,
   onOpenPlayerView,
-  initiativeOrder,
+  combatEntries,
+  onCombatEntriesChange,
   activeInitiativeIndex,
+  onActiveInitiativeIndexChange,
   onStartInitiative,
   onNextTurn,
+  onPrevTurn,
   onEndInitiative,
+  onAddFromMapToCombat,
   isInitiativeActive,
+  combatMode,
+  onToggleCombatMode,
   scenes,
   activeSceneId,
   onAddScene,
@@ -111,6 +124,14 @@ export const GMSidebar = ({
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<SidebarSection>('tokens');
 
+  // Auto-switch to initiative section when entering combat mode
+  useEffect(() => {
+    if (combatMode) {
+      setCollapsed(false);
+      setActiveSection('initiative');
+    }
+  }, [combatMode]);
+
   const navItems: { id: SidebarSection; icon: typeof Map; label: string }[] = [
     { id: 'maps', icon: Layers, label: 'Mapas' },
     { id: 'tokens', icon: Users, label: 'Tokens' },
@@ -118,9 +139,6 @@ export const GMSidebar = ({
     { id: 'initiative', icon: Swords, label: 'Iniciativa' },
   ];
 
-  const sortedInitiativeTokens = initiativeOrder
-    .map(id => tokens.find(t => t.id === id))
-    .filter(Boolean) as TokenData[];
 
   return (
     <div className={cn(
@@ -271,86 +289,36 @@ export const GMSidebar = ({
             </ScrollArea>
           )}
 
-          {/* Initiative section */}
+          {/* Initiative / Combat section */}
           {activeSection === 'initiative' && (
-            <ScrollArea className="flex-1">
-              <div className="p-3 space-y-3">
-                {!isInitiativeActive ? (
-                  <div className="space-y-3">
-                    <p className="text-xs text-muted-foreground">
-                      Ordena los tokens por iniciativa y comienza el combate.
-                    </p>
-                    <Button
-                      onClick={onStartInitiative}
-                      className="w-full gap-2"
-                      size="sm"
-                      disabled={tokens.filter(t => t.status === 'active').length === 0}
-                    >
-                      <Swords className="w-4 h-4" />
-                      Iniciar combate
-                    </Button>
-                    {tokens.filter(t => t.status === 'active').length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        Añade tokens activos para iniciar
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={onNextTurn}
-                        className="flex-1 gap-2"
-                        size="sm"
-                      >
-                        Siguiente turno
-                      </Button>
-                      <Button
-                        onClick={onEndInitiative}
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                      >
-                        Fin
-                      </Button>
-                    </div>
-
-                    <div className="space-y-1">
-                      {sortedInitiativeTokens.map((token, index) => (
-                        <div
-                          key={token.id}
-                          className={cn(
-                            "flex items-center gap-2 p-2 rounded-lg text-sm transition-all",
-                            index === activeInitiativeIndex
-                              ? "bg-primary/15 border border-primary/30 text-foreground"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          <span className="w-5 text-center font-mono text-xs">{index + 1}</span>
-                          <div
-                            className={cn(
-                              "w-6 h-6 rounded-full border border-foreground/20 flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden",
-                              !token.imageUrl && `bg-token-${token.color}`
-                            )}
-                          >
-                            {token.imageUrl ? (
-                              <img src={token.imageUrl} className="w-full h-full object-cover" alt="" />
-                            ) : (
-                              token.name.charAt(0)
-                            )}
-                          </div>
-                          <span className="truncate flex-1">{token.name}</span>
-                          <span className="text-xs font-mono text-muted-foreground">{token.initiative}</span>
-                          {index === activeInitiativeIndex && (
-                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between gap-2 shrink-0">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Modo combate</span>
+                <Button
+                  size="sm"
+                  variant={combatMode ? 'default' : 'outline'}
+                  className="h-7 text-xs gap-1"
+                  onClick={onToggleCombatMode}
+                >
+                  <Swords className="w-3 h-3" />
+                  {combatMode ? 'Activo' : 'Inactivo'}
+                </Button>
               </div>
-            </ScrollArea>
+              <CombatTracker
+                embedded
+                entries={combatEntries}
+                activeIndex={activeInitiativeIndex}
+                isActive={isInitiativeActive}
+                tokens={tokens}
+                onEntriesChange={onCombatEntriesChange}
+                onActiveIndexChange={onActiveInitiativeIndexChange}
+                onStart={onStartInitiative}
+                onStop={onEndInitiative}
+                onNext={onNextTurn}
+                onPrev={onPrevTurn}
+                onAddFromMap={onAddFromMapToCombat}
+              />
+            </div>
           )}
         </div>
       )}

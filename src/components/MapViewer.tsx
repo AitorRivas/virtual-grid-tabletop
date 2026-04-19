@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from './Token';
+import { CombatTracker, type CombatEntry, type CombatFaction } from './CombatTracker';
 import { MapControls } from './MapControls';
 import { DiceRoller } from './DiceRoller';
 import { AmbientPlayer } from './AmbientPlayer';
@@ -24,6 +25,7 @@ import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
+export type TokenFaction = 'pj' | 'enemy' | 'npc';
 
 export interface TokenData {
   id: string;
@@ -41,6 +43,7 @@ export interface TokenData {
   rotation?: number;
   speedFeet?: number;
   sizeInCells?: number;
+  faction?: TokenFaction;
   lightEnabled?: boolean;
   lightRadius?: number;
   lightSoftness?: number;
@@ -112,10 +115,11 @@ export const MapViewer = () => {
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
 
-  // Initiative system
-  const [initiativeOrder, setInitiativeOrder] = useState<string[]>([]);
+  // Combat / Initiative system
+  const [combatEntries, setCombatEntries] = useState<CombatEntry[]>([]);
   const [activeInitiativeIndex, setActiveInitiativeIndex] = useState(0);
   const [isInitiativeActive, setIsInitiativeActive] = useState(false);
+  const [combatMode, setCombatMode] = useState(false);
 
   // Open player view window
   const openPlayerWindow = useCallback(() => {
@@ -243,47 +247,87 @@ export const MapViewer = () => {
     }));
   }, [updateActiveMap]);
 
-  // Initiative handlers
+  // Combat handlers
   const handleStartInitiative = useCallback(() => {
-    const activeTokens = tokens
-      .filter(t => t.status === 'active')
-      .sort((a, b) => b.initiative - a.initiative);
-    if (activeTokens.length === 0) return;
-    setInitiativeOrder(activeTokens.map(t => t.id));
+    if (combatEntries.length === 0) {
+      // auto-import active map tokens if list is empty
+      const factionFromToken = (t: TokenData): CombatFaction =>
+        t.faction ?? (t.id.startsWith('char-') ? 'pj' : t.id.startsWith('monster-') ? 'enemy' : 'npc');
+      const fromTokens: CombatEntry[] = tokens
+        .filter(t => t.status === 'active')
+        .sort((a, b) => b.initiative - a.initiative)
+        .map(t => ({
+          id: `combat-${t.id}`,
+          tokenId: t.id,
+          name: t.name,
+          initiative: t.initiative,
+          faction: factionFromToken(t),
+        }));
+      if (fromTokens.length === 0) {
+        toast.error('Añade combatientes antes de iniciar');
+        return;
+      }
+      setCombatEntries(fromTokens);
+    }
     setActiveInitiativeIndex(0);
     setIsInitiativeActive(true);
+    setCombatMode(true);
     toast.success('¡Combate iniciado!');
-  }, [tokens]);
+  }, [combatEntries.length, tokens]);
 
   const handleNextTurn = useCallback(() => {
     setActiveInitiativeIndex(prev => {
-      const next = (prev + 1) % initiativeOrder.length;
-      const token = tokens.find(t => t.id === initiativeOrder[next]);
-      if (token) toast.info(`Turno de ${token.name}`);
+      if (combatEntries.length === 0) return 0;
+      const next = (prev + 1) % combatEntries.length;
+      const entry = combatEntries[next];
+      if (entry) toast.info(`Turno de ${entry.name}`);
       return next;
     });
-  }, [initiativeOrder, tokens]);
+  }, [combatEntries]);
+
+  const handlePrevTurn = useCallback(() => {
+    setActiveInitiativeIndex(prev => {
+      if (combatEntries.length === 0) return 0;
+      const next = (prev - 1 + combatEntries.length) % combatEntries.length;
+      return next;
+    });
+  }, [combatEntries]);
 
   const handleEndInitiative = useCallback(() => {
     setIsInitiativeActive(false);
-    setInitiativeOrder([]);
     setActiveInitiativeIndex(0);
     toast.success('Combate finalizado');
   }, []);
 
-  // Get the currently active initiative token id
-  const activeInitiativeTokenId = isInitiativeActive && initiativeOrder.length > 0
-    ? initiativeOrder[activeInitiativeIndex]
+  const handleAddFromMap = useCallback(() => {
+    const factionFromToken = (t: TokenData): CombatFaction =>
+      t.faction ?? (t.id.startsWith('char-') ? 'pj' : t.id.startsWith('monster-') ? 'enemy' : 'npc');
+    const existingTokenIds = new Set(combatEntries.map(e => e.tokenId).filter(Boolean));
+    const additions: CombatEntry[] = tokens
+      .filter(t => t.status === 'active' && !existingTokenIds.has(t.id))
+      .map(t => ({
+        id: `combat-${t.id}-${Date.now()}`,
+        tokenId: t.id,
+        name: t.name,
+        initiative: t.initiative,
+        faction: factionFromToken(t),
+      }));
+    if (additions.length === 0) {
+      toast.info('Todos los tokens activos ya están en la lista');
+      return;
+    }
+    setCombatEntries(prev => [...prev, ...additions]);
+    toast.success(`${additions.length} combatiente(s) añadido(s)`);
+  }, [combatEntries, tokens]);
+
+  // Get the currently active initiative token id (for halo on map)
+  const activeInitiativeTokenId = isInitiativeActive && combatEntries.length > 0
+    ? combatEntries[activeInitiativeIndex]?.tokenId ?? null
     : null;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('El archivo es demasiado grande. Máximo 20MB.');
-      return;
-    }
 
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, sube una imagen válida.');
@@ -522,6 +566,7 @@ export const MapViewer = () => {
       imageUrl: character.image_url || undefined,
       speedFeet: character.speed,
       sizeInCells,
+      faction: 'pj',
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${character.name} añadido al mapa`);
@@ -546,6 +591,7 @@ export const MapViewer = () => {
       imageUrl: monster.image_url || undefined,
       speedFeet: monster.speed,
       sizeInCells,
+      faction: 'enemy',
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
@@ -763,12 +809,18 @@ export const MapViewer = () => {
         onAddCharacterToMap={handleAddCharacterToMap}
         onAddMonsterToMap={handleAddMonsterToMap}
         onOpenPlayerView={openPlayerWindow}
-        initiativeOrder={initiativeOrder}
+        combatEntries={combatEntries}
+        onCombatEntriesChange={setCombatEntries}
         activeInitiativeIndex={activeInitiativeIndex}
+        onActiveInitiativeIndexChange={setActiveInitiativeIndex}
         onStartInitiative={handleStartInitiative}
         onNextTurn={handleNextTurn}
+        onPrevTurn={handlePrevTurn}
         onEndInitiative={handleEndInitiative}
+        onAddFromMapToCombat={handleAddFromMap}
         isInitiativeActive={isInitiativeActive}
+        combatMode={combatMode}
+        onToggleCombatMode={() => setCombatMode(prev => !prev)}
         scenes={scenes}
         activeSceneId={activeSceneId}
         onAddScene={addScene}
@@ -823,6 +875,8 @@ export const MapViewer = () => {
           tokens={tokens}
           narrativeLightFollowTokenId={narrativeLight.followTokenId}
           onNarrativeLightFollowToken={(id) => setNarrativeLight({ followTokenId: id })}
+          combatMode={combatMode}
+          onToggleCombatMode={() => setCombatMode(prev => !prev)}
         />
 
         {/* Map area */}
@@ -835,7 +889,7 @@ export const MapViewer = () => {
                   Carga tu mapa
                 </h2>
                 <p className="text-muted-foreground mb-4">
-                  Sube una imagen de hasta 20MB
+                  Sube una imagen de tu mapa
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
