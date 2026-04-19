@@ -620,12 +620,15 @@ export const MapViewer = () => {
       onZoom={(ref) => {
         setZoomLevel(ref.state.scale);
         zoomFunctionsRef.current = ref;
+        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
       onPanning={(ref) => {
         zoomFunctionsRef.current = ref;
+        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
+        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
     >
       {({ zoomIn, zoomOut, resetTransform, zoomToElement, ...rest }) => (
