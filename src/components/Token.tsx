@@ -422,10 +422,22 @@ export const Token = ({
 
         {/* Quick action buttons */}
         {showActions && status === 'active' && (
-          <div 
+          <div
             className="absolute left-1/2 -translate-x-1/2 flex gap-1 z-[110]"
             style={{ top: -32 }}
           >
+            {onToggleHidden && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleHidden();
+                }}
+                className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
+                title={hidden ? 'Mostrar a los jugadores' : 'Ocultar a los jugadores'}
+              >
+                {hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
