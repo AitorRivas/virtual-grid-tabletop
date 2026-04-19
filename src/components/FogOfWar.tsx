@@ -412,7 +412,7 @@ export const FogOfWar = ({
         width={width}
         height={height}
         className="absolute inset-0"
-        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+        style={{ width: '100%', height: '100%', pointerEvents: 'none', opacity }}
       />
       {/* Overlay for previews (rectangle/polygon) */}
       <canvas
