@@ -144,6 +144,8 @@ const PlayerView = () => {
     mapDimensions.height,
     dmCamera.scale,
   ]);
+
+  const gridConfig = useMemo((): GridConfig => ({
     type: showGrid ? 'square' : 'none',
     cellSize: gridSize,
     offsetX: gridOffsetX,
