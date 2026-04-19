@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      audio_library: {
+        Row: {
+          audio_data: string
+          channel: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          audio_data: string
+          channel?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          audio_data?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       characters: {
         Row: {
           actions: Json | null
