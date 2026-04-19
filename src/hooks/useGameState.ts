@@ -175,6 +175,24 @@ export const useGameState = () => {
     ));
   }, []);
 
+  const savePlayerCamera = useCallback((mapId: string, snapshot: PlayerCameraSnapshot) => {
+    gameStateStore.setState((prev) => {
+      const cur = prev.playerCameras[mapId];
+      if (
+        cur &&
+        Math.abs(cur.positionX - snapshot.positionX) < 0.5 &&
+        Math.abs(cur.positionY - snapshot.positionY) < 0.5 &&
+        Math.abs(cur.scale - snapshot.scale) < 0.001
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        playerCameras: { ...prev.playerCameras, [mapId]: snapshot },
+      };
+    });
+  }, []);
+
   const clearSession = useCallback(() => {
     gameStateStore.clear();
   }, []);
