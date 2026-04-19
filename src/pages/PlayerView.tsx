@@ -126,11 +126,13 @@ const PlayerView = () => {
       {renderNarrative()}
 
       <TransformWrapper
+        key={activeMap?.id ?? 'no-map'}
         initialScale={1}
         minScale={0.1}
         maxScale={10}
         centerOnInit
-        limitToBounds={false}
+        limitToBounds={true}
+        smooth
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
