@@ -200,6 +200,7 @@ function migrateState(raw: any): GameState {
       playerViewConfig: defaultPlayerViewConfig,
       dmCamera: defaultDmCamera,
       dmSelectedTokenId: null,
+      playerCameras: {},
     };
   }
 
