@@ -99,12 +99,18 @@ export const GMSidebar = ({
   onAddCharacterToMap,
   onAddMonsterToMap,
   onOpenPlayerView,
-  initiativeOrder,
+  combatEntries,
+  onCombatEntriesChange,
   activeInitiativeIndex,
+  onActiveInitiativeIndexChange,
   onStartInitiative,
   onNextTurn,
+  onPrevTurn,
   onEndInitiative,
+  onAddFromMapToCombat,
   isInitiativeActive,
+  combatMode,
+  onToggleCombatMode,
   scenes,
   activeSceneId,
   onAddScene,
@@ -125,9 +131,6 @@ export const GMSidebar = ({
     { id: 'initiative', icon: Swords, label: 'Iniciativa' },
   ];
 
-  const sortedInitiativeTokens = initiativeOrder
-    .map(id => tokens.find(t => t.id === id))
-    .filter(Boolean) as TokenData[];
 
   return (
     <div className={cn(
