@@ -59,7 +59,7 @@ export const AmbientPlayer = () => {
   const [showLibrary, setShowLibrary] = useState(false);
   const [savingTrackId, setSavingTrackId] = useState<string | null>(null);
 
-  const { items: libraryItems, addToLibrary, removeFromLibrary } = useAudioLibrary();
+  const { musicItems, ambientItems, addToLibrary, removeFromLibrary } = useAudioLibrary();
 
   const audioRef1 = useRef<HTMLAudioElement | null>(null);
   const audioRef2 = useRef<HTMLAudioElement | null>(null);
@@ -604,48 +604,54 @@ export const AmbientPlayer = () => {
               </div>
 
               {showLibrary ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    {libraryItems.length === 0
-                      ? 'Tu biblioteca está vacía. Sube una pista y guárdala con el icono 💾.'
-                      : `${libraryItems.length} pista${libraryItems.length === 1 ? '' : 's'} guardada${libraryItems.length === 1 ? '' : 's'}`}
-                  </p>
-                  <div className="space-y-1 max-h-72 overflow-y-auto">
-                    {libraryItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-2 p-2 rounded bg-secondary/30 hover:bg-secondary/50"
-                      >
-                        {item.channel === 'ambient' ? (
-                          <Wind className="w-3 h-3 text-muted-foreground shrink-0" />
-                        ) : (
-                          <Music className="w-3 h-3 text-muted-foreground shrink-0" />
-                        )}
-                        <span className="flex-1 text-sm truncate" title={item.name}>
-                          {item.name}
-                        </span>
-                        <Button
-                          onClick={() => loadFromLibrary(item)}
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:text-primary"
-                          title="Cargar y reproducir"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          onClick={() => removeFromLibrary(item.id)}
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:text-destructive"
-                          title="Eliminar de la biblioteca"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                (() => {
+                  const currentItems = activeChannel === 1 ? musicItems : ambientItems;
+                  const channelLabel = activeChannel === 1 ? 'música' : 'ambiente';
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        {currentItems.length === 0
+                          ? `Tu biblioteca de ${channelLabel} está vacía. Cambia de pestaña arriba para alternar entre Música y Ambiente, o guarda una pista con 💾.`
+                          : `${currentItems.length} pista${currentItems.length === 1 ? '' : 's'} de ${channelLabel}`}
+                      </p>
+                      <div className="space-y-1 max-h-72 overflow-y-auto">
+                        {currentItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center gap-2 p-2 rounded bg-secondary/30 hover:bg-secondary/50"
+                          >
+                            {item.channel === 'ambient' ? (
+                              <Wind className="w-3 h-3 text-muted-foreground shrink-0" />
+                            ) : (
+                              <Music className="w-3 h-3 text-muted-foreground shrink-0" />
+                            )}
+                            <span className="flex-1 text-sm truncate" title={item.name}>
+                              {item.name}
+                            </span>
+                            <Button
+                              onClick={() => loadFromLibrary(item)}
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 hover:text-primary"
+                              title="Cargar y reproducir"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              onClick={() => removeFromLibrary(item.id)}
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 hover:text-destructive"
+                              title="Eliminar de la biblioteca"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  );
+                })()
               ) : (
                 /* Active channel controls */
                 activeChannel === 1 ? renderChannelControls(1) : renderChannelControls(2)
