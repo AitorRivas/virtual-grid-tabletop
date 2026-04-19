@@ -48,6 +48,8 @@ export interface TokenData {
   lightRadius?: number;
   lightSoftness?: number;
   lightFlicker?: boolean;
+  /** If true, the token is invisible to players but still shown to the DM (semi-transparent). */
+  hidden?: boolean;
 }
 
 export const MapViewer = () => {
