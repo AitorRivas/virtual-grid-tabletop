@@ -27,6 +27,8 @@ export const FogOfWar = ({
   onFogChange,
   fogTool,
   fogMode,
+  opacity = 1,
+  onReady,
 }: FogOfWarProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -34,6 +36,7 @@ export const FogOfWar = ({
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const renderedDataRef = useRef<string | null>(null);
   const mountedRef = useRef(false);
+  const readyFiredRef = useRef(false);
 
   // Rectangle state
   const [rectStart, setRectStart] = useState<{ x: number; y: number } | null>(null);
