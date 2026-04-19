@@ -66,16 +66,35 @@ const PlayerView = () => {
   }, [activeMap?.id]);
 
   // Restore the saved Player camera for this map once dimensions are known.
+  // Coords are clamped to current viewport so a saved camera from a larger
+  // window never lands the view outside the map ("limbo" prevention).
   useEffect(() => {
     if (!activeMap?.id || !transformApiRef.current) return;
     if (mapDimensions.width === 0 || mapDimensions.height === 0) return;
     if (restoredForMapRef.current === activeMap.id) return;
+    const root = rootRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
     const saved = playerCameras[activeMap.id];
     if (!saved) {
       restoredForMapRef.current = activeMap.id;
       return;
     }
-    transformApiRef.current.setTransform(saved.positionX, saved.positionY, saved.scale, 0);
+
+    const scale = Number.isFinite(saved.scale) && saved.scale > 0 ? saved.scale : 1;
+    const scaledW = mapDimensions.width * scale;
+    const scaledH = mapDimensions.height * scale;
+    let x = saved.positionX;
+    let y = saved.positionY;
+    // Clamp to keep map inside viewport (matches limitToBounds behavior).
+    if (scaledW <= rect.width) x = (rect.width - scaledW) / 2;
+    else x = Math.min(0, Math.max(rect.width - scaledW, x));
+    if (scaledH <= rect.height) y = (rect.height - scaledH) / 2;
+    else y = Math.min(0, Math.max(rect.height - scaledH, y));
+
+    transformApiRef.current.setTransform(x, y, scale, 0);
     restoredForMapRef.current = activeMap.id;
   }, [activeMap?.id, mapDimensions.width, mapDimensions.height, playerCameras]);
 

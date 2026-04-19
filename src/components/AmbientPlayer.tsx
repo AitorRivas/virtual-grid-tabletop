@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { toast } from 'sonner';
 import { useDraggable } from '@/hooks/useDraggable';
-import { useAudioLibrary, type LibraryAudio } from '@/hooks/useAudioLibrary';
+import { useAudioLibrary, isSupportedAudioFile, type LibraryAudioMeta } from '@/hooks/useAudioLibrary';
 
 interface Track {
   id: string;
@@ -59,7 +59,7 @@ export const AmbientPlayer = () => {
   const [showLibrary, setShowLibrary] = useState(false);
   const [savingTrackId, setSavingTrackId] = useState<string | null>(null);
 
-  const { musicItems, ambientItems, addToLibrary, removeFromLibrary } = useAudioLibrary();
+  const { musicItems, ambientItems, addToLibrary, removeFromLibrary, loadAudioData } = useAudioLibrary();
 
   const audioRef1 = useRef<HTMLAudioElement | null>(null);
   const audioRef2 = useRef<HTMLAudioElement | null>(null);
@@ -181,7 +181,8 @@ export const AmbientPlayer = () => {
     const newTracks: Track[] = [];
     let invalid = 0;
     for (const file of files) {
-      if (!file.type.startsWith('audio/')) {
+      if (!isSupportedAudioFile(file)) {
+        console.warn('Audio upload rejected (formato no soportado):', { name: file.name, type: file.type });
         invalid += 1;
         continue;
       }
@@ -219,7 +220,11 @@ export const AmbientPlayer = () => {
     } else {
       if (audioRef.current) {
         audioRef.current.src = track.url;
-        audioRef.current.play();
+        audioRef.current.play().catch((err) => {
+          console.error('Audio play failed:', { id: track.id, name: track.name, url: track.url.slice(0, 64) + '…', error: err });
+          toast.error(`No se pudo reproducir "${track.name}"`);
+          setChannel(prev => ({ ...prev, isPlaying: false }));
+        });
       }
       setChannel(prev => ({ ...prev, currentTrack: track, isPlaying: true }));
     }
@@ -330,16 +335,20 @@ export const AmbientPlayer = () => {
   };
 
   // Load a single library item into the active channel and start playing.
-  const loadFromLibrary = (item: LibraryAudio) => {
+  // Audio data is fetched lazily (not preloaded for the whole library).
+  const loadFromLibrary = async (item: LibraryAudioMeta) => {
     const channelNum: 1 | 2 = item.channel === 'ambient' ? 2 : 1;
     setActiveChannel(channelNum);
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
     const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
 
+    const audioData = await loadAudioData(item.id);
+    if (!audioData) return;
+
     const newTrack: Track = {
       id: `lib-${item.id}`,
       name: item.name,
-      url: item.audio_data,
+      url: audioData,
       libraryId: item.id,
     };
 
@@ -349,8 +358,11 @@ export const AmbientPlayer = () => {
       return { ...prev, tracks, currentTrack: newTrack, isPlaying: true };
     });
     if (audioRef.current) {
-      audioRef.current.src = item.audio_data;
-      audioRef.current.play().catch(() => {});
+      audioRef.current.src = audioData;
+      audioRef.current.play().catch((err) => {
+        console.error('Audio play failed (library):', { id: item.id, name: item.name, error: err });
+        toast.error(`No se pudo reproducir "${item.name}"`);
+      });
     }
   };
 
