@@ -24,6 +24,7 @@ import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
 export type TokenStatus = 'active' | 'dead' | 'inactive';
+export type TokenFaction = 'pj' | 'enemy' | 'npc';
 
 export interface TokenData {
   id: string;
@@ -41,6 +42,7 @@ export interface TokenData {
   rotation?: number;
   speedFeet?: number;
   sizeInCells?: number;
+  faction?: TokenFaction;
   lightEnabled?: boolean;
   lightRadius?: number;
   lightSoftness?: number;
