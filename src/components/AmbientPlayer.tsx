@@ -427,6 +427,7 @@ export const AmbientPlayer = () => {
         ref={fileInputRef}
         type="file"
         accept="audio/*"
+        multiple
         onChange={handleFileUpload}
         className="hidden"
       />
