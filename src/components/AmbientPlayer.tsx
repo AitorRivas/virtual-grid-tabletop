@@ -580,19 +580,76 @@ export const AmbientPlayer = () => {
                 </Button>
               </div>
 
-              {/* Upload button */}
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                size="sm"
-                className="w-full mb-4 gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Añadir a {activeChannel === 1 ? 'Música' : 'Ambiente'}
-              </Button>
+              {/* Action buttons */}
+              <div className="flex gap-2 mb-4">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-2"
+                  title="Puedes seleccionar varios archivos a la vez"
+                >
+                  <Upload className="w-4 h-4" />
+                  Añadir
+                </Button>
+                <Button
+                  onClick={() => setShowLibrary(s => !s)}
+                  variant={showLibrary ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 gap-2"
+                >
+                  <Library className="w-4 h-4" />
+                  Biblioteca
+                </Button>
+              </div>
 
-              {/* Active channel controls */}
-              {activeChannel === 1 ? renderChannelControls(1) : renderChannelControls(2)}
+              {showLibrary ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {libraryItems.length === 0
+                      ? 'Tu biblioteca está vacía. Sube una pista y guárdala con el icono 💾.'
+                      : `${libraryItems.length} pista${libraryItems.length === 1 ? '' : 's'} guardada${libraryItems.length === 1 ? '' : 's'}`}
+                  </p>
+                  <div className="space-y-1 max-h-72 overflow-y-auto">
+                    {libraryItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-2 p-2 rounded bg-secondary/30 hover:bg-secondary/50"
+                      >
+                        {item.channel === 'ambient' ? (
+                          <Wind className="w-3 h-3 text-muted-foreground shrink-0" />
+                        ) : (
+                          <Music className="w-3 h-3 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="flex-1 text-sm truncate" title={item.name}>
+                          {item.name}
+                        </span>
+                        <Button
+                          onClick={() => loadFromLibrary(item)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:text-primary"
+                          title="Cargar y reproducir"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          onClick={() => removeFromLibrary(item.id)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:text-destructive"
+                          title="Eliminar de la biblioteca"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Active channel controls */
+                activeChannel === 1 ? renderChannelControls(1) : renderChannelControls(2)
+              )}
             </div>
           </div>
         )}
