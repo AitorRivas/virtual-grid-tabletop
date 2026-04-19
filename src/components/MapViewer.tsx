@@ -807,12 +807,18 @@ export const MapViewer = () => {
         onAddCharacterToMap={handleAddCharacterToMap}
         onAddMonsterToMap={handleAddMonsterToMap}
         onOpenPlayerView={openPlayerWindow}
-        initiativeOrder={initiativeOrder}
+        combatEntries={combatEntries}
+        onCombatEntriesChange={setCombatEntries}
         activeInitiativeIndex={activeInitiativeIndex}
+        onActiveInitiativeIndexChange={setActiveInitiativeIndex}
         onStartInitiative={handleStartInitiative}
         onNextTurn={handleNextTurn}
+        onPrevTurn={handlePrevTurn}
         onEndInitiative={handleEndInitiative}
+        onAddFromMapToCombat={handleAddFromMap}
         isInitiativeActive={isInitiativeActive}
+        combatMode={combatMode}
+        onToggleCombatMode={() => setCombatMode(prev => !prev)}
         scenes={scenes}
         activeSceneId={activeSceneId}
         onAddScene={addScene}
@@ -867,6 +873,8 @@ export const MapViewer = () => {
           tokens={tokens}
           narrativeLightFollowTokenId={narrativeLight.followTokenId}
           onNarrativeLightFollowToken={(id) => setNarrativeLight({ followTokenId: id })}
+          combatMode={combatMode}
+          onToggleCombatMode={() => setCombatMode(prev => !prev)}
         />
 
         {/* Map area */}
