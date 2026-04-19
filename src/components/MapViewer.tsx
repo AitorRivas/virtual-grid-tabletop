@@ -280,11 +280,6 @@ export const MapViewer = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('El archivo es demasiado grande. Máximo 20MB.');
-      return;
-    }
-
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, sube una imagen válida.');
       return;
@@ -835,7 +830,7 @@ export const MapViewer = () => {
                   Carga tu mapa
                 </h2>
                 <p className="text-muted-foreground mb-4">
-                  Sube una imagen de hasta 20MB
+                  Sube una imagen de tu mapa
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
