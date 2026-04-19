@@ -56,7 +56,11 @@ export const AmbientPlayer = () => {
   });
   
   const [activeChannel, setActiveChannel] = useState<1 | 2>(1);
-  
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [savingTrackId, setSavingTrackId] = useState<string | null>(null);
+
+  const { items: libraryItems, addToLibrary, removeFromLibrary } = useAudioLibrary();
+
   const audioRef1 = useRef<HTMLAudioElement | null>(null);
   const audioRef2 = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
