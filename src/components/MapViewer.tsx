@@ -74,6 +74,10 @@ export const MapViewer = () => {
     narrativeLight,
     setNarrativeLight,
     setActiveInitiativeTokenId,
+    playerViewConfig,
+    setPlayerViewConfig,
+    setDmCamera,
+    setDmSelectedTokenId,
   } = useGameState();
 
   // Derive current map state from activeMap
@@ -836,6 +840,8 @@ export const MapViewer = () => {
         narrativeOverlay={narrativeOverlay}
         onShowNarrativeImage={handleShowNarrativeImage}
         onHideNarrativeImage={handleHideNarrativeImage}
+        playerViewConfig={playerViewConfig}
+        onPlayerViewConfigChange={setPlayerViewConfig}
       />
 
       {/* Main content */}
