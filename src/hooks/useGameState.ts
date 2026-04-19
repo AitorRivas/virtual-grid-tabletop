@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData } from '@/stores/gameState';
+import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState } from '@/stores/gameState';
 
-export type { MapData, SceneData, GameState, NarrativeLightData };
+export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState };
 
 type MapUpdate =
   | Partial<MapData>
@@ -147,6 +147,34 @@ export const useGameState = () => {
     ));
   }, []);
 
+  const setPlayerViewConfig = useCallback((updates: Partial<PlayerViewConfig>) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      playerViewConfig: { ...prev.playerViewConfig, ...updates },
+    }));
+  }, []);
+
+  const setDmCamera = useCallback((camera: Omit<DmCameraState, 'tick'>) => {
+    gameStateStore.setState((prev) => {
+      const cur = prev.dmCamera;
+      if (
+        cur.mapId === camera.mapId &&
+        Math.abs(cur.positionX - camera.positionX) < 0.5 &&
+        Math.abs(cur.positionY - camera.positionY) < 0.5 &&
+        Math.abs(cur.scale - camera.scale) < 0.001
+      ) {
+        return prev;
+      }
+      return { ...prev, dmCamera: { ...camera, tick: cur.tick + 1 } };
+    });
+  }, []);
+
+  const setDmSelectedTokenId = useCallback((tokenId: string | null) => {
+    gameStateStore.setState((prev) => (
+      prev.dmSelectedTokenId === tokenId ? prev : { ...prev, dmSelectedTokenId: tokenId }
+    ));
+  }, []);
+
   const clearSession = useCallback(() => {
     gameStateStore.clear();
   }, []);
@@ -160,6 +188,9 @@ export const useGameState = () => {
     narrativeOverlay: state.narrativeOverlay,
     narrativeLight: state.narrativeLight,
     activeInitiativeTokenId: state.activeInitiativeTokenId,
+    playerViewConfig: state.playerViewConfig,
+    dmCamera: state.dmCamera,
+    dmSelectedTokenId: state.dmSelectedTokenId,
     isLoaded,
     setActiveMapId,
     addMap,
@@ -173,6 +204,9 @@ export const useGameState = () => {
     setNarrativeOverlay,
     setNarrativeLight,
     setActiveInitiativeTokenId,
+    setPlayerViewConfig,
+    setDmCamera,
+    setDmSelectedTokenId,
     clearSession,
   };
 };
