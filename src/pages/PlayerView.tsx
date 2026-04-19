@@ -118,21 +118,25 @@ const PlayerView = () => {
   useEffect(() => {
     if (!playerViewConfig.syncSelection) return;
     if (!dmSelectedTokenId || !transformApiRef.current) return;
+    if (!rootRef.current || mapDimensions.width === 0 || mapDimensions.height === 0) return;
     const token = activeMap?.tokens.find((t) => t.id === dmSelectedTokenId);
-    if (!token || !mapContainerRef.current || mapDimensions.width === 0) return;
+    if (!token) return;
 
     // Token x/y are stored as percentages (0-1) of the map's natural size.
     const tokenX = token.x * mapDimensions.width;
     const tokenY = token.y * mapDimensions.height;
 
-    const wrapper = mapContainerRef.current.parentElement?.parentElement;
-    const wrapperRect = wrapper?.getBoundingClientRect();
-    if (!wrapperRect) return;
+    const rootRect = rootRef.current.getBoundingClientRect();
+    if (!rootRect.width || !rootRect.height) return;
 
     const cur = transformApiRef.current.state;
-    const scale = playerViewConfig.syncZoom ? dmCamera.scale : cur.scale;
-    const targetX = wrapperRect.width / 2 - tokenX * scale;
-    const targetY = wrapperRect.height / 2 - tokenY * scale;
+    const rawScale = playerViewConfig.syncZoom ? dmCamera.scale : cur.scale;
+    const scale = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : 1;
+
+    const targetX = rootRect.width / 2 - tokenX * scale;
+    const targetY = rootRect.height / 2 - tokenY * scale;
+
+    if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
 
     transformApiRef.current.setTransform(targetX, targetY, scale, 320, 'easeOut');
   }, [
