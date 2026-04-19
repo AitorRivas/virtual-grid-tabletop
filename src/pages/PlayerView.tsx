@@ -132,9 +132,9 @@ const PlayerView = () => {
       : (cur?.scale ?? 1);
     const scale = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : 1;
 
-    // Token x/y stored as percentages (0-1) of map natural size.
-    const tokenX = token.x * mapDimensions.width;
-    const tokenY = token.y * mapDimensions.height;
+    // Token x/y stored as percentages (0-100) of map natural size.
+    const tokenX = (token.x / 100) * mapDimensions.width;
+    const tokenY = (token.y / 100) * mapDimensions.height;
 
     const scaledMapW = mapDimensions.width * scale;
     const scaledMapH = mapDimensions.height * scale;
