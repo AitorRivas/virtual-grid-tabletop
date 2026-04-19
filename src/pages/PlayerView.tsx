@@ -79,6 +79,12 @@ const PlayerView = () => {
 
     const saved = playerCameras[activeMap.id];
     if (!saved) {
+      const scale = 1;
+      const scaledW = mapDimensions.width * scale;
+      const scaledH = mapDimensions.height * scale;
+      const x = scaledW <= rect.width ? (rect.width - scaledW) / 2 : Math.min(0, Math.max(rect.width - scaledW, 0));
+      const y = scaledH <= rect.height ? (rect.height - scaledH) / 2 : Math.min(0, Math.max(rect.height - scaledH, 0));
+      transformApiRef.current.setTransform(x, y, scale, 0);
       restoredForMapRef.current = activeMap.id;
       return;
     }
@@ -88,14 +94,15 @@ const PlayerView = () => {
     const scaledH = mapDimensions.height * scale;
     let x = saved.positionX;
     let y = saved.positionY;
-    // Clamp to keep map inside viewport (matches limitToBounds behavior).
     if (scaledW <= rect.width) x = (rect.width - scaledW) / 2;
     else x = Math.min(0, Math.max(rect.width - scaledW, x));
     if (scaledH <= rect.height) y = (rect.height - scaledH) / 2;
     else y = Math.min(0, Math.max(rect.height - scaledH, y));
 
-    transformApiRef.current.setTransform(x, y, scale, 0);
-    restoredForMapRef.current = activeMap.id;
+    requestAnimationFrame(() => {
+      transformApiRef.current?.setTransform(x, y, scale, 0);
+      restoredForMapRef.current = activeMap.id;
+    });
   }, [activeMap?.id, mapDimensions.width, mapDimensions.height, playerCameras]);
 
   // Handle narrative overlay transitions
@@ -275,7 +282,7 @@ const PlayerView = () => {
         initialScale={1}
         minScale={0.1}
         maxScale={10}
-        centerOnInit
+        centerOnInit={false}
         limitToBounds={true}
         smooth
         onInit={(ref) => { transformApiRef.current = ref as any; }}
