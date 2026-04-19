@@ -18,6 +18,8 @@ const PlayerView = () => {
     playerViewConfig,
     dmCamera,
     dmSelectedTokenId,
+    playerCameras,
+    savePlayerCamera,
   } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -27,6 +29,7 @@ const PlayerView = () => {
     setTransform: (x: number, y: number, scale: number, time?: number, easing?: string) => void;
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
+  const restoredForMapRef = useRef<string | null>(null);
 
   // Track narrative transitions
   const [narrativeVisible, setNarrativeVisible] = useState(false);
