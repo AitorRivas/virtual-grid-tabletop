@@ -25,11 +25,15 @@ interface TokenProps {
   rotation?: number;
   isSelected: boolean;
   isActiveInitiative?: boolean;
+  hidden?: boolean;
+  /** When true, hidden visuals (semi-transparent + EyeOff badge) are applied. Player view passes false to never render hidden tokens at all. */
+  showHiddenStyle?: boolean;
   onMove: (id: string, x: number, y: number) => void;
   onClick: () => void;
   onDelete: () => void;
   onMarkDead: () => void;
   onRotate: (id: string, rotation: number) => void;
+  onToggleHidden?: () => void;
   mapContainerRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -45,9 +49,10 @@ const colorClasses: Record<TokenColor, string> = {
   black: 'bg-gray-800',
 };
 
-export const Token = ({ 
+export const Token = ({
   id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected, isActiveInitiative = false,
-  onMove, onClick, onDelete, onMarkDead, onRotate, mapContainerRef 
+  hidden = false, showHiddenStyle = false,
+  onMove, onClick, onDelete, onMarkDead, onRotate, onToggleHidden, mapContainerRef
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
