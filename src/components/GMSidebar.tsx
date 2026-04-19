@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MapManager } from './MapManager';
 import { TokenToolbar } from './TokenToolbar';
 import { SceneManager } from './SceneManager';
+import { CombatTracker, type CombatEntry } from './CombatTracker';
 import { MapData, SceneData } from '@/hooks/useGameState';
 import { TokenData, TokenColor, TokenStatus } from './MapViewer';
 import { Character, Monster } from '@/types/dnd';
@@ -44,13 +45,19 @@ interface GMSidebarProps {
   onAddMonsterToMap: (monster: Monster) => void;
   // Player view
   onOpenPlayerView: () => void;
-  // Initiative
-  initiativeOrder: string[];
+  // Combat / Initiative
+  combatEntries: CombatEntry[];
+  onCombatEntriesChange: (entries: CombatEntry[]) => void;
   activeInitiativeIndex: number;
+  onActiveInitiativeIndexChange: (index: number) => void;
   onStartInitiative: () => void;
   onNextTurn: () => void;
+  onPrevTurn: () => void;
   onEndInitiative: () => void;
+  onAddFromMapToCombat: () => void;
   isInitiativeActive: boolean;
+  combatMode: boolean;
+  onToggleCombatMode: () => void;
   // Scenes
   scenes: SceneData[];
   activeSceneId: string | null;
