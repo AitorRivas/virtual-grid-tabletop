@@ -322,7 +322,14 @@ export const MapViewer = () => {
       round: next === 0 ? cur.round + 1 : cur.round,
     }));
     const entry = combatEntries[next];
-    if (entry) toast.info(`Turno de ${entry.name}`);
+    if (entry) {
+      toast.info(`Turno de ${entry.name}`);
+      // Auto-select the active token so Player View centers on it (if syncSelection is on)
+      // and the DM also sees its selection halo.
+      if (entry.tokenId) {
+        setSelectedToken(entry.tokenId);
+      }
+    }
   }, [combatEntries, activeInitiativeIndex, updateCombat]);
 
   const handlePrevTurn = useCallback(() => {
