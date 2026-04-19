@@ -23,6 +23,8 @@ const PlayerView = () => {
   } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [transformReadyMapId, setTransformReadyMapId] = useState<string | null>(null);
+  const [imageReadyMapId, setImageReadyMapId] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const transformApiRef = useRef<{
@@ -30,6 +32,7 @@ const PlayerView = () => {
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
   const restoredForMapRef = useRef<string | null>(null);
+  const isHydratingCameraRef = useRef(false);
 
   // Track narrative transitions
   const [narrativeVisible, setNarrativeVisible] = useState(false);
@@ -52,6 +55,12 @@ const PlayerView = () => {
   const gridOffsetY = activeMap?.gridOffsetY ?? 0;
   const cellStates = activeMap?.cellStates ?? {};
 
+  const isMapReady = !!activeMap?.id
+    && transformReadyMapId === activeMap.id
+    && imageReadyMapId === activeMap.id
+    && mapDimensions.width > 0
+    && mapDimensions.height > 0;
+
   // Reset dimensions when map image changes
   useEffect(() => {
     if (mapImage !== prevMapImageRef.current) {
@@ -60,65 +69,85 @@ const PlayerView = () => {
     }
   }, [mapImage]);
 
-  // Reset restore guard whenever the active map changes so we re-apply the saved camera.
+  // Reset hydration flags whenever the active map changes.
   useEffect(() => {
     restoredForMapRef.current = null;
+    isHydratingCameraRef.current = true;
+    setTransformReadyMapId(null);
+    setImageReadyMapId(null);
   }, [activeMap?.id]);
 
   // Persist the current camera right before leaving a map (or unmounting).
-  // This covers the case where the user changes map before another transform event fires.
   useEffect(() => {
     const currentMapId = activeMap?.id;
     return () => {
       if (!currentMapId || !transformApiRef.current) return;
       const state = transformApiRef.current.state;
-      savePlayerCamera(currentMapId, {
+      const snapshot = {
         positionX: state.positionX,
         positionY: state.positionY,
         scale: state.scale,
-      });
+      };
+      console.log('Saving camera:', currentMapId, snapshot);
+      savePlayerCamera(currentMapId, snapshot);
     };
   }, [activeMap?.id, savePlayerCamera]);
 
-  // Restore the saved Player camera for this map once dimensions are known.
-  // Coords are clamped to current viewport so a saved camera from a larger
-  // window never lands the view outside the map ("limbo" prevention).
+  // Restore the saved camera only after both the viewport and the map image are ready.
+  // This avoids racing against react-zoom-pan-pinch init and cached-image onLoad timing.
   useEffect(() => {
-    if (!activeMap?.id || !transformApiRef.current) return;
-    if (mapDimensions.width === 0 || mapDimensions.height === 0) return;
+    if (!activeMap?.id || !isMapReady || !transformApiRef.current) return;
     if (restoredForMapRef.current === activeMap.id) return;
+
+    const api = transformApiRef.current;
     const root = rootRef.current;
     if (!root) return;
+
     const rect = root.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
+    const clampCamera = (positionX: number, positionY: number, scale: number) => {
+      const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+      const scaledW = mapDimensions.width * safeScale;
+      const scaledH = mapDimensions.height * safeScale;
+
+      let nextX = positionX;
+      let nextY = positionY;
+
+      if (scaledW <= rect.width) nextX = (rect.width - scaledW) / 2;
+      else nextX = Math.min(0, Math.max(rect.width - scaledW, nextX));
+
+      if (scaledH <= rect.height) nextY = (rect.height - scaledH) / 2;
+      else nextY = Math.min(0, Math.max(rect.height - scaledH, nextY));
+
+      return { positionX: nextX, positionY: nextY, scale: safeScale };
+    };
+
     const saved = playerCameras[activeMap.id];
-    if (!saved) {
-      const scale = 1;
-      const scaledW = mapDimensions.width * scale;
-      const scaledH = mapDimensions.height * scale;
-      const x = scaledW <= rect.width ? (rect.width - scaledW) / 2 : Math.min(0, Math.max(rect.width - scaledW, 0));
-      const y = scaledH <= rect.height ? (rect.height - scaledH) / 2 : Math.min(0, Math.max(rect.height - scaledH, 0));
-      transformApiRef.current.setTransform(x, y, scale, 0);
-      restoredForMapRef.current = activeMap.id;
-      return;
+    const targetCamera = saved
+      ? clampCamera(saved.positionX, saved.positionY, saved.scale)
+      : clampCamera(0, 0, 1);
+
+    if (saved) {
+      console.log('Restoring camera:', activeMap.id, targetCamera);
+    } else {
+      console.log('Applying default camera:', activeMap.id, targetCamera);
     }
 
-    const scale = Number.isFinite(saved.scale) && saved.scale > 0 ? saved.scale : 1;
-    const scaledW = mapDimensions.width * scale;
-    const scaledH = mapDimensions.height * scale;
-    let x = saved.positionX;
-    let y = saved.positionY;
-    if (scaledW <= rect.width) x = (rect.width - scaledW) / 2;
-    else x = Math.min(0, Math.max(rect.width - scaledW, x));
-    if (scaledH <= rect.height) y = (rect.height - scaledH) / 2;
-    else y = Math.min(0, Math.max(rect.height - scaledH, y));
-
+    let cancelled = false;
     requestAnimationFrame(() => {
-      transformApiRef.current?.setTransform(x, y, scale, 0);
-      restoredForMapRef.current = activeMap.id;
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
+        restoredForMapRef.current = activeMap.id;
+        isHydratingCameraRef.current = false;
+      });
     });
-  }, [activeMap?.id, mapDimensions.width, mapDimensions.height, playerCameras]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMap?.id, isMapReady, mapDimensions.width, mapDimensions.height, playerCameras]);
 
   // Handle narrative overlay transitions
   useEffect(() => {
@@ -154,11 +183,12 @@ const PlayerView = () => {
   }, []);
 
   // Sync DM camera (position + zoom) when flags are enabled.
-  // Smoothly animate using react-zoom-pan-pinch's setTransform with duration.
+  // Never apply while we are still hydrating a saved/default camera for this map.
   useEffect(() => {
-    if (!transformApiRef.current) return;
+    if (!transformApiRef.current || !activeMap?.id) return;
     if (!playerViewConfig.syncCamera && !playerViewConfig.syncZoom) return;
-    if (dmCamera.mapId && dmCamera.mapId !== activeMap?.id) return;
+    if (restoredForMapRef.current !== activeMap.id || isHydratingCameraRef.current) return;
+    if (dmCamera.mapId && dmCamera.mapId !== activeMap.id) return;
 
     const cur = transformApiRef.current.state;
     const targetX = playerViewConfig.syncCamera ? dmCamera.positionX : cur.positionX;
@@ -178,12 +208,13 @@ const PlayerView = () => {
   ]);
 
   // Sync selection: center Player View on the token the DM selected.
-  // Uses clamped translation to keep viewport inside map bounds (avoids "limbo").
+  // Never apply while we are still hydrating a saved/default camera for this map.
   useEffect(() => {
-    if (!playerViewConfig.syncSelection) return;
+    if (!playerViewConfig.syncSelection || !activeMap?.id) return;
+    if (restoredForMapRef.current !== activeMap.id || isHydratingCameraRef.current) return;
     if (!dmSelectedTokenId || !transformApiRef.current) return;
     if (!rootRef.current || mapDimensions.width === 0 || mapDimensions.height === 0) return;
-    const token = activeMap?.tokens.find((t) => t.id === dmSelectedTokenId);
+    const token = activeMap.tokens.find((t) => t.id === dmSelectedTokenId);
     if (!token) return;
 
     const rootRect = rootRef.current.getBoundingClientRect();
@@ -195,19 +226,15 @@ const PlayerView = () => {
       : (cur?.scale ?? 1);
     const scale = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : 1;
 
-    // Token x/y stored as percentages (0-100) of map natural size.
     const tokenX = (token.x / 100) * mapDimensions.width;
     const tokenY = (token.y / 100) * mapDimensions.height;
 
     const scaledMapW = mapDimensions.width * scale;
     const scaledMapH = mapDimensions.height * scale;
 
-    // Desired translation to center the token under the viewport center.
     let targetX = rootRect.width / 2 - tokenX * scale;
     let targetY = rootRect.height / 2 - tokenY * scale;
 
-    // Clamp to keep map inside viewport (matches limitToBounds behavior).
-    // If map is smaller than viewport, center it; otherwise clamp edges.
     if (scaledMapW <= rootRect.width) {
       targetX = (rootRect.width - scaledMapW) / 2;
     } else {
@@ -230,6 +257,7 @@ const PlayerView = () => {
     dmSelectedTokenId,
     playerViewConfig.syncSelection,
     playerViewConfig.syncZoom,
+    activeMap?.id,
     activeMap?.tokens,
     mapDimensions.width,
     mapDimensions.height,
@@ -300,13 +328,15 @@ const PlayerView = () => {
         centerOnInit={false}
         limitToBounds={true}
         smooth
-        onInit={(ref) => { transformApiRef.current = ref as any; }}
+        onInit={(ref) => {
+          transformApiRef.current = ref as any;
+          setTransformReadyMapId(activeMap?.id ?? null);
+        }}
         onZoom={(ref) => { transformApiRef.current = ref as any; }}
         onPanning={(ref) => { transformApiRef.current = ref as any; }}
         onTransformed={(ref, state) => {
           transformApiRef.current = ref as any;
-          // Persist Player camera per map (only after we've restored, to avoid overwriting saved state with the centerOnInit transform).
-          if (activeMap?.id && restoredForMapRef.current === activeMap.id) {
+          if (activeMap?.id && restoredForMapRef.current === activeMap.id && !isHydratingCameraRef.current) {
             savePlayerCamera(activeMap.id, {
               positionX: state.positionX,
               positionY: state.positionY,
@@ -329,6 +359,7 @@ const PlayerView = () => {
               onLoad={(e) => {
                 const img = e.currentTarget;
                 setMapDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                setImageReadyMapId(activeMap?.id ?? null);
               }}
             />
 
@@ -380,7 +411,6 @@ const PlayerView = () => {
                 onReady={() => setFogReady(true)}
               />
             )}
-
 
             {/* Narrative Light layer */}
             {narrativeLight.enabled && mapDimensions.width > 0 && (
