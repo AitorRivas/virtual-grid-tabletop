@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState } from '@/stores/gameState';
+import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored } from '@/stores/gameState';
 
-export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState };
+export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored };
 
 type MapUpdate =
   | Partial<MapData>

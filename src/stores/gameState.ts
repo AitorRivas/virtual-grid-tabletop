@@ -9,6 +9,21 @@ import type { CellState } from '@/lib/gridEngine/types';
 const STORAGE_KEY = 'dnd-session';
 const BROADCAST_CHANNEL = 'vtt-gamestate-sync';
 
+export interface CombatEntryStored {
+  id: string;
+  tokenId?: string;
+  name: string;
+  initiative: number;
+  faction: 'pj' | 'enemy' | 'npc';
+}
+
+export interface MapCombatState {
+  entries: CombatEntryStored[];
+  activeIndex: number;
+  isActive: boolean;
+  round: number;
+}
+
 export interface MapData {
   id: string;
   name: string;
@@ -24,6 +39,8 @@ export interface MapData {
   gridOffsetX: number;
   gridOffsetY: number;
   cellStates: Record<string, CellState>;
+  /** Per-map combat state (initiative tracker scoped to this map only). */
+  combat?: MapCombatState;
 }
 
 export interface SceneData {

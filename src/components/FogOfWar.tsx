@@ -12,6 +12,10 @@ interface FogOfWarProps {
   onFogChange: (data: string) => void;
   fogTool: FogTool;
   fogMode: FogMode;
+  /** Visual opacity of the fog layer (1 = fully opaque for players, ~0.45 for DM). Default 1. */
+  opacity?: number;
+  /** Callback fired the first time the canvas has been painted (used by Player View to lift the black anti-flicker overlay). */
+  onReady?: () => void;
 }
 
 export const FogOfWar = ({
@@ -23,6 +27,8 @@ export const FogOfWar = ({
   onFogChange,
   fogTool,
   fogMode,
+  opacity = 1,
+  onReady,
 }: FogOfWarProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -30,6 +36,7 @@ export const FogOfWar = ({
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const renderedDataRef = useRef<string | null>(null);
   const mountedRef = useRef(false);
+  const readyFiredRef = useRef(false);
 
   // Rectangle state
   const [rectStart, setRectStart] = useState<{ x: number; y: number } | null>(null);
@@ -38,6 +45,17 @@ export const FogOfWar = ({
   // Polygon state
   const [polyPoints, setPolyPoints] = useState<{ x: number; y: number }[]>([]);
   const [polyPreview, setPolyPreview] = useState<{ x: number; y: number } | null>(null);
+
+  const fireReady = useCallback(() => {
+    if (readyFiredRef.current || !onReady) return;
+    readyFiredRef.current = true;
+    onReady();
+  }, [onReady]);
+
+  // Reset ready flag whenever the canvas is remounted (size change ≈ map change)
+  useEffect(() => {
+    readyFiredRef.current = false;
+  }, [width, height]);
 
   // ── Initialise / restore fog on mount ──────────────────────────
   useEffect(() => {
@@ -55,6 +73,7 @@ export const FogOfWar = ({
         ctx.drawImage(img, 0, 0, width, height);
         renderedDataRef.current = fogData;
         mountedRef.current = true;
+        fireReady();
       };
       img.src = fogData;
     } else {
@@ -65,6 +84,7 @@ export const FogOfWar = ({
       const dataUrl = canvas.toDataURL('image/png', 0.6);
       renderedDataRef.current = dataUrl;
       onFogChange(dataUrl);
+      fireReady();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height]);
@@ -85,6 +105,7 @@ export const FogOfWar = ({
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         renderedDataRef.current = fogData;
+        fireReady();
       };
       img.src = fogData;
     } else {
@@ -93,6 +114,7 @@ export const FogOfWar = ({
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
       renderedDataRef.current = null;
+      fireReady();
     }
   }, [fogData, width, height]);
 
@@ -390,7 +412,7 @@ export const FogOfWar = ({
         width={width}
         height={height}
         className="absolute inset-0"
-        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+        style={{ width: '100%', height: '100%', pointerEvents: 'none', opacity }}
       />
       {/* Overlay for previews (rectangle/polygon) */}
       <canvas

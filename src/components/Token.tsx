@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Trash2, Skull } from 'lucide-react';
+import { Trash2, Skull, Eye, EyeOff } from 'lucide-react';
 import { TokenColor, TokenStatus } from './MapViewer';
 import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -25,11 +25,15 @@ interface TokenProps {
   rotation?: number;
   isSelected: boolean;
   isActiveInitiative?: boolean;
+  hidden?: boolean;
+  /** When true, hidden visuals (semi-transparent + EyeOff badge) are applied. Player view passes false to never render hidden tokens at all. */
+  showHiddenStyle?: boolean;
   onMove: (id: string, x: number, y: number) => void;
   onClick: () => void;
   onDelete: () => void;
   onMarkDead: () => void;
   onRotate: (id: string, rotation: number) => void;
+  onToggleHidden?: () => void;
   mapContainerRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -45,9 +49,10 @@ const colorClasses: Record<TokenColor, string> = {
   black: 'bg-gray-800',
 };
 
-export const Token = ({ 
+export const Token = ({
   id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected, isActiveInitiative = false,
-  onMove, onClick, onDelete, onMarkDead, onRotate, mapContainerRef 
+  hidden = false, showHiddenStyle = false,
+  onMove, onClick, onDelete, onMarkDead, onRotate, onToggleHidden, mapContainerRef
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
@@ -216,13 +221,23 @@ export const Token = ({
           width: size,
           height: size,
           zIndex: isSelected ? 100 : 50,
-          opacity: isDead || isInactive ? 0.5 : 1,
+          opacity: hidden && showHiddenStyle ? 0.4 : (isDead || isInactive ? 0.5 : 1),
+          filter: hidden && showHiddenStyle ? 'grayscale(0.4)' : undefined,
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMoveForCursor}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
       >
+        {/* Hidden indicator badge (DM-only) */}
+        {hidden && showHiddenStyle && (
+          <div
+            className="absolute -top-1 -right-1 z-[105] bg-card/95 border border-border rounded-full p-1 shadow-lg pointer-events-none"
+            title="Token oculto a los jugadores"
+          >
+            <EyeOff className="w-3 h-3 text-muted-foreground" />
+          </div>
+        )}
         {/* Initiative active halo */}
         {isActiveInitiative && status === 'active' && (
           <div 
@@ -407,10 +422,22 @@ export const Token = ({
 
         {/* Quick action buttons */}
         {showActions && status === 'active' && (
-          <div 
+          <div
             className="absolute left-1/2 -translate-x-1/2 flex gap-1 z-[110]"
             style={{ top: -32 }}
           >
+            {onToggleHidden && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleHidden();
+                }}
+                className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
+                title={hidden ? 'Mostrar a los jugadores' : 'Ocultar a los jugadores'}
+              >
+                {hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
