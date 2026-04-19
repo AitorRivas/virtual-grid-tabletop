@@ -65,6 +65,21 @@ const PlayerView = () => {
     restoredForMapRef.current = null;
   }, [activeMap?.id]);
 
+  // Persist the current camera right before leaving a map (or unmounting).
+  // This covers the case where the user changes map before another transform event fires.
+  useEffect(() => {
+    const currentMapId = activeMap?.id;
+    return () => {
+      if (!currentMapId || !transformApiRef.current) return;
+      const state = transformApiRef.current.state;
+      savePlayerCamera(currentMapId, {
+        positionX: state.positionX,
+        positionY: state.positionY,
+        scale: state.scale,
+      });
+    };
+  }, [activeMap?.id, savePlayerCamera]);
+
   // Restore the saved Player camera for this map once dimensions are known.
   // Coords are clamped to current viewport so a saved camera from a larger
   // window never lands the view outside the map ("limbo" prevention).
@@ -79,6 +94,12 @@ const PlayerView = () => {
 
     const saved = playerCameras[activeMap.id];
     if (!saved) {
+      const scale = 1;
+      const scaledW = mapDimensions.width * scale;
+      const scaledH = mapDimensions.height * scale;
+      const x = scaledW <= rect.width ? (rect.width - scaledW) / 2 : Math.min(0, Math.max(rect.width - scaledW, 0));
+      const y = scaledH <= rect.height ? (rect.height - scaledH) / 2 : Math.min(0, Math.max(rect.height - scaledH, 0));
+      transformApiRef.current.setTransform(x, y, scale, 0);
       restoredForMapRef.current = activeMap.id;
       return;
     }
@@ -88,14 +109,15 @@ const PlayerView = () => {
     const scaledH = mapDimensions.height * scale;
     let x = saved.positionX;
     let y = saved.positionY;
-    // Clamp to keep map inside viewport (matches limitToBounds behavior).
     if (scaledW <= rect.width) x = (rect.width - scaledW) / 2;
     else x = Math.min(0, Math.max(rect.width - scaledW, x));
     if (scaledH <= rect.height) y = (rect.height - scaledH) / 2;
     else y = Math.min(0, Math.max(rect.height - scaledH, y));
 
-    transformApiRef.current.setTransform(x, y, scale, 0);
-    restoredForMapRef.current = activeMap.id;
+    requestAnimationFrame(() => {
+      transformApiRef.current?.setTransform(x, y, scale, 0);
+      restoredForMapRef.current = activeMap.id;
+    });
   }, [activeMap?.id, mapDimensions.width, mapDimensions.height, playerCameras]);
 
   // Handle narrative overlay transitions
@@ -275,7 +297,7 @@ const PlayerView = () => {
         initialScale={1}
         minScale={0.1}
         maxScale={10}
-        centerOnInit
+        centerOnInit={false}
         limitToBounds={true}
         smooth
         onInit={(ref) => { transformApiRef.current = ref as any; }}
@@ -295,7 +317,7 @@ const PlayerView = () => {
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
-          contentStyle={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          contentStyle={{ width: '100%', height: '100%' }}
         >
           <div ref={mapContainerRef} className="relative">
             <img
