@@ -10,11 +10,23 @@ import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 
 const PlayerView = () => {
-  const { activeMap, narrativeOverlay, narrativeLight, activeInitiativeTokenId } = useGameState();
+  const {
+    activeMap,
+    narrativeOverlay,
+    narrativeLight,
+    activeInitiativeTokenId,
+    playerViewConfig,
+    dmCamera,
+    dmSelectedTokenId,
+  } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const transformApiRef = useRef<{
+    setTransform: (x: number, y: number, scale: number, time?: number, easing?: string) => void;
+    state: { positionX: number; positionY: number; scale: number };
+  } | null>(null);
 
   // Track narrative transitions
   const [narrativeVisible, setNarrativeVisible] = useState(false);
