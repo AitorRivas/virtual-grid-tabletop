@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Upload, Grid3x3, ZoomIn, Film, Trash2, Cloud, RotateCcw, Shield, LogOut, Key, Eye, EyeOff, Paintbrush, Square, Hexagon, EyeOff as HideIcon, Flashlight } from 'lucide-react';
+import { Upload, Grid3x3, ZoomIn, Film, Trash2, Cloud, RotateCcw, Shield, LogOut, Key, Eye, EyeOff, Paintbrush, Square, Hexagon, EyeOff as HideIcon, Flashlight, Swords } from 'lucide-react';
 import type { TokenData } from './MapViewer';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
@@ -47,6 +47,8 @@ interface MapControlsProps {
   tokens?: TokenData[];
   narrativeLightFollowTokenId?: string | null;
   onNarrativeLightFollowToken?: (id: string | null) => void;
+  combatMode?: boolean;
+  onToggleCombatMode?: () => void;
 }
 
 export const MapControls = ({
@@ -83,6 +85,8 @@ export const MapControls = ({
   tokens: tokensForLight,
   narrativeLightFollowTokenId,
   onNarrativeLightFollowToken,
+  combatMode,
+  onToggleCombatMode,
 }: MapControlsProps) => {
   const navigate = useNavigate();
   const { isAdmin, signOut, updatePassword, profile } = useAuth();
@@ -523,6 +527,19 @@ export const MapControls = ({
 
             {/* Right side actions */}
             <div className="flex-1" />
+
+            {onToggleCombatMode && (
+              <Button
+                onClick={onToggleCombatMode}
+                variant={combatMode ? "default" : "ghost"}
+                size="sm"
+                className="gap-2 h-8"
+                title="Activa el panel de iniciativa optimizado para combate"
+              >
+                <Swords className="w-4 h-4" />
+                <span className="hidden lg:inline">Modo Combate</span>
+              </Button>
+            )}
 
             {onToggleCinemaMode && (
               <Button
