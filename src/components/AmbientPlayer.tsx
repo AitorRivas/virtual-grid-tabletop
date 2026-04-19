@@ -171,32 +171,37 @@ export const AmbientPlayer = () => {
   }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith('audio/')) {
-      toast.error('Por favor, sube un archivo de audio válido');
-      return;
+    const newTracks: Track[] = [];
+    let invalid = 0;
+    for (const file of files) {
+      if (!file.type.startsWith('audio/')) {
+        invalid += 1;
+        continue;
+      }
+      const url = URL.createObjectURL(file);
+      newTracks.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        url,
+      });
     }
 
-    const url = URL.createObjectURL(file);
-    const newTrack: Track = {
-      id: Date.now().toString(),
-      name: file.name.replace(/\.[^/.]+$/, ''),
-      url,
-    };
+    if (newTracks.length > 0) {
+      if (activeChannel === 1) {
+        setChannel1(prev => ({ ...prev, tracks: [...prev.tracks, ...newTracks] }));
+      } else {
+        setChannel2(prev => ({ ...prev, tracks: [...prev.tracks, ...newTracks] }));
+      }
+      toast.success(`${newTracks.length} pista${newTracks.length === 1 ? '' : 's'} añadida${newTracks.length === 1 ? '' : 's'}`);
+    }
+    if (invalid > 0) {
+      toast.error(`${invalid} archivo${invalid === 1 ? '' : 's'} ignorado${invalid === 1 ? '' : 's'} (no es audio)`);
+    }
 
-    if (activeChannel === 1) {
-      setChannel1(prev => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
-    } else {
-      setChannel2(prev => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
-    }
-    toast.success('Audio añadido');
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const playTrack = (track: Track, channelNum: 1 | 2) => {
