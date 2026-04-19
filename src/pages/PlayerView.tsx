@@ -262,6 +262,17 @@ const PlayerView = () => {
         onInit={(ref) => { transformApiRef.current = ref as any; }}
         onZoom={(ref) => { transformApiRef.current = ref as any; }}
         onPanning={(ref) => { transformApiRef.current = ref as any; }}
+        onTransformed={(ref, state) => {
+          transformApiRef.current = ref as any;
+          // Persist Player camera per map (only after we've restored, to avoid overwriting saved state with the centerOnInit transform).
+          if (activeMap?.id && restoredForMapRef.current === activeMap.id) {
+            savePlayerCamera(activeMap.id, {
+              positionX: state.positionX,
+              positionY: state.positionY,
+              scale: state.scale,
+            });
+          }
+        }}
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
