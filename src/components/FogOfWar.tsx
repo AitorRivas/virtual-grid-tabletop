@@ -46,6 +46,17 @@ export const FogOfWar = ({
   const [polyPoints, setPolyPoints] = useState<{ x: number; y: number }[]>([]);
   const [polyPreview, setPolyPreview] = useState<{ x: number; y: number } | null>(null);
 
+  const fireReady = useCallback(() => {
+    if (readyFiredRef.current || !onReady) return;
+    readyFiredRef.current = true;
+    onReady();
+  }, [onReady]);
+
+  // Reset ready flag whenever the canvas is remounted (size change ≈ map change)
+  useEffect(() => {
+    readyFiredRef.current = false;
+  }, [width, height]);
+
   // ── Initialise / restore fog on mount ──────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,6 +73,7 @@ export const FogOfWar = ({
         ctx.drawImage(img, 0, 0, width, height);
         renderedDataRef.current = fogData;
         mountedRef.current = true;
+        fireReady();
       };
       img.src = fogData;
     } else {
@@ -72,6 +84,7 @@ export const FogOfWar = ({
       const dataUrl = canvas.toDataURL('image/png', 0.6);
       renderedDataRef.current = dataUrl;
       onFogChange(dataUrl);
+      fireReady();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height]);
@@ -92,6 +105,7 @@ export const FogOfWar = ({
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         renderedDataRef.current = fogData;
+        fireReady();
       };
       img.src = fogData;
     } else {
@@ -100,6 +114,7 @@ export const FogOfWar = ({
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
       renderedDataRef.current = null;
+      fireReady();
     }
   }, [fogData, width, height]);
 
