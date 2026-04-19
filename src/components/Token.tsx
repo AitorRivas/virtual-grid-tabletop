@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Trash2, Skull } from 'lucide-react';
+import { Trash2, Skull, Eye, EyeOff } from 'lucide-react';
 import { TokenColor, TokenStatus } from './MapViewer';
 import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
