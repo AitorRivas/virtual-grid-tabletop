@@ -200,6 +200,9 @@ const PlayerView = () => {
         centerOnInit
         limitToBounds={true}
         smooth
+        onInit={(ref) => { transformApiRef.current = ref as any; }}
+        onZoom={(ref) => { transformApiRef.current = ref as any; }}
+        onPanning={(ref) => { transformApiRef.current = ref as any; }}
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
