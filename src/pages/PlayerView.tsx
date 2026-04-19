@@ -115,6 +115,7 @@ const PlayerView = () => {
   ]);
 
   // Sync selection: center Player View on the token the DM selected.
+  // Uses clamped translation to keep viewport inside map bounds (avoids "limbo").
   useEffect(() => {
     if (!playerViewConfig.syncSelection) return;
     if (!dmSelectedTokenId || !transformApiRef.current) return;
@@ -122,19 +123,42 @@ const PlayerView = () => {
     const token = activeMap?.tokens.find((t) => t.id === dmSelectedTokenId);
     if (!token) return;
 
-    // Token x/y are stored as percentages (0-1) of the map's natural size.
-    const tokenX = token.x * mapDimensions.width;
-    const tokenY = token.y * mapDimensions.height;
-
     const rootRect = rootRef.current.getBoundingClientRect();
     if (!rootRect.width || !rootRect.height) return;
 
     const cur = transformApiRef.current.state;
-    const rawScale = playerViewConfig.syncZoom ? dmCamera.scale : cur.scale;
+    const rawScale = playerViewConfig.syncZoom
+      ? dmCamera.scale
+      : (cur?.scale ?? 1);
     const scale = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : 1;
 
-    const targetX = rootRect.width / 2 - tokenX * scale;
-    const targetY = rootRect.height / 2 - tokenY * scale;
+    // Token x/y stored as percentages (0-1) of map natural size.
+    const tokenX = token.x * mapDimensions.width;
+    const tokenY = token.y * mapDimensions.height;
+
+    const scaledMapW = mapDimensions.width * scale;
+    const scaledMapH = mapDimensions.height * scale;
+
+    // Desired translation to center the token under the viewport center.
+    let targetX = rootRect.width / 2 - tokenX * scale;
+    let targetY = rootRect.height / 2 - tokenY * scale;
+
+    // Clamp to keep map inside viewport (matches limitToBounds behavior).
+    // If map is smaller than viewport, center it; otherwise clamp edges.
+    if (scaledMapW <= rootRect.width) {
+      targetX = (rootRect.width - scaledMapW) / 2;
+    } else {
+      const minX = rootRect.width - scaledMapW;
+      const maxX = 0;
+      targetX = Math.min(maxX, Math.max(minX, targetX));
+    }
+    if (scaledMapH <= rootRect.height) {
+      targetY = (rootRect.height - scaledMapH) / 2;
+    } else {
+      const minY = rootRect.height - scaledMapH;
+      const maxY = 0;
+      targetY = Math.min(maxY, Math.max(minY, targetY));
+    }
 
     if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
 

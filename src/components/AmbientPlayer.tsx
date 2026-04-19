@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal, Wind } from 'lucide-react';
+import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal, Wind, Library, Save, Trash2, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { toast } from 'sonner';
 import { useDraggable } from '@/hooks/useDraggable';
+import { useAudioLibrary, type LibraryAudio } from '@/hooks/useAudioLibrary';
 
 interface Track {
   id: string;
   name: string;
   url: string;
+  /** If set, the source is base64 from the persistent library (do not revoke). */
+  libraryId?: string;
 }
 
 interface AudioChannel {
@@ -53,7 +56,11 @@ export const AmbientPlayer = () => {
   });
   
   const [activeChannel, setActiveChannel] = useState<1 | 2>(1);
-  
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [savingTrackId, setSavingTrackId] = useState<string | null>(null);
+
+  const { items: libraryItems, addToLibrary, removeFromLibrary } = useAudioLibrary();
+
   const audioRef1 = useRef<HTMLAudioElement | null>(null);
   const audioRef2 = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -168,32 +175,37 @@ export const AmbientPlayer = () => {
   }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith('audio/')) {
-      toast.error('Por favor, sube un archivo de audio válido');
-      return;
+    const newTracks: Track[] = [];
+    let invalid = 0;
+    for (const file of files) {
+      if (!file.type.startsWith('audio/')) {
+        invalid += 1;
+        continue;
+      }
+      const url = URL.createObjectURL(file);
+      newTracks.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        url,
+      });
     }
 
-    const url = URL.createObjectURL(file);
-    const newTrack: Track = {
-      id: Date.now().toString(),
-      name: file.name.replace(/\.[^/.]+$/, ''),
-      url,
-    };
+    if (newTracks.length > 0) {
+      if (activeChannel === 1) {
+        setChannel1(prev => ({ ...prev, tracks: [...prev.tracks, ...newTracks] }));
+      } else {
+        setChannel2(prev => ({ ...prev, tracks: [...prev.tracks, ...newTracks] }));
+      }
+      toast.success(`${newTracks.length} pista${newTracks.length === 1 ? '' : 's'} añadida${newTracks.length === 1 ? '' : 's'}`);
+    }
+    if (invalid > 0) {
+      toast.error(`${invalid} archivo${invalid === 1 ? '' : 's'} ignorado${invalid === 1 ? '' : 's'} (no es audio)`);
+    }
 
-    if (activeChannel === 1) {
-      setChannel1(prev => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
-    } else {
-      setChannel2(prev => ({ ...prev, tracks: [...prev.tracks, newTrack] }));
-    }
-    toast.success('Audio añadido');
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const playTrack = (track: Track, channelNum: 1 | 2) => {
@@ -265,19 +277,80 @@ export const AmbientPlayer = () => {
 
   const removeTrack = (trackId: string, channelNum: 1 | 2) => {
     const channel = channelNum === 1 ? channel1 : channel2;
-    
+
     if (channel.currentTrack?.id === trackId) {
       stopPlayback(channelNum);
     }
     const track = channel.tracks.find(t => t.id === trackId);
-    if (track?.url) {
+    // Only revoke blob URLs (library tracks use base64 data URIs).
+    if (track?.url && !track.libraryId && track.url.startsWith('blob:')) {
       URL.revokeObjectURL(track.url);
     }
-    
+
     if (channelNum === 1) {
       setChannel1(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
     } else {
       setChannel2(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
+    }
+  };
+
+  // Convert blob URL to base64 and persist to library.
+  const saveTrackToLibrary = async (track: Track, channelNum: 1 | 2) => {
+    if (track.libraryId) {
+      toast.info('Esta pista ya está en la biblioteca');
+      return;
+    }
+    setSavingTrackId(track.id);
+    try {
+      const res = await fetch(track.url);
+      const blob = await res.blob();
+      const base64: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const channelKey: 'music' | 'ambient' = channelNum === 1 ? 'music' : 'ambient';
+      const saved = await addToLibrary(track.name, channelKey, base64);
+      if (saved) {
+        toast.success('Guardado en biblioteca');
+        // Tag the in-session track with libraryId so we don't allow double-save.
+        const updater = (prev: AudioChannel) => ({
+          ...prev,
+          tracks: prev.tracks.map(t => (t.id === track.id ? { ...t, libraryId: saved.id } : t)),
+        });
+        if (channelNum === 1) setChannel1(updater);
+        else setChannel2(updater);
+      }
+    } catch (err) {
+      toast.error('Error al guardar pista');
+    } finally {
+      setSavingTrackId(null);
+    }
+  };
+
+  // Load a single library item into the active channel and start playing.
+  const loadFromLibrary = (item: LibraryAudio) => {
+    const channelNum: 1 | 2 = item.channel === 'ambient' ? 2 : 1;
+    setActiveChannel(channelNum);
+    const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
+    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
+
+    const newTrack: Track = {
+      id: `lib-${item.id}`,
+      name: item.name,
+      url: item.audio_data,
+      libraryId: item.id,
+    };
+
+    setChannel(prev => {
+      const exists = prev.tracks.find(t => t.libraryId === item.id);
+      const tracks = exists ? prev.tracks : [...prev.tracks, newTrack];
+      return { ...prev, tracks, currentTrack: newTrack, isPlaying: true };
+    });
+    if (audioRef.current) {
+      audioRef.current.src = item.audio_data;
+      audioRef.current.play().catch(() => {});
     }
   };
 
@@ -380,11 +453,24 @@ export const AmbientPlayer = () => {
                   }
                 </Button>
                 <span className="flex-1 text-sm truncate">{track.name}</span>
+                {!track.libraryId && (
+                  <Button
+                    onClick={() => saveTrackToLibrary(track, channelNum)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 hover:text-primary"
+                    title="Guardar en biblioteca"
+                    disabled={savingTrackId === track.id}
+                  >
+                    <Save className="w-3 h-3" />
+                  </Button>
+                )}
                 <Button
                   onClick={() => removeTrack(track.id, channelNum)}
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 hover:text-destructive"
+                  title="Quitar de la sesión"
                 >
                   <X className="w-3 h-3" />
                 </Button>
@@ -419,6 +505,7 @@ export const AmbientPlayer = () => {
         ref={fileInputRef}
         type="file"
         accept="audio/*"
+        multiple
         onChange={handleFileUpload}
         className="hidden"
       />
@@ -493,19 +580,76 @@ export const AmbientPlayer = () => {
                 </Button>
               </div>
 
-              {/* Upload button */}
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                size="sm"
-                className="w-full mb-4 gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Añadir a {activeChannel === 1 ? 'Música' : 'Ambiente'}
-              </Button>
+              {/* Action buttons */}
+              <div className="flex gap-2 mb-4">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-2"
+                  title="Puedes seleccionar varios archivos a la vez"
+                >
+                  <Upload className="w-4 h-4" />
+                  Añadir
+                </Button>
+                <Button
+                  onClick={() => setShowLibrary(s => !s)}
+                  variant={showLibrary ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 gap-2"
+                >
+                  <Library className="w-4 h-4" />
+                  Biblioteca
+                </Button>
+              </div>
 
-              {/* Active channel controls */}
-              {activeChannel === 1 ? renderChannelControls(1) : renderChannelControls(2)}
+              {showLibrary ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {libraryItems.length === 0
+                      ? 'Tu biblioteca está vacía. Sube una pista y guárdala con el icono 💾.'
+                      : `${libraryItems.length} pista${libraryItems.length === 1 ? '' : 's'} guardada${libraryItems.length === 1 ? '' : 's'}`}
+                  </p>
+                  <div className="space-y-1 max-h-72 overflow-y-auto">
+                    {libraryItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-2 p-2 rounded bg-secondary/30 hover:bg-secondary/50"
+                      >
+                        {item.channel === 'ambient' ? (
+                          <Wind className="w-3 h-3 text-muted-foreground shrink-0" />
+                        ) : (
+                          <Music className="w-3 h-3 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="flex-1 text-sm truncate" title={item.name}>
+                          {item.name}
+                        </span>
+                        <Button
+                          onClick={() => loadFromLibrary(item)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:text-primary"
+                          title="Cargar y reproducir"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          onClick={() => removeFromLibrary(item.id)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:text-destructive"
+                          title="Eliminar de la biblioteca"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Active channel controls */
+                activeChannel === 1 ? renderChannelControls(1) : renderChannelControls(2)
+              )}
             </div>
           </div>
         )}
