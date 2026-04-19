@@ -566,6 +566,7 @@ export const MapViewer = () => {
       imageUrl: character.image_url || undefined,
       speedFeet: character.speed,
       sizeInCells,
+      faction: 'pj',
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${character.name} añadido al mapa`);
