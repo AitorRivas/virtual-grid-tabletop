@@ -326,6 +326,11 @@ export const MapViewer = () => {
     ? combatEntries[activeInitiativeIndex]?.tokenId ?? null
     : null;
 
+  // Sync active turn token to shared store so Player View can render the halo
+  useEffect(() => {
+    setActiveInitiativeTokenId(activeInitiativeTokenId);
+  }, [activeInitiativeTokenId, setActiveInitiativeTokenId]);
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
