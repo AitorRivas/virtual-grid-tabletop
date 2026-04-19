@@ -65,6 +65,21 @@ const PlayerView = () => {
     restoredForMapRef.current = null;
   }, [activeMap?.id]);
 
+  // Persist the current camera right before leaving a map (or unmounting).
+  // This covers the case where the user changes map before another transform event fires.
+  useEffect(() => {
+    const currentMapId = activeMap?.id;
+    return () => {
+      if (!currentMapId || !transformApiRef.current) return;
+      const state = transformApiRef.current.state;
+      savePlayerCamera(currentMapId, {
+        positionX: state.positionX,
+        positionY: state.positionY,
+        scale: state.scale,
+      });
+    };
+  }, [activeMap?.id, savePlayerCamera]);
+
   // Restore the saved Player camera for this map once dimensions are known.
   // Coords are clamped to current viewport so a saved camera from a larger
   // window never lands the view outside the map ("limbo" prevention).
@@ -302,7 +317,7 @@ const PlayerView = () => {
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
-          contentStyle={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          contentStyle={{ width: '100%', height: '100%' }}
         >
           <div ref={mapContainerRef} className="relative">
             <img
