@@ -80,6 +80,12 @@ export interface DmCameraState {
   tick: number;
 }
 
+export interface PlayerCameraSnapshot {
+  positionX: number;
+  positionY: number;
+  scale: number;
+}
+
 export interface GameState {
   revision: number;
   updatedAt: number;
@@ -101,6 +107,8 @@ export interface GameState {
   dmCamera: DmCameraState;
   /** Token selected by DM, broadcast for syncSelection (centers Player View on it) */
   dmSelectedTokenId: string | null;
+  /** Per-map saved Player View camera (position + zoom) so switching maps restores the previous viewport. */
+  playerCameras: Record<string, PlayerCameraSnapshot>;
 }
 
 const defaultNarrativeLight: NarrativeLightData = {
@@ -138,6 +146,7 @@ const defaultState: GameState = {
   playerViewConfig: defaultPlayerViewConfig,
   dmCamera: defaultDmCamera,
   dmSelectedTokenId: null,
+  playerCameras: {},
 };
 
 // Migrate old session formats
@@ -156,6 +165,7 @@ function migrateState(raw: any): GameState {
       playerViewConfig: { ...defaultPlayerViewConfig, ...(raw.playerViewConfig ?? {}) },
       dmCamera: raw.dmCamera ?? defaultDmCamera,
       dmSelectedTokenId: raw.dmSelectedTokenId ?? null,
+      playerCameras: raw.playerCameras ?? {},
     };
   }
 
@@ -190,6 +200,7 @@ function migrateState(raw: any): GameState {
       playerViewConfig: defaultPlayerViewConfig,
       dmCamera: defaultDmCamera,
       dmSelectedTokenId: null,
+      playerCameras: {},
     };
   }
 

@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored } from '@/stores/gameState';
+import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored, PlayerCameraSnapshot } from '@/stores/gameState';
 
-export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored };
+export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored, PlayerCameraSnapshot };
 
 type MapUpdate =
   | Partial<MapData>
@@ -175,6 +175,24 @@ export const useGameState = () => {
     ));
   }, []);
 
+  const savePlayerCamera = useCallback((mapId: string, snapshot: PlayerCameraSnapshot) => {
+    gameStateStore.setState((prev) => {
+      const cur = prev.playerCameras[mapId];
+      if (
+        cur &&
+        Math.abs(cur.positionX - snapshot.positionX) < 0.5 &&
+        Math.abs(cur.positionY - snapshot.positionY) < 0.5 &&
+        Math.abs(cur.scale - snapshot.scale) < 0.001
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        playerCameras: { ...prev.playerCameras, [mapId]: snapshot },
+      };
+    });
+  }, []);
+
   const clearSession = useCallback(() => {
     gameStateStore.clear();
   }, []);
@@ -191,6 +209,7 @@ export const useGameState = () => {
     playerViewConfig: state.playerViewConfig,
     dmCamera: state.dmCamera,
     dmSelectedTokenId: state.dmSelectedTokenId,
+    playerCameras: state.playerCameras,
     isLoaded,
     setActiveMapId,
     addMap,
@@ -207,6 +226,7 @@ export const useGameState = () => {
     setPlayerViewConfig,
     setDmCamera,
     setDmSelectedTokenId,
+    savePlayerCamera,
     clearSession,
   };
 };

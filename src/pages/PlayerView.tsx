@@ -18,6 +18,8 @@ const PlayerView = () => {
     playerViewConfig,
     dmCamera,
     dmSelectedTokenId,
+    playerCameras,
+    savePlayerCamera,
   } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -27,6 +29,7 @@ const PlayerView = () => {
     setTransform: (x: number, y: number, scale: number, time?: number, easing?: string) => void;
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
+  const restoredForMapRef = useRef<string | null>(null);
 
   // Track narrative transitions
   const [narrativeVisible, setNarrativeVisible] = useState(false);
@@ -56,6 +59,25 @@ const PlayerView = () => {
       prevMapImageRef.current = mapImage;
     }
   }, [mapImage]);
+
+  // Reset restore guard whenever the active map changes so we re-apply the saved camera.
+  useEffect(() => {
+    restoredForMapRef.current = null;
+  }, [activeMap?.id]);
+
+  // Restore the saved Player camera for this map once dimensions are known.
+  useEffect(() => {
+    if (!activeMap?.id || !transformApiRef.current) return;
+    if (mapDimensions.width === 0 || mapDimensions.height === 0) return;
+    if (restoredForMapRef.current === activeMap.id) return;
+    const saved = playerCameras[activeMap.id];
+    if (!saved) {
+      restoredForMapRef.current = activeMap.id;
+      return;
+    }
+    transformApiRef.current.setTransform(saved.positionX, saved.positionY, saved.scale, 0);
+    restoredForMapRef.current = activeMap.id;
+  }, [activeMap?.id, mapDimensions.width, mapDimensions.height, playerCameras]);
 
   // Handle narrative overlay transitions
   useEffect(() => {
@@ -240,6 +262,17 @@ const PlayerView = () => {
         onInit={(ref) => { transformApiRef.current = ref as any; }}
         onZoom={(ref) => { transformApiRef.current = ref as any; }}
         onPanning={(ref) => { transformApiRef.current = ref as any; }}
+        onTransformed={(ref, state) => {
+          transformApiRef.current = ref as any;
+          // Persist Player camera per map (only after we've restored, to avoid overwriting saved state with the centerOnInit transform).
+          if (activeMap?.id && restoredForMapRef.current === activeMap.id) {
+            savePlayerCamera(activeMap.id, {
+              positionX: state.positionX,
+              positionY: state.positionY,
+              scale: state.scale,
+            });
+          }
+        }}
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
