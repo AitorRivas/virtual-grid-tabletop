@@ -420,44 +420,48 @@ export const Token = ({
           {isInactive && ' ⏸️'}
         </div>
 
-        {/* Quick action buttons */}
+        {/* Quick action buttons (with invisible bridge to prevent hover gap) */}
         {showActions && status === 'active' && (
           <div
-            className="absolute left-1/2 -translate-x-1/2 flex gap-1 z-[110]"
-            style={{ top: -32 }}
+            className="absolute left-1/2 -translate-x-1/2 z-[110]"
+            style={{ top: -40, paddingBottom: 8 }}
+            onMouseEnter={() => setShowActions(true)}
+            onMouseLeave={() => setShowActions(false)}
           >
-            {onToggleHidden && (
+            <div className="flex gap-1">
+              {onToggleHidden && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleHidden();
+                  }}
+                  className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
+                  title={hidden ? 'Mostrar a los jugadores' : 'Ocultar a los jugadores'}
+                >
+                  {hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onToggleHidden();
+                  onMarkDead();
                 }}
                 className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
-                title={hidden ? 'Mostrar a los jugadores' : 'Ocultar a los jugadores'}
+                title="Marcar como muerto"
               >
-                {hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                <Skull className="w-4 h-4" />
               </button>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onMarkDead();
-              }}
-              className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
-              title="Marcar como muerto"
-            >
-              <Skull className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="p-1.5 bg-destructive hover:bg-destructive/80 rounded text-destructive-foreground transition-colors shadow-lg"
-              title="Eliminar token"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="p-1.5 bg-destructive hover:bg-destructive/80 rounded text-destructive-foreground transition-colors shadow-lg"
+                title="Eliminar token"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
