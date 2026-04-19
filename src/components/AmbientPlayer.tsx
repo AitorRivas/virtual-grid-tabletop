@@ -453,11 +453,24 @@ export const AmbientPlayer = () => {
                   }
                 </Button>
                 <span className="flex-1 text-sm truncate">{track.name}</span>
+                {!track.libraryId && (
+                  <Button
+                    onClick={() => saveTrackToLibrary(track, channelNum)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 hover:text-primary"
+                    title="Guardar en biblioteca"
+                    disabled={savingTrackId === track.id}
+                  >
+                    <Save className="w-3 h-3" />
+                  </Button>
+                )}
                 <Button
                   onClick={() => removeTrack(track.id, channelNum)}
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 hover:text-destructive"
+                  title="Quitar de la sesión"
                 >
                   <X className="w-3 h-3" />
                 </Button>
