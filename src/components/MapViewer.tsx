@@ -553,9 +553,19 @@ export const MapViewer = () => {
   };
 
   const handleTokenLightChange = (id: string, updates: { lightEnabled?: boolean; lightRadius?: number; lightSoftness?: number; lightFlicker?: boolean }) => {
-    setTokens(prev => prev.map(token => 
+    setTokens(prev => prev.map(token =>
       token.id === id ? { ...token, ...updates } : token
     ));
+  };
+
+  const handleToggleHidden = (id: string) => {
+    let nowHidden = false;
+    setTokens(prev => prev.map(token => {
+      if (token.id !== id) return token;
+      nowHidden = !token.hidden;
+      return { ...token, hidden: nowHidden };
+    }));
+    toast.success(nowHidden ? 'Token oculto a los jugadores' : 'Token visible para los jugadores');
   };
 
   const handleHpChange = (id: string, hpCurrent: number, hpMax: number) => {
