@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal, Wind } from 'lucide-react';
+import { Music, Volume2, VolumeX, Play, Pause, Upload, X, Repeat, GripHorizontal, Wind, Library, Save, Trash2, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { toast } from 'sonner';
 import { useDraggable } from '@/hooks/useDraggable';
+import { useAudioLibrary, type LibraryAudio } from '@/hooks/useAudioLibrary';
 
 interface Track {
   id: string;
   name: string;
   url: string;
+  /** If set, the source is base64 from the persistent library (do not revoke). */
+  libraryId?: string;
 }
 
 interface AudioChannel {
