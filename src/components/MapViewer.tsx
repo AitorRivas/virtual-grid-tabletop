@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from './Token';
+import { CombatTracker, type CombatEntry, type CombatFaction } from './CombatTracker';
 import { MapControls } from './MapControls';
 import { DiceRoller } from './DiceRoller';
 import { AmbientPlayer } from './AmbientPlayer';
@@ -114,10 +115,11 @@ export const MapViewer = () => {
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
 
-  // Initiative system
-  const [initiativeOrder, setInitiativeOrder] = useState<string[]>([]);
+  // Combat / Initiative system
+  const [combatEntries, setCombatEntries] = useState<CombatEntry[]>([]);
   const [activeInitiativeIndex, setActiveInitiativeIndex] = useState(0);
   const [isInitiativeActive, setIsInitiativeActive] = useState(false);
+  const [combatMode, setCombatMode] = useState(false);
 
   // Open player view window
   const openPlayerWindow = useCallback(() => {
@@ -245,37 +247,82 @@ export const MapViewer = () => {
     }));
   }, [updateActiveMap]);
 
-  // Initiative handlers
+  // Combat handlers
   const handleStartInitiative = useCallback(() => {
-    const activeTokens = tokens
-      .filter(t => t.status === 'active')
-      .sort((a, b) => b.initiative - a.initiative);
-    if (activeTokens.length === 0) return;
-    setInitiativeOrder(activeTokens.map(t => t.id));
+    if (combatEntries.length === 0) {
+      // auto-import active map tokens if list is empty
+      const factionFromToken = (t: TokenData): CombatFaction =>
+        t.faction ?? (t.id.startsWith('char-') ? 'pj' : t.id.startsWith('monster-') ? 'enemy' : 'npc');
+      const fromTokens: CombatEntry[] = tokens
+        .filter(t => t.status === 'active')
+        .sort((a, b) => b.initiative - a.initiative)
+        .map(t => ({
+          id: `combat-${t.id}`,
+          tokenId: t.id,
+          name: t.name,
+          initiative: t.initiative,
+          faction: factionFromToken(t),
+        }));
+      if (fromTokens.length === 0) {
+        toast.error('Añade combatientes antes de iniciar');
+        return;
+      }
+      setCombatEntries(fromTokens);
+    }
     setActiveInitiativeIndex(0);
     setIsInitiativeActive(true);
+    setCombatMode(true);
     toast.success('¡Combate iniciado!');
-  }, [tokens]);
+  }, [combatEntries.length, tokens]);
 
   const handleNextTurn = useCallback(() => {
     setActiveInitiativeIndex(prev => {
-      const next = (prev + 1) % initiativeOrder.length;
-      const token = tokens.find(t => t.id === initiativeOrder[next]);
-      if (token) toast.info(`Turno de ${token.name}`);
+      if (combatEntries.length === 0) return 0;
+      const next = (prev + 1) % combatEntries.length;
+      const entry = combatEntries[next];
+      if (entry) toast.info(`Turno de ${entry.name}`);
       return next;
     });
-  }, [initiativeOrder, tokens]);
+  }, [combatEntries]);
+
+  const handlePrevTurn = useCallback(() => {
+    setActiveInitiativeIndex(prev => {
+      if (combatEntries.length === 0) return 0;
+      const next = (prev - 1 + combatEntries.length) % combatEntries.length;
+      return next;
+    });
+  }, [combatEntries]);
 
   const handleEndInitiative = useCallback(() => {
     setIsInitiativeActive(false);
-    setInitiativeOrder([]);
     setActiveInitiativeIndex(0);
     toast.success('Combate finalizado');
   }, []);
 
-  // Get the currently active initiative token id
-  const activeInitiativeTokenId = isInitiativeActive && initiativeOrder.length > 0
-    ? initiativeOrder[activeInitiativeIndex]
+  const handleAddFromMap = useCallback(() => {
+    const factionFromToken = (t: TokenData): CombatFaction =>
+      t.faction ?? (t.id.startsWith('char-') ? 'pj' : t.id.startsWith('monster-') ? 'enemy' : 'npc');
+    const existingTokenIds = new Set(combatEntries.map(e => e.tokenId).filter(Boolean));
+    const additions: CombatEntry[] = tokens
+      .filter(t => t.status === 'active' && !existingTokenIds.has(t.id))
+      .map(t => ({
+        id: `combat-${t.id}-${Date.now()}`,
+        tokenId: t.id,
+        name: t.name,
+        initiative: t.initiative,
+        faction: factionFromToken(t),
+      }));
+    if (additions.length === 0) {
+      toast.info('Todos los tokens activos ya están en la lista');
+      return;
+    }
+    setCombatEntries(prev => [...prev, ...additions]);
+    toast.success(`${additions.length} combatiente(s) añadido(s)`);
+  }, [combatEntries, tokens]);
+
+  // Get the currently active initiative token id (for halo on map)
+  const activeInitiativeTokenId = isInitiativeActive && combatEntries.length > 0
+    ? combatEntries[activeInitiativeIndex]?.tokenId ?? null
     : null;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
