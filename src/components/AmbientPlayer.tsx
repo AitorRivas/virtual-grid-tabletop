@@ -335,16 +335,20 @@ export const AmbientPlayer = () => {
   };
 
   // Load a single library item into the active channel and start playing.
-  const loadFromLibrary = (item: LibraryAudio) => {
+  // Audio data is fetched lazily (not preloaded for the whole library).
+  const loadFromLibrary = async (item: LibraryAudioMeta) => {
     const channelNum: 1 | 2 = item.channel === 'ambient' ? 2 : 1;
     setActiveChannel(channelNum);
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
     const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
 
+    const audioData = await loadAudioData(item.id);
+    if (!audioData) return;
+
     const newTrack: Track = {
       id: `lib-${item.id}`,
       name: item.name,
-      url: item.audio_data,
+      url: audioData,
       libraryId: item.id,
     };
 
@@ -354,8 +358,11 @@ export const AmbientPlayer = () => {
       return { ...prev, tracks, currentTrack: newTrack, isPlaying: true };
     });
     if (audioRef.current) {
-      audioRef.current.src = item.audio_data;
-      audioRef.current.play().catch(() => {});
+      audioRef.current.src = audioData;
+      audioRef.current.play().catch((err) => {
+        console.error('Audio play failed (library):', { id: item.id, name: item.name, error: err });
+        toast.error(`No se pudo reproducir "${item.name}"`);
+      });
     }
   };
 
