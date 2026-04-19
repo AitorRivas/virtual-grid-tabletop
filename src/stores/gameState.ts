@@ -136,6 +136,9 @@ function migrateState(raw: any): GameState {
       narrativeOverlay: raw.narrativeOverlay ?? { image: null, text: '', visible: false },
       narrativeLight: raw.narrativeLight ?? defaultNarrativeLight,
       activeInitiativeTokenId: raw.activeInitiativeTokenId ?? null,
+      playerViewConfig: { ...defaultPlayerViewConfig, ...(raw.playerViewConfig ?? {}) },
+      dmCamera: raw.dmCamera ?? defaultDmCamera,
+      dmSelectedTokenId: raw.dmSelectedTokenId ?? null,
     };
   }
 
@@ -167,6 +170,9 @@ function migrateState(raw: any): GameState {
       narrativeOverlay: { image: null, text: '', visible: false },
       narrativeLight: defaultNarrativeLight,
       activeInitiativeTokenId: null,
+      playerViewConfig: defaultPlayerViewConfig,
+      dmCamera: defaultDmCamera,
+      dmSelectedTokenId: null,
     };
   }
 
