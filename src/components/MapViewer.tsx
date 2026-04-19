@@ -336,6 +336,8 @@ export const MapViewer = () => {
     if (combatEntries.length === 0) return;
     const next = (activeInitiativeIndex - 1 + combatEntries.length) % combatEntries.length;
     setActiveInitiativeIndex(next);
+    const entry = combatEntries[next];
+    if (entry?.tokenId) setSelectedToken(entry.tokenId);
   }, [combatEntries, activeInitiativeIndex, setActiveInitiativeIndex]);
 
   const handleEndInitiative = useCallback(() => {
