@@ -159,7 +159,7 @@ export const GMSidebar = ({
             <Button
               variant="ghost"
               size="sm"
-              className="w-10 h-10 p-0 mb-2"
+              className="w-10 h-10 p-0 mb-1"
               onClick={onOpenPlayerView}
             >
               <Monitor className="w-5 h-5 text-primary" />
@@ -168,7 +168,13 @@ export const GMSidebar = ({
           <TooltipContent side="right">Vista de jugadores</TooltipContent>
         </Tooltip>
 
-        <div className="h-px w-8 bg-border/50 mb-1" />
+        {/* Player view sync config */}
+        <PlayerViewConfigPanel
+          config={playerViewConfig}
+          onChange={onPlayerViewConfigChange}
+        />
+
+        <div className="h-px w-8 bg-border/50 my-1" />
 
         {navItems.map(item => (
           <Tooltip key={item.id}>
