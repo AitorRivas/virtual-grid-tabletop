@@ -60,6 +60,25 @@ const PlayerView = () => {
     }
   }, [mapImage]);
 
+  // Reset restore guard whenever the active map changes so we re-apply the saved camera.
+  useEffect(() => {
+    restoredForMapRef.current = null;
+  }, [activeMap?.id]);
+
+  // Restore the saved Player camera for this map once dimensions are known.
+  useEffect(() => {
+    if (!activeMap?.id || !transformApiRef.current) return;
+    if (mapDimensions.width === 0 || mapDimensions.height === 0) return;
+    if (restoredForMapRef.current === activeMap.id) return;
+    const saved = playerCameras[activeMap.id];
+    if (!saved) {
+      restoredForMapRef.current = activeMap.id;
+      return;
+    }
+    transformApiRef.current.setTransform(saved.positionX, saved.positionY, saved.scale, 0);
+    restoredForMapRef.current = activeMap.id;
+  }, [activeMap?.id, mapDimensions.width, mapDimensions.height, playerCameras]);
+
   // Handle narrative overlay transitions
   useEffect(() => {
     if (narrativeOverlay.visible && narrativeOverlay.image) {
