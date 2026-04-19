@@ -175,6 +175,15 @@ const PlayerView = () => {
     );
   };
 
+  // Anti-flicker: keep a black overlay until fog has painted on map switch.
+  const [fogReady, setFogReady] = useState(!fogEnabled);
+  useEffect(() => {
+    setFogReady(!fogEnabled);
+  }, [activeMap?.id, fogEnabled]);
+
+  // Players never see hidden tokens.
+  const visibleTokens = tokens.filter((t) => !t.hidden);
+
   if (!mapImage) {
     return (
       <div ref={rootRef} className="h-screen w-screen bg-black flex items-center justify-center">
@@ -265,6 +274,8 @@ const PlayerView = () => {
                 onFogChange={() => {}}
                 fogTool="brush"
                 fogMode="reveal"
+                opacity={1}
+                onReady={() => setFogReady(true)}
               />
             )}
 
@@ -280,12 +291,13 @@ const PlayerView = () => {
               />
             )}
 
-            {tokens.map(token => (
+            {visibleTokens.map(token => (
               <Token
                 key={token.id}
                 {...token}
                 isSelected={false}
                 isActiveInitiative={token.id === activeInitiativeTokenId}
+                showHiddenStyle={false}
                 onMove={() => {}}
                 onClick={() => {}}
                 onDelete={() => {}}
@@ -297,6 +309,11 @@ const PlayerView = () => {
           </div>
         </TransformComponent>
       </TransformWrapper>
+
+      {/* Anti-flicker black cover until fog is ready */}
+      {fogEnabled && !fogReady && (
+        <div className="absolute inset-0 bg-black pointer-events-none z-40" />
+      )}
 
       <button
         onClick={toggleFullscreen}
