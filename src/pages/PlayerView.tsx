@@ -90,7 +90,60 @@ const PlayerView = () => {
     }
   }, []);
 
-  const gridConfig = useMemo((): GridConfig => ({
+  // Sync DM camera (position + zoom) when flags are enabled.
+  // Smoothly animate using react-zoom-pan-pinch's setTransform with duration.
+  useEffect(() => {
+    if (!transformApiRef.current) return;
+    if (!playerViewConfig.syncCamera && !playerViewConfig.syncZoom) return;
+    if (dmCamera.mapId && dmCamera.mapId !== activeMap?.id) return;
+
+    const cur = transformApiRef.current.state;
+    const targetX = playerViewConfig.syncCamera ? dmCamera.positionX : cur.positionX;
+    const targetY = playerViewConfig.syncCamera ? dmCamera.positionY : cur.positionY;
+    const targetScale = playerViewConfig.syncZoom ? dmCamera.scale : cur.scale;
+
+    transformApiRef.current.setTransform(targetX, targetY, targetScale, 220, 'easeOut');
+  }, [
+    dmCamera.tick,
+    dmCamera.positionX,
+    dmCamera.positionY,
+    dmCamera.scale,
+    dmCamera.mapId,
+    playerViewConfig.syncCamera,
+    playerViewConfig.syncZoom,
+    activeMap?.id,
+  ]);
+
+  // Sync selection: center Player View on the token the DM selected.
+  useEffect(() => {
+    if (!playerViewConfig.syncSelection) return;
+    if (!dmSelectedTokenId || !transformApiRef.current) return;
+    const token = activeMap?.tokens.find((t) => t.id === dmSelectedTokenId);
+    if (!token || !mapContainerRef.current || mapDimensions.width === 0) return;
+
+    // Token x/y are stored as percentages (0-1) of the map's natural size.
+    const tokenX = token.x * mapDimensions.width;
+    const tokenY = token.y * mapDimensions.height;
+
+    const wrapper = mapContainerRef.current.parentElement?.parentElement;
+    const wrapperRect = wrapper?.getBoundingClientRect();
+    if (!wrapperRect) return;
+
+    const cur = transformApiRef.current.state;
+    const scale = playerViewConfig.syncZoom ? dmCamera.scale : cur.scale;
+    const targetX = wrapperRect.width / 2 - tokenX * scale;
+    const targetY = wrapperRect.height / 2 - tokenY * scale;
+
+    transformApiRef.current.setTransform(targetX, targetY, scale, 320, 'easeOut');
+  }, [
+    dmSelectedTokenId,
+    playerViewConfig.syncSelection,
+    playerViewConfig.syncZoom,
+    activeMap?.tokens,
+    mapDimensions.width,
+    mapDimensions.height,
+    dmCamera.scale,
+  ]);
     type: showGrid ? 'square' : 'none',
     cellSize: gridSize,
     offsetX: gridOffsetX,
