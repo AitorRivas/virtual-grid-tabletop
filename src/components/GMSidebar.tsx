@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Map, Users, Swords, ChevronRight, ChevronLeft, Monitor, Layers, Clapperboard, Image, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
@@ -123,6 +123,14 @@ export const GMSidebar = ({
 }: GMSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<SidebarSection>('tokens');
+
+  // Auto-switch to initiative section when entering combat mode
+  useEffect(() => {
+    if (combatMode) {
+      setCollapsed(false);
+      setActiveSection('initiative');
+    }
+  }, [combatMode]);
 
   const navItems: { id: SidebarSection; icon: typeof Map; label: string }[] = [
     { id: 'maps', icon: Layers, label: 'Mapas' },
