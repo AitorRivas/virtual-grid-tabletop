@@ -141,6 +141,12 @@ export const useGameState = () => {
     }));
   }, []);
 
+  const setActiveInitiativeTokenId = useCallback((tokenId: string | null) => {
+    gameStateStore.setState((prev) => (
+      prev.activeInitiativeTokenId === tokenId ? prev : { ...prev, activeInitiativeTokenId: tokenId }
+    ));
+  }, []);
+
   const clearSession = useCallback(() => {
     gameStateStore.clear();
   }, []);
@@ -153,6 +159,7 @@ export const useGameState = () => {
     activeSceneId: state.activeSceneId,
     narrativeOverlay: state.narrativeOverlay,
     narrativeLight: state.narrativeLight,
+    activeInitiativeTokenId: state.activeInitiativeTokenId,
     isLoaded,
     setActiveMapId,
     addMap,
@@ -165,6 +172,7 @@ export const useGameState = () => {
     setActiveSceneId,
     setNarrativeOverlay,
     setNarrativeLight,
+    setActiveInitiativeTokenId,
     clearSession,
   };
 };

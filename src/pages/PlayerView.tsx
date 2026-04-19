@@ -10,7 +10,7 @@ import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 
 const PlayerView = () => {
-  const { activeMap, narrativeOverlay, narrativeLight } = useGameState();
+  const { activeMap, narrativeOverlay, narrativeLight, activeInitiativeTokenId } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -126,11 +126,13 @@ const PlayerView = () => {
       {renderNarrative()}
 
       <TransformWrapper
+        key={activeMap?.id ?? 'no-map'}
         initialScale={1}
         minScale={0.1}
         maxScale={10}
         centerOnInit
-        limitToBounds={false}
+        limitToBounds={true}
+        smooth
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
@@ -213,6 +215,7 @@ const PlayerView = () => {
                 key={token.id}
                 {...token}
                 isSelected={false}
+                isActiveInitiative={token.id === activeInitiativeTokenId}
                 onMove={() => {}}
                 onClick={() => {}}
                 onDelete={() => {}}

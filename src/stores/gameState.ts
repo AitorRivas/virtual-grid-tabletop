@@ -59,6 +59,8 @@ export interface GameState {
     visible: boolean;
   };
   narrativeLight: NarrativeLightData;
+  /** ID of the token currently taking its turn in combat (null if no combat active). Synced to Player View. */
+  activeInitiativeTokenId: string | null;
 }
 
 const defaultNarrativeLight: NarrativeLightData = {
@@ -78,6 +80,7 @@ const defaultState: GameState = {
   activeSceneId: null,
   narrativeOverlay: { image: null, text: '', visible: false },
   narrativeLight: defaultNarrativeLight,
+  activeInitiativeTokenId: null,
 };
 
 // Migrate old session formats
@@ -92,6 +95,7 @@ function migrateState(raw: any): GameState {
       activeSceneId: raw.activeSceneId ?? null,
       narrativeOverlay: raw.narrativeOverlay ?? { image: null, text: '', visible: false },
       narrativeLight: raw.narrativeLight ?? defaultNarrativeLight,
+      activeInitiativeTokenId: raw.activeInitiativeTokenId ?? null,
     };
   }
 
@@ -122,6 +126,7 @@ function migrateState(raw: any): GameState {
       activeSceneId: null,
       narrativeOverlay: { image: null, text: '', visible: false },
       narrativeLight: defaultNarrativeLight,
+      activeInitiativeTokenId: null,
     };
   }
 

@@ -73,6 +73,7 @@ export const MapViewer = () => {
     setNarrativeOverlay,
     narrativeLight,
     setNarrativeLight,
+    setActiveInitiativeTokenId,
   } = useGameState();
 
   // Derive current map state from activeMap
@@ -324,6 +325,11 @@ export const MapViewer = () => {
   const activeInitiativeTokenId = isInitiativeActive && combatEntries.length > 0
     ? combatEntries[activeInitiativeIndex]?.tokenId ?? null
     : null;
+
+  // Sync active turn token to shared store so Player View can render the halo
+  useEffect(() => {
+    setActiveInitiativeTokenId(activeInitiativeTokenId);
+  }, [activeInitiativeTokenId, setActiveInitiativeTokenId]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
