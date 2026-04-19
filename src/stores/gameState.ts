@@ -146,6 +146,7 @@ const defaultState: GameState = {
   playerViewConfig: defaultPlayerViewConfig,
   dmCamera: defaultDmCamera,
   dmSelectedTokenId: null,
+  playerCameras: {},
 };
 
 // Migrate old session formats
@@ -164,6 +165,7 @@ function migrateState(raw: any): GameState {
       playerViewConfig: { ...defaultPlayerViewConfig, ...(raw.playerViewConfig ?? {}) },
       dmCamera: raw.dmCamera ?? defaultDmCamera,
       dmSelectedTokenId: raw.dmSelectedTokenId ?? null,
+      playerCameras: raw.playerCameras ?? {},
     };
   }
 
