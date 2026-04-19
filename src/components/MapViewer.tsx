@@ -122,11 +122,36 @@ export const MapViewer = () => {
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
 
-  // Combat / Initiative system
-  const [combatEntries, setCombatEntries] = useState<CombatEntry[]>([]);
-  const [activeInitiativeIndex, setActiveInitiativeIndex] = useState(0);
-  const [isInitiativeActive, setIsInitiativeActive] = useState(false);
+  // Combat / Initiative system — derived from active map's combat state (scoped per map)
+  const combat = activeMap?.combat ?? { entries: [], activeIndex: 0, isActive: false, round: 1 };
+  const combatEntries = combat.entries;
+  const activeInitiativeIndex = combat.activeIndex;
+  const isInitiativeActive = combat.isActive;
   const [combatMode, setCombatMode] = useState(false);
+
+  const updateCombat = useCallback((updater: Partial<MapCombatState> | ((prev: MapCombatState) => Partial<MapCombatState>)) => {
+    updateActiveMap((currentMap) => {
+      const cur = currentMap?.combat ?? { entries: [], activeIndex: 0, isActive: false, round: 1 };
+      const patch = typeof updater === 'function' ? updater(cur) : updater;
+      return { combat: { ...cur, ...patch } };
+    });
+  }, [updateActiveMap]);
+
+  const setCombatEntries = useCallback((updater: CombatEntry[] | ((prev: CombatEntry[]) => CombatEntry[])) => {
+    updateCombat((cur) => ({
+      entries: typeof updater === 'function' ? updater(cur.entries) : updater,
+    }));
+  }, [updateCombat]);
+
+  const setActiveInitiativeIndex = useCallback((updater: number | ((prev: number) => number)) => {
+    updateCombat((cur) => ({
+      activeIndex: typeof updater === 'function' ? updater(cur.activeIndex) : updater,
+    }));
+  }, [updateCombat]);
+
+  const setIsInitiativeActive = useCallback((v: boolean) => {
+    updateCombat({ isActive: v });
+  }, [updateCombat]);
 
   // Open player view window
   const openPlayerWindow = useCallback(() => {
