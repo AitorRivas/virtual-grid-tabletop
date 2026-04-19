@@ -281,12 +281,19 @@ export const MapViewer = () => {
 
   // Combat handlers
   const handleStartInitiative = useCallback(() => {
+    if (!activeMapId) return;
     if (combatEntries.length === 0) {
-      // auto-import active map tokens if list is empty
+      // Auto-import ONLY tokens of the currently active map (no cross-map leakage)
       const factionFromToken = (t: TokenData): CombatFaction =>
         t.faction ?? (t.id.startsWith('char-') ? 'pj' : t.id.startsWith('monster-') ? 'enemy' : 'npc');
+      const seen = new Set<string>();
       const fromTokens: CombatEntry[] = tokens
         .filter(t => t.status === 'active')
+        .filter(t => {
+          if (seen.has(t.id)) return false;
+          seen.add(t.id);
+          return true;
+        })
         .sort((a, b) => b.initiative - a.initiative)
         .map(t => ({
           id: `combat-${t.id}`,
@@ -299,58 +306,61 @@ export const MapViewer = () => {
         toast.error('Añade combatientes antes de iniciar');
         return;
       }
-      setCombatEntries(fromTokens);
+      updateCombat({ entries: fromTokens, activeIndex: 0, isActive: true, round: 1 });
+    } else {
+      updateCombat({ activeIndex: 0, isActive: true, round: 1 });
     }
-    setActiveInitiativeIndex(0);
-    setIsInitiativeActive(true);
     setCombatMode(true);
     toast.success('¡Combate iniciado!');
-  }, [combatEntries.length, tokens]);
+  }, [activeMapId, combatEntries.length, tokens, updateCombat]);
 
   const handleNextTurn = useCallback(() => {
-    setActiveInitiativeIndex(prev => {
-      if (combatEntries.length === 0) return 0;
-      const next = (prev + 1) % combatEntries.length;
-      const entry = combatEntries[next];
-      if (entry) toast.info(`Turno de ${entry.name}`);
-      return next;
-    });
-  }, [combatEntries]);
+    if (combatEntries.length === 0) return;
+    const next = (activeInitiativeIndex + 1) % combatEntries.length;
+    updateCombat((cur) => ({
+      activeIndex: next,
+      round: next === 0 ? cur.round + 1 : cur.round,
+    }));
+    const entry = combatEntries[next];
+    if (entry) toast.info(`Turno de ${entry.name}`);
+  }, [combatEntries, activeInitiativeIndex, updateCombat]);
 
   const handlePrevTurn = useCallback(() => {
-    setActiveInitiativeIndex(prev => {
-      if (combatEntries.length === 0) return 0;
-      const next = (prev - 1 + combatEntries.length) % combatEntries.length;
-      return next;
-    });
-  }, [combatEntries]);
+    if (combatEntries.length === 0) return;
+    const next = (activeInitiativeIndex - 1 + combatEntries.length) % combatEntries.length;
+    setActiveInitiativeIndex(next);
+  }, [combatEntries, activeInitiativeIndex, setActiveInitiativeIndex]);
 
   const handleEndInitiative = useCallback(() => {
-    setIsInitiativeActive(false);
-    setActiveInitiativeIndex(0);
+    updateCombat({ isActive: false, activeIndex: 0, round: 1 });
     toast.success('Combate finalizado');
-  }, []);
+  }, [updateCombat]);
 
   const handleAddFromMap = useCallback(() => {
     const factionFromToken = (t: TokenData): CombatFaction =>
       t.faction ?? (t.id.startsWith('char-') ? 'pj' : t.id.startsWith('monster-') ? 'enemy' : 'npc');
-    const existingTokenIds = new Set(combatEntries.map(e => e.tokenId).filter(Boolean));
-    const additions: CombatEntry[] = tokens
-      .filter(t => t.status === 'active' && !existingTokenIds.has(t.id))
-      .map(t => ({
-        id: `combat-${t.id}-${Date.now()}`,
+    // Dedupe against existing entries AND within the new batch.
+    const existingTokenIds = new Set(combatEntries.map(e => e.tokenId).filter(Boolean) as string[]);
+    const additions: CombatEntry[] = [];
+    for (const t of tokens) {
+      if (t.status !== 'active') continue;
+      if (existingTokenIds.has(t.id)) continue;
+      existingTokenIds.add(t.id);
+      additions.push({
+        id: `combat-${t.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         tokenId: t.id,
         name: t.name,
         initiative: t.initiative,
         faction: factionFromToken(t),
-      }));
+      });
+    }
     if (additions.length === 0) {
       toast.info('Todos los tokens activos ya están en la lista');
       return;
     }
     setCombatEntries(prev => [...prev, ...additions]);
     toast.success(`${additions.length} combatiente(s) añadido(s)`);
-  }, [combatEntries, tokens]);
+  }, [combatEntries, tokens, setCombatEntries]);
 
   // Get the currently active initiative token id (for halo on map)
   const activeInitiativeTokenId = isInitiativeActive && combatEntries.length > 0
