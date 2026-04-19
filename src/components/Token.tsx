@@ -221,13 +221,23 @@ export const Token = ({
           width: size,
           height: size,
           zIndex: isSelected ? 100 : 50,
-          opacity: isDead || isInactive ? 0.5 : 1,
+          opacity: hidden && showHiddenStyle ? 0.4 : (isDead || isInactive ? 0.5 : 1),
+          filter: hidden && showHiddenStyle ? 'grayscale(0.4)' : undefined,
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMoveForCursor}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
       >
+        {/* Hidden indicator badge (DM-only) */}
+        {hidden && showHiddenStyle && (
+          <div
+            className="absolute -top-1 -right-1 z-[105] bg-card/95 border border-border rounded-full p-1 shadow-lg pointer-events-none"
+            title="Token oculto a los jugadores"
+          >
+            <EyeOff className="w-3 h-3 text-muted-foreground" />
+          </div>
+        )}
         {/* Initiative active halo */}
         {isActiveInitiative && status === 'active' && (
           <div 
