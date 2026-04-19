@@ -800,7 +800,7 @@ export const MapViewer = () => {
               />
             )}
 
-            {/* Tokens */}
+            {/* Tokens — DM sees ALL tokens (hidden ones with semi-transparent style) */}
             {tokens.map(token => (
               <Token
                 key={token.id}
@@ -809,11 +809,14 @@ export const MapViewer = () => {
                 rotation={token.rotation}
                 isSelected={selectedToken === token.id}
                 isActiveInitiative={token.id === activeInitiativeTokenId}
+                hidden={token.hidden}
+                showHiddenStyle={true}
                 onMove={handleTokenMove}
                 onClick={() => setSelectedToken(token.id)}
                 onDelete={() => handleDeleteToken(token.id)}
                 onMarkDead={() => handleStatusChange(token.id, 'dead')}
                 onRotate={handleTokenRotation}
+                onToggleHidden={() => handleToggleHidden(token.id)}
                 mapContainerRef={mapContainerRef}
               />
             ))}

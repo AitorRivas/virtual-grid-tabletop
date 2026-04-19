@@ -12,6 +12,10 @@ interface FogOfWarProps {
   onFogChange: (data: string) => void;
   fogTool: FogTool;
   fogMode: FogMode;
+  /** Visual opacity of the fog layer (1 = fully opaque for players, ~0.45 for DM). Default 1. */
+  opacity?: number;
+  /** Callback fired the first time the canvas has been painted (used by Player View to lift the black anti-flicker overlay). */
+  onReady?: () => void;
 }
 
 export const FogOfWar = ({
