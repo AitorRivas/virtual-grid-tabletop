@@ -591,6 +591,7 @@ export const MapViewer = () => {
       imageUrl: monster.image_url || undefined,
       speedFeet: monster.speed,
       sizeInCells,
+      faction: 'enemy',
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
