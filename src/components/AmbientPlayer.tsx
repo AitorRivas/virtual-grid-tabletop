@@ -277,19 +277,80 @@ export const AmbientPlayer = () => {
 
   const removeTrack = (trackId: string, channelNum: 1 | 2) => {
     const channel = channelNum === 1 ? channel1 : channel2;
-    
+
     if (channel.currentTrack?.id === trackId) {
       stopPlayback(channelNum);
     }
     const track = channel.tracks.find(t => t.id === trackId);
-    if (track?.url) {
+    // Only revoke blob URLs (library tracks use base64 data URIs).
+    if (track?.url && !track.libraryId && track.url.startsWith('blob:')) {
       URL.revokeObjectURL(track.url);
     }
-    
+
     if (channelNum === 1) {
       setChannel1(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
     } else {
       setChannel2(prev => ({ ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) }));
+    }
+  };
+
+  // Convert blob URL to base64 and persist to library.
+  const saveTrackToLibrary = async (track: Track, channelNum: 1 | 2) => {
+    if (track.libraryId) {
+      toast.info('Esta pista ya está en la biblioteca');
+      return;
+    }
+    setSavingTrackId(track.id);
+    try {
+      const res = await fetch(track.url);
+      const blob = await res.blob();
+      const base64: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const channelKey: 'music' | 'ambient' = channelNum === 1 ? 'music' : 'ambient';
+      const saved = await addToLibrary(track.name, channelKey, base64);
+      if (saved) {
+        toast.success('Guardado en biblioteca');
+        // Tag the in-session track with libraryId so we don't allow double-save.
+        const updater = (prev: AudioChannel) => ({
+          ...prev,
+          tracks: prev.tracks.map(t => (t.id === track.id ? { ...t, libraryId: saved.id } : t)),
+        });
+        if (channelNum === 1) setChannel1(updater);
+        else setChannel2(updater);
+      }
+    } catch (err) {
+      toast.error('Error al guardar pista');
+    } finally {
+      setSavingTrackId(null);
+    }
+  };
+
+  // Load a single library item into the active channel and start playing.
+  const loadFromLibrary = (item: LibraryAudio) => {
+    const channelNum: 1 | 2 = item.channel === 'ambient' ? 2 : 1;
+    setActiveChannel(channelNum);
+    const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
+    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
+
+    const newTrack: Track = {
+      id: `lib-${item.id}`,
+      name: item.name,
+      url: item.audio_data,
+      libraryId: item.id,
+    };
+
+    setChannel(prev => {
+      const exists = prev.tracks.find(t => t.libraryId === item.id);
+      const tracks = exists ? prev.tracks : [...prev.tracks, newTrack];
+      return { ...prev, tracks, currentTrack: newTrack, isPlaying: true };
+    });
+    if (audioRef.current) {
+      audioRef.current.src = item.audio_data;
+      audioRef.current.play().catch(() => {});
     }
   };
 
