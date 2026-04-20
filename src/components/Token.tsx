@@ -3,6 +3,8 @@ import { Trash2, Skull, Eye, EyeOff } from 'lucide-react';
 import { TokenColor, TokenStatus } from './MapViewer';
 import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card';
+import { CombatTokenTooltipContent, type CombatTooltipData } from './CombatTokenTooltipContent';
 
 interface FloatingNumber {
   id: string;
@@ -35,6 +37,8 @@ interface TokenProps {
   onRotate: (id: string, rotation: number) => void;
   onToggleHidden?: () => void;
   mapContainerRef: React.RefObject<HTMLDivElement>;
+  /** When provided (DM + combat active + entity has stats), shows a hover card with categorized actions/traits. */
+  combatTooltip?: CombatTooltipData | null;
 }
 
 const colorClasses: Record<TokenColor, string> = {
@@ -52,7 +56,8 @@ const colorClasses: Record<TokenColor, string> = {
 export const Token = ({
   id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected, isActiveInitiative = false,
   hidden = false, showHiddenStyle = false,
-  onMove, onClick, onDelete, onMarkDead, onRotate, onToggleHidden, mapContainerRef
+  onMove, onClick, onDelete, onMarkDead, onRotate, onToggleHidden, mapContainerRef,
+  combatTooltip = null,
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
