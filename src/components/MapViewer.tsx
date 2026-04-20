@@ -273,17 +273,6 @@ export const MapViewer = () => {
   }, [activeMapId, fogEnabled]);
 
   useEffect(() => {
-    if (!activeMapId || tokens.length === 0) return;
-    const sanitizedTokens = tokens.map(sanitizeToken);
-    const changed = sanitizedTokens.reduce((count, token, index) => (
-      count + ((token.x !== tokens[index]?.x || token.y !== tokens[index]?.y) ? 1 : 0)
-    ), 0);
-    if (changed === 0) return;
-    warn('tokens:clamp', { mapId: activeMapId, count: changed, source: 'hydrate' });
-    setTokens(sanitizedTokens);
-  }, [activeMapId, tokens, setTokens]);
-
-  useEffect(() => {
     if (!activeMapId) return;
     const visibleTokenIds = new Set(tokens.map((token) => token.id));
     const cleanedEntries = combatEntries.filter((entry) => !entry.tokenId || visibleTokenIds.has(entry.tokenId));
@@ -361,6 +350,17 @@ export const MapViewer = () => {
       cellStates: typeof updater === 'function' ? updater(currentMap?.cellStates ?? {}) : updater,
     }));
   }, [updateActiveMap]);
+
+  useEffect(() => {
+    if (!activeMapId || tokens.length === 0) return;
+    const sanitizedTokens = tokens.map(sanitizeToken);
+    const changed = sanitizedTokens.reduce((count, token, index) => (
+      count + ((token.x !== tokens[index]?.x || token.y !== tokens[index]?.y) ? 1 : 0)
+    ), 0);
+    if (changed === 0) return;
+    warn('tokens:clamp', { mapId: activeMapId, count: changed, source: 'hydrate' });
+    setTokens(sanitizedTokens);
+  }, [activeMapId, tokens, setTokens]);
 
   // Combat handlers
   const handleStartInitiative = useCallback(() => {
@@ -925,6 +925,7 @@ export const MapViewer = () => {
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
+        setTransformReadyMapId(activeMapId ?? null);
         // Do NOT broadcast on init — would emit (0,0,1) and overwrite saved state.
       }}
     >
@@ -1010,6 +1011,7 @@ export const MapViewer = () => {
                 fogTool={fogTool}
                 fogMode={fogMode}
                 opacity={0.45}
+                onReady={() => setFogReadyMapId(activeMapId ?? null)}
               />
             )}
 
