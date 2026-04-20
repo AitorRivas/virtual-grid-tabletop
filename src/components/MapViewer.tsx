@@ -731,11 +731,38 @@ export const MapViewer = () => {
   };
 
   const handleStatusChange = (id: string, status: TokenStatus) => {
-    setTokens(prev => prev.map(token => 
-      token.id === id ? { ...token, status } : token
-    ));
-    
-    if (status !== 'active') {
+    let prevStatus: TokenStatus | null = null;
+    setTokens(prev => prev.map(token => {
+      if (token.id !== id) return token;
+      prevStatus = token.status;
+      // Resurrecting from dead: restore at least 1 HP if at 0
+      if (status === 'active' && token.status === 'dead') {
+        const restoredHp = token.hpCurrent <= 0 ? Math.max(1, Math.ceil(token.hpMax * 0.1)) : token.hpCurrent;
+        return { ...token, status, hpCurrent: restoredHp };
+      }
+      return { ...token, status };
+    }));
+
+    // When a token becomes dead/inactive, remove it from combat tracker
+    if (status !== 'active' && prevStatus === 'active') {
+      updateCombat((cur) => {
+        const idx = cur.entries.findIndex(e => e.tokenId === id);
+        if (idx === -1) return {};
+        const newEntries = cur.entries.filter(e => e.tokenId !== id);
+        let newActiveIndex = cur.activeIndex;
+        if (cur.isActive && newEntries.length > 0) {
+          if (idx < cur.activeIndex) newActiveIndex = cur.activeIndex - 1;
+          else if (idx === cur.activeIndex) newActiveIndex = cur.activeIndex % newEntries.length;
+        } else if (newEntries.length === 0) {
+          newActiveIndex = 0;
+        }
+        return { entries: newEntries, activeIndex: newActiveIndex };
+      });
+    }
+
+    if (status === 'active' && prevStatus === 'dead') {
+      toast.success('Token resucitado');
+    } else if (status !== 'active') {
       toast.success(status === 'dead' ? 'Token marcado como muerto' : 'Token marcado como inactivo');
     }
   };
