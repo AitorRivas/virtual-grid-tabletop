@@ -23,7 +23,7 @@ import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
-import type { CombatTooltipData } from './CombatTokenTooltipContent';
+import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
 
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
@@ -704,7 +704,7 @@ export const MapViewer = () => {
   const getCombatTooltip = useCallback((token: TokenData): CombatTooltipData | null => {
     if (!isInitiativeActive) return null;
     if (token.sourceMonsterId) {
-      const m = monsterById.get(token.sourceMonsterId);
+      const m = monsterById.get(token.sourceMonsterId) as any;
       if (!m) return null;
       const traits = m.traits ?? [];
       const actions = m.actions ?? [];
@@ -712,12 +712,19 @@ export const MapViewer = () => {
       const reactions = m.reactions ?? [];
       const legendary = m.legendary_actions?.actions ?? [];
       if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length) return null;
+      const sizeLbl = localizeSize(m.size);
+      const typeLbl = localizeType(m.type);
       return {
         name: m.name,
-        subtitle: `${m.size ?? ''} ${m.type ?? ''} · CR ${m.challenge_rating ?? '?'}`.trim(),
+        subtitle: `${sizeLbl} ${typeLbl} · VD ${m.challenge_rating ?? '?'}`.replace(/\s+/g, ' ').trim(),
         hp: { current: token.hpCurrent, max: token.hpMax },
         ac: m.armor_class,
         traits, actions, bonusActions, reactions, legendary,
+        source: {
+          strength: m.strength, dexterity: m.dexterity, constitution: m.constitution,
+          intelligence: m.intelligence, wisdom: m.wisdom, charisma: m.charisma,
+          proficiency_bonus: m.proficiency_bonus,
+        },
       };
     }
     if (token.sourceCharacterId) {
@@ -732,6 +739,11 @@ export const MapViewer = () => {
         hp: { current: token.hpCurrent, max: token.hpMax },
         ac: c.armor_class,
         traits, actions, bonusActions: [], reactions: [], legendary: [],
+        source: {
+          strength: c.strength, dexterity: c.dexterity, constitution: c.constitution,
+          intelligence: c.intelligence, wisdom: c.wisdom, charisma: c.charisma,
+          proficiency_bonus: c.proficiency_bonus,
+        },
       };
     }
     return null;
