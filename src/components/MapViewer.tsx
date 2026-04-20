@@ -646,7 +646,7 @@ export const MapViewer = () => {
     const nextY = clampPercent(y);
 
     if (nextX !== x || nextY !== y) {
-      warn('tokens:remove', { reason: 'clamped_move', id, x, y, nextX, nextY });
+      warn('tokens:clamp', { reason: 'clamped_move', id, x, y, nextX, nextY });
     }
 
     setTokens(prev => prev.map(token => 
