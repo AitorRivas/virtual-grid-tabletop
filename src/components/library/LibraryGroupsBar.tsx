@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useLibraryGroups, LibraryGroup } from '@/hooks/useLibraryGroups';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Plus, Folder, FolderOpen, X, Pencil, Check, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface LibraryGroupsBarProps {
   /** null = "Todos", "__none__" = sin grupo, otherwise group id */
