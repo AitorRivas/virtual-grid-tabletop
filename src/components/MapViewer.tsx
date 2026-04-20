@@ -88,6 +88,8 @@ export const MapViewer = () => {
     setPlayerViewConfig,
     setDmCamera,
     setDmSelectedTokenId,
+    dmCameras,
+    saveDmCamera,
   } = useGameState();
 
   // Derive current map state from activeMap
