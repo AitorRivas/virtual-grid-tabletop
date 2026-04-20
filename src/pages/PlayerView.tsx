@@ -118,42 +118,57 @@ const PlayerView = () => {
     if (!activeMap?.id || !isMapReady || !transformApiRef.current) return;
     if (restoredForMapRef.current === activeMap.id) return;
 
-    const api = transformApiRef.current;
-    const root = rootRef.current;
-    if (!root) return;
+    let frame = 0;
+    let rafId = 0;
 
-    const rect = root.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
+    const hydrateCamera = () => {
+      const api = transformApiRef.current;
+      const root = rootRef.current;
+      if (!api || !root) return;
 
-    const clampCamera = (positionX: number, positionY: number, scale: number) => {
-      const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-      const scaledW = mapDimensions.width * safeScale;
-      const scaledH = mapDimensions.height * safeScale;
+      const rect = root.getBoundingClientRect();
+      if ((!rect.width || !rect.height) && frame < 10) {
+        frame += 1;
+        rafId = requestAnimationFrame(hydrateCamera);
+        return;
+      }
 
-      let nextX = positionX;
-      let nextY = positionY;
+      const clampCamera = (positionX: number, positionY: number, scale: number) => {
+        const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+        const scaledW = mapDimensions.width * safeScale;
+        const scaledH = mapDimensions.height * safeScale;
 
-      if (scaledW <= rect.width) nextX = (rect.width - scaledW) / 2;
-      else nextX = Math.min(0, Math.max(rect.width - scaledW, nextX));
+        let nextX = positionX;
+        let nextY = positionY;
 
-      if (scaledH <= rect.height) nextY = (rect.height - scaledH) / 2;
-      else nextY = Math.min(0, Math.max(rect.height - scaledH, nextY));
+        if (scaledW <= rect.width) nextX = (rect.width - scaledW) / 2;
+        else nextX = Math.min(0, Math.max(rect.width - scaledW, nextX));
 
-      return { positionX: nextX, positionY: nextY, scale: safeScale };
+        if (scaledH <= rect.height) nextY = (rect.height - scaledH) / 2;
+        else nextY = Math.min(0, Math.max(rect.height - scaledH, nextY));
+
+        return { positionX: nextX, positionY: nextY, scale: safeScale };
+      };
+
+      const saved = playerCameras[activeMap.id];
+      const targetCamera = saved
+        ? clampCamera(saved.positionX, saved.positionY, saved.scale)
+        : clampCamera(0, 0, 1);
+
+      if (saved) log('camera:restore', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
+      else log('camera:default', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
+
+      api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
+      restoredForMapRef.current = activeMap.id;
+      isHydratingCameraRef.current = false;
+      setCameraReadyMapId(activeMap.id);
     };
 
-    const saved = playerCameras[activeMap.id];
-    const targetCamera = saved
-      ? clampCamera(saved.positionX, saved.positionY, saved.scale)
-      : clampCamera(0, 0, 1);
+    rafId = requestAnimationFrame(() => {
+      rafId = requestAnimationFrame(hydrateCamera);
+    });
 
-    if (saved) log('camera:restore', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
-    else log('camera:default', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
-
-    api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
-    restoredForMapRef.current = activeMap.id;
-    isHydratingCameraRef.current = false;
-    setCameraReadyMapId(activeMap.id);
+    return () => cancelAnimationFrame(rafId);
   }, [activeMap?.id, isMapReady, mapDimensions.width, mapDimensions.height, playerCameras]);
 
   // Handle narrative overlay transitions
@@ -328,7 +343,7 @@ const PlayerView = () => {
     <div ref={rootRef} className="h-screen w-screen overflow-hidden bg-black relative">
       {renderNarrative()}
 
-      <div className="h-full w-full" style={{ visibility: isViewReady ? 'visible' : 'hidden' }}>
+      <div className="h-full w-full">
         <TransformWrapper
           key={activeMap?.id ?? 'no-map'}
           initialScale={1}
@@ -407,7 +422,7 @@ const PlayerView = () => {
 
             {fogEnabled && mapDimensions.width > 0 && (
               <FogOfWar
-                key={mapImage}
+                key={activeMap?.id ?? mapImage}
                 width={mapDimensions.width}
                 height={mapDimensions.height}
                 enabled={false}
