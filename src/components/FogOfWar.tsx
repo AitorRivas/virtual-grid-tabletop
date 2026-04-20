@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
+import { log } from '@/lib/debug';
 
 export type FogTool = 'brush' | 'rectangle' | 'polygon';
 export type FogMode = 'reveal' | 'hide';
@@ -73,6 +74,7 @@ export const FogOfWar = ({
         ctx.drawImage(img, 0, 0, width, height);
         renderedDataRef.current = fogData;
         mountedRef.current = true;
+        log('fog:apply', { phase: 'restore', width, height, source: 'stored' });
         fireReady();
       };
       img.src = fogData;
@@ -84,6 +86,7 @@ export const FogOfWar = ({
       const dataUrl = canvas.toDataURL('image/png', 0.6);
       renderedDataRef.current = dataUrl;
       onFogChange(dataUrl);
+      log('fog:apply', { phase: 'init', width, height, source: 'default' });
       fireReady();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,6 +108,7 @@ export const FogOfWar = ({
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         renderedDataRef.current = fogData;
+        log('fog:apply', { phase: 'sync', width, height, source: 'external' });
         fireReady();
       };
       img.src = fogData;
@@ -114,6 +118,7 @@ export const FogOfWar = ({
       ctx.fillStyle = 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
       renderedDataRef.current = null;
+      log('fog:apply', { phase: 'reset', width, height, source: 'external' });
       fireReady();
     }
   }, [fogData, width, height]);
@@ -161,6 +166,7 @@ export const FogOfWar = ({
     const dataUrl = canvas.toDataURL('image/png', 0.6);
     renderedDataRef.current = dataUrl;
     onFogChange(dataUrl);
+    log('fog:apply', { phase: 'save', width: canvas.width, height: canvas.height, source: fogTool });
   }, [onFogChange]);
 
   const getComposite = useCallback(() => {
