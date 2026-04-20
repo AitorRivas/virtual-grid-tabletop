@@ -101,11 +101,11 @@ const PlayerView = () => {
     });
   }, [activeMap?.id]);
 
-  const isPipelineReady = loadingState.mapReady && loadingState.fogReady && loadingState.cameraReady;
-  const isReady = isPipelineReady || forceRenderUnlock;
+  const isSceneReady = loadingState.mapReady && loadingState.fogReady && loadingState.cameraReady;
+  const isReady = isSceneReady || forceRenderUnlock;
 
   // Reset dimensions when map image changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (mapImage !== prevMapImageRef.current) {
       setMapDimensions({ width: 0, height: 0 });
       prevMapImageRef.current = mapImage;
@@ -113,7 +113,7 @@ const PlayerView = () => {
   }, [mapImage]);
 
   // Reset hydration flags whenever the active map changes.
-  useEffect(() => {
+  useLayoutEffect(() => {
     restoredForMapRef.current = null;
     renderUnlockedForMapRef.current = null;
     isHydratingCameraRef.current = true;
@@ -139,10 +139,22 @@ const PlayerView = () => {
   }, [isMapReady, markLoadingReady]);
 
   useEffect(() => {
-    if (!activeMap?.id || !mapImage || isPipelineReady) return;
+    if (cameraReadyMapId === activeMap?.id) {
+      markLoadingReady('cameraReady');
+    }
+  }, [activeMap?.id, cameraReadyMapId, markLoadingReady]);
+
+  useEffect(() => {
+    if (fogReadyMapId === activeMap?.id) {
+      markLoadingReady('fogReady');
+    }
+  }, [activeMap?.id, fogReadyMapId, markLoadingReady]);
+
+  useEffect(() => {
+    if (!activeMap?.id || !mapImage || isSceneReady) return;
 
     const timeoutId = window.setTimeout(() => {
-      if (isPipelineReady) return;
+      if (isSceneReady) return;
       console.warn('Force render unlock');
       warn('renderUnlockForced', {
         mapId: activeMap.id,
@@ -152,7 +164,7 @@ const PlayerView = () => {
     }, 1000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [activeMap?.id, mapImage, isPipelineReady, loadingState]);
+  }, [activeMap?.id, mapImage, isSceneReady, loadingState]);
 
   useEffect(() => {
     if (!activeMap?.id || !isReady || renderUnlockedForMapRef.current === activeMap.id) return;
