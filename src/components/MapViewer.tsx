@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from './Token';
 import { CombatTracker, type CombatEntry, type CombatFaction } from './CombatTracker';
@@ -184,6 +184,25 @@ export const MapViewer = () => {
     if (w) w.focus();
   }, []);
 
+  const persistCurrentDmCamera = useCallback((mapId: string | null) => {
+    const api = zoomFunctionsRef.current;
+    if (!mapId || !api) return;
+    const snapshot = {
+      positionX: api.state.positionX,
+      positionY: api.state.positionY,
+      scale: api.state.scale,
+    };
+    log('camera:save', { mapId, snapshot, scope: 'dm' });
+    setDmCamera({ ...snapshot, mapId });
+    saveDmCamera(mapId, snapshot);
+  }, [saveDmCamera, setDmCamera]);
+
+  const handleSelectMap = useCallback((nextMapId: string) => {
+    if (!nextMapId || nextMapId === activeMapId) return;
+    persistCurrentDmCamera(activeMapId);
+    setActiveMapId(nextMapId);
+  }, [activeMapId, persistCurrentDmCamera, setActiveMapId]);
+
   // Scene activation handler
   const handleActivateScene = useCallback((sceneId: string) => {
     const scene = scenes.find(s => s.id === sceneId);
@@ -193,7 +212,7 @@ export const MapViewer = () => {
 
     // Switch to linked map if specified
     if (scene.mapId && scene.mapId !== activeMapId) {
-      setActiveMapId(scene.mapId);
+      handleSelectMap(scene.mapId);
     }
 
     // Show narrative image if specified
@@ -218,7 +237,7 @@ export const MapViewer = () => {
     }
 
     toast.success(`Escena "${scene.name}" activada`);
-  }, [scenes, activeMapId, setActiveMapId, setActiveSceneId, setNarrativeOverlay]);
+  }, [scenes, activeMapId, handleSelectMap, setActiveSceneId, setNarrativeOverlay]);
 
   // Narrative overlay handlers
   const handleShowNarrativeImage = useCallback((image: string, text?: string) => {
@@ -306,7 +325,7 @@ export const MapViewer = () => {
 
   // Zoom functions
   const zoomFunctionsRef = useRef<{
-    setTransform: (x: number, y: number, scale: number) => void;
+    setTransform: (x: number, y: number, scale: number, animationTime?: number, animationType?: string) => void;
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
 
@@ -487,13 +506,21 @@ export const MapViewer = () => {
     });
   }, [activeMapId, setDmCamera, saveDmCamera]);
 
+  // Persist outgoing camera before the old TransformWrapper unmounts.
+  useLayoutEffect(() => {
+    return () => {
+      persistCurrentDmCamera(activeMapId);
+    };
+  }, [activeMapId, persistCurrentDmCamera]);
+
   // Restore DM camera once the image is decoded and TransformWrapper api is ready.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!activeMapId) return;
     if (restoredForMapRef.current === activeMapId) return;
+    if (transformReadyMapId !== activeMapId) return;
     if (imageReadyMapId !== activeMapId) return;
     if (!zoomFunctionsRef.current) return;
-    if (mapDimensions.width === 0) return;
+    if (mapDimensions.width === 0 || mapDimensions.height === 0) return;
 
     const api = zoomFunctionsRef.current;
     const container = mapViewportRef.current;
@@ -531,11 +558,11 @@ export const MapViewer = () => {
       requestAnimationFrame(() => {
         if (cancelled) return;
         if (saved) {
-          api.setTransform(target.positionX, target.positionY, target.scale);
+          api.setTransform(target.positionX, target.positionY, target.scale, 0);
           setZoomLevel(target.scale);
           log('camera:restore', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         } else {
-          api.setTransform(target.positionX, target.positionY, target.scale);
+          api.setTransform(target.positionX, target.positionY, target.scale, 0);
           setZoomLevel(target.scale);
           log('camera:default', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         }
@@ -545,7 +572,7 @@ export const MapViewer = () => {
       });
     });
     return () => { cancelled = true; };
-  }, [activeMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras]);
+  }, [activeMapId, transformReadyMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras]);
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
