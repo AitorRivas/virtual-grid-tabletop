@@ -1222,9 +1222,6 @@ export const MapViewer = () => {
           ) : (
             renderMapContent()
           )}
-          {mapImage && !isMapPipelineReady && (
-            <div className="absolute inset-0 z-40 bg-board-bg pointer-events-none" />
-          )}
         </div>
       </div>
 
