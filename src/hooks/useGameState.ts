@@ -193,6 +193,24 @@ export const useGameState = () => {
     });
   }, []);
 
+  const saveDmCamera = useCallback((mapId: string, snapshot: PlayerCameraSnapshot) => {
+    gameStateStore.setState((prev) => {
+      const cur = prev.dmCameras[mapId];
+      if (
+        cur &&
+        Math.abs(cur.positionX - snapshot.positionX) < 0.5 &&
+        Math.abs(cur.positionY - snapshot.positionY) < 0.5 &&
+        Math.abs(cur.scale - snapshot.scale) < 0.001
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        dmCameras: { ...prev.dmCameras, [mapId]: snapshot },
+      };
+    });
+  }, []);
+
   const clearSession = useCallback(() => {
     gameStateStore.clear();
   }, []);
@@ -210,6 +228,7 @@ export const useGameState = () => {
     dmCamera: state.dmCamera,
     dmSelectedTokenId: state.dmSelectedTokenId,
     playerCameras: state.playerCameras,
+    dmCameras: state.dmCameras,
     isLoaded,
     setActiveMapId,
     addMap,
@@ -227,6 +246,7 @@ export const useGameState = () => {
     setDmCamera,
     setDmSelectedTokenId,
     savePlayerCamera,
+    saveDmCamera,
     clearSession,
   };
 };

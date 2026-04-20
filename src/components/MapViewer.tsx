@@ -24,6 +24,7 @@ import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
+import { log } from '@/lib/debug';
 
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
@@ -88,6 +89,8 @@ export const MapViewer = () => {
     setPlayerViewConfig,
     setDmCamera,
     setDmSelectedTokenId,
+    dmCameras,
+    saveDmCamera,
   } = useGameState();
 
   // Derive current map state from activeMap
@@ -241,6 +244,11 @@ export const MapViewer = () => {
     setCellEditMode(false);
     setZoomLevel(1);
     setMapDimensions({ width: 0, height: 0 });
+    // Camera hydration: block broadcasts/restores until image+transform ready for THIS map
+    restoredForMapRef.current = null;
+    isHydratingCameraRef.current = true;
+    setImageReadyMapId(null);
+    log('map:switch', { mapId: activeMapId });
   }, [activeMapId]);
 
   // Auto-create first map
@@ -262,6 +270,11 @@ export const MapViewer = () => {
     setTransform: (x: number, y: number, scale: number) => void;
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
+
+  // DM camera hydration refs (mirror PlayerView pattern)
+  const restoredForMapRef = useRef<string | null>(null);
+  const isHydratingCameraRef = useRef<boolean>(true);
+  const [imageReadyMapId, setImageReadyMapId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -319,6 +332,7 @@ export const MapViewer = () => {
       updateCombat({ activeIndex: 0, isActive: true, round: 1 });
     }
     setCombatMode(true);
+    log('combat:init', { mapId: activeMapId, participants: combatEntries.length || tokens.filter(t => t.status === 'active').length });
     toast.success('¡Combate iniciado!');
   }, [activeMapId, combatEntries.length, tokens, updateCombat]);
 
@@ -350,8 +364,9 @@ export const MapViewer = () => {
 
   const handleEndInitiative = useCallback(() => {
     updateCombat({ isActive: false, activeIndex: 0, round: 1 });
+    log('combat:end', { mapId: activeMapId });
     toast.success('Combate finalizado');
-  }, [updateCombat]);
+  }, [updateCombat, activeMapId]);
 
   const handleAddFromMap = useCallback(() => {
     const factionFromToken = (t: TokenData): CombatFaction =>
@@ -390,6 +405,9 @@ export const MapViewer = () => {
   }, [activeInitiativeTokenId, setActiveInitiativeTokenId]);
 
   // Broadcast DM camera state for syncCamera/syncZoom (rAF throttled)
+  // Skip broadcasts AND persistence while we are still hydrating the saved camera
+  // for the active map — otherwise the initial (0,0,1) from key-remount would
+  // overwrite both the player snapshot and our own saved camera.
   const cameraRafRef = useRef<number | null>(null);
   const pendingCameraRef = useRef<{ x: number; y: number; s: number } | null>(null);
   const broadcastCamera = useCallback((x: number, y: number, s: number) => {
@@ -399,9 +417,40 @@ export const MapViewer = () => {
       cameraRafRef.current = null;
       const p = pendingCameraRef.current;
       if (!p) return;
+      // Drop emissions until camera has been restored for the current map.
+      if (!activeMapId) return;
+      if (restoredForMapRef.current !== activeMapId || isHydratingCameraRef.current) return;
       setDmCamera({ positionX: p.x, positionY: p.y, scale: p.s, mapId: activeMapId });
+      saveDmCamera(activeMapId, { positionX: p.x, positionY: p.y, scale: p.s });
     });
-  }, [activeMapId, setDmCamera]);
+  }, [activeMapId, setDmCamera, saveDmCamera]);
+
+  // Restore DM camera once the image is decoded and TransformWrapper api is ready.
+  useEffect(() => {
+    if (!activeMapId) return;
+    if (restoredForMapRef.current === activeMapId) return;
+    if (imageReadyMapId !== activeMapId) return;
+    if (!zoomFunctionsRef.current) return;
+    if (mapDimensions.width === 0) return;
+
+    const api = zoomFunctionsRef.current;
+    const saved = dmCameras[activeMapId];
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        if (saved) {
+          api.setTransform(saved.positionX, saved.positionY, saved.scale);
+          log('camera:restore', { mapId: activeMapId, snapshot: saved });
+        } else {
+          log('camera:default', { mapId: activeMapId });
+        }
+        restoredForMapRef.current = activeMapId;
+        isHydratingCameraRef.current = false;
+      });
+    });
+    return () => { cancelled = true; };
+  }, [activeMapId, imageReadyMapId, mapDimensions.width, dmCameras]);
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
@@ -649,8 +698,9 @@ export const MapViewer = () => {
     const sizeInCells = Math.max(1, Math.min(4, Math.round(baseTokenSize / 100)));
     const tokenSizePx = sizeInCells * gridSize;
 
+    const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
-      id: `char-${Date.now()}`,
+      id: `char-${uid}`,
       x: 50,
       y: 50,
       color: character.token_color,
@@ -668,6 +718,7 @@ export const MapViewer = () => {
       sourceCharacterId: character.id,
     };
     setTokens(prev => [...prev, newToken]);
+    log('tokens:add', { type: 'character', name: character.name, id: newToken.id });
     toast.success(`${character.name} añadido al mapa`);
   };
 
@@ -675,8 +726,9 @@ export const MapViewer = () => {
     const sizeInCells = CREATURE_SIZE_CELLS[monster.size] ?? 1;
     const tokenSizePx = sizeInCells * gridSize;
 
+    const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
-      id: `monster-${Date.now()}`,
+      id: `monster-${uid}`,
       x: 50,
       y: 50,
       color: monster.token_color,
@@ -694,6 +746,7 @@ export const MapViewer = () => {
       sourceMonsterId: monster.id,
     };
     setTokens(prev => [...prev, newToken]);
+    log('tokens:add', { type: 'monster', name: monster.name, id: newToken.id });
     toast.success(`${monster.name} añadido al mapa`);
   };
 
@@ -756,7 +809,7 @@ export const MapViewer = () => {
       initialScale={1}
       minScale={0.1}
       maxScale={10}
-      centerOnInit
+      centerOnInit={false}
       limitToBounds={false}
       panning={{ disabled: isAddingToken }}
       onZoom={(ref) => {
@@ -770,7 +823,7 @@ export const MapViewer = () => {
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
-        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
+        // Do NOT broadcast on init — would emit (0,0,1) and overwrite saved state.
       }}
     >
       {({ zoomIn, zoomOut, resetTransform, zoomToElement, ...rest }) => (
@@ -800,6 +853,7 @@ export const MapViewer = () => {
               onLoad={(e) => {
                 const img = e.currentTarget;
                 setMapDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                setImageReadyMapId(activeMapId ?? null);
               }}
             />
             
