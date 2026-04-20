@@ -479,11 +479,11 @@ export const Token = ({
         {showActions && status === 'active' && (
           <div
             className="absolute left-1/2 -translate-x-1/2 z-[110]"
-            style={{ top: -40, paddingBottom: 8 }}
+            style={{ top: -44, paddingBottom: 44 }}
             onMouseEnter={() => setShowActions(true)}
             onMouseLeave={() => setShowActions(false)}
           >
-            <div className="flex gap-1">
+            <div className="flex gap-1 relative z-[1]">
               {onToggleHidden && (
                 <button
                   onClick={(e) => {

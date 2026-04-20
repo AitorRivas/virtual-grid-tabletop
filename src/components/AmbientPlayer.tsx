@@ -456,7 +456,7 @@ export const AmbientPlayer = () => {
 
         {/* Track list */}
         {channel.tracks.length > 0 && (
-          <div className="space-y-1 max-h-32 overflow-y-auto">
+          <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-thin pr-1">
             {channel.tracks.map((track) => (
               <div
                 key={track.id}
