@@ -13,6 +13,7 @@
  *   combat:cleanup   — Stale combat entries removed
  *   combat:next      — Turn advanced
  *   tokens:add       — Token(s) appended to active map
+ *   tokens:clamp     — Token coordinates corrected to map bounds
  *   tokens:remove    — Token removed
  *   encounter:deploy — Encounter deployed to map (with count)
  *   audio:load       — Audio asset loaded
@@ -48,6 +49,7 @@ export type DebugCategory =
   | 'combat:cleanup'
   | 'combat:next'
   | 'tokens:add'
+  | 'tokens:clamp'
   | 'tokens:remove'
   | 'encounter:deploy'
   | 'audio:load'
