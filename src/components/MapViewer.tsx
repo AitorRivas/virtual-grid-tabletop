@@ -138,6 +138,9 @@ export const MapViewer = () => {
   const [fogTool, setFogTool] = useState<import('./FogOfWar').FogTool>('brush');
   const [fogMode, setFogMode] = useState<import('./FogOfWar').FogMode>('reveal');
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
+  const [transformReadyMapId, setTransformReadyMapId] = useState<string | null>(null);
+  const [cameraReadyMapId, setCameraReadyMapId] = useState<string | null>(null);
+  const [fogReadyMapId, setFogReadyMapId] = useState<string | null>(null);
 
   // Grid engine
   const [cellEditMode, setCellEditMode] = useState(false);
@@ -258,9 +261,16 @@ export const MapViewer = () => {
     // Camera hydration: block broadcasts/restores until image+transform ready for THIS map
     restoredForMapRef.current = null;
     isHydratingCameraRef.current = true;
+    setTransformReadyMapId(null);
+    setCameraReadyMapId(null);
     setImageReadyMapId(null);
+    setFogReadyMapId(fogEnabled ? null : activeMapId);
     log('map:switch', { mapId: activeMapId });
   }, [activeMapId]);
+
+  useEffect(() => {
+    setFogReadyMapId(fogEnabled ? null : activeMapId);
+  }, [activeMapId, fogEnabled]);
 
   useEffect(() => {
     if (!activeMapId) return;
@@ -307,6 +317,15 @@ export const MapViewer = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapViewportRef = useRef<HTMLDivElement>(null);
+
+  const isMapPipelineReady = !!activeMapId
+    && transformReadyMapId === activeMapId
+    && imageReadyMapId === activeMapId
+    && cameraReadyMapId === activeMapId
+    && (!fogEnabled || fogReadyMapId === activeMapId)
+    && mapDimensions.width > 0
+    && mapDimensions.height > 0;
 
   // Map update helpers
   const setMapImage = useCallback((img: string | null) => updateActiveMap({ mapImage: img }), [updateActiveMap]);
@@ -331,6 +350,17 @@ export const MapViewer = () => {
       cellStates: typeof updater === 'function' ? updater(currentMap?.cellStates ?? {}) : updater,
     }));
   }, [updateActiveMap]);
+
+  useEffect(() => {
+    if (!activeMapId || tokens.length === 0) return;
+    const sanitizedTokens = tokens.map(sanitizeToken);
+    const changed = sanitizedTokens.reduce((count, token, index) => (
+      count + ((token.x !== tokens[index]?.x || token.y !== tokens[index]?.y) ? 1 : 0)
+    ), 0);
+    if (changed === 0) return;
+    warn('tokens:clamp', { mapId: activeMapId, count: changed, source: 'hydrate' });
+    setTokens(sanitizedTokens);
+  }, [activeMapId, tokens, setTokens]);
 
   // Combat handlers
   const handleStartInitiative = useCallback(() => {
@@ -466,7 +496,7 @@ export const MapViewer = () => {
     if (mapDimensions.width === 0) return;
 
     const api = zoomFunctionsRef.current;
-    const container = mapContainerRef.current?.parentElement;
+    const container = mapViewportRef.current;
     const saved = dmCameras[activeMapId];
     const clampCamera = (positionX: number, positionY: number, scale: number) => {
       const viewportWidth = container?.clientWidth ?? 0;
@@ -511,6 +541,7 @@ export const MapViewer = () => {
         }
         restoredForMapRef.current = activeMapId;
         isHydratingCameraRef.current = false;
+        setCameraReadyMapId(activeMapId);
       });
     });
     return () => { cancelled = true; };
@@ -615,7 +646,7 @@ export const MapViewer = () => {
     const nextY = clampPercent(y);
 
     if (nextX !== x || nextY !== y) {
-      warn('tokens:remove', { reason: 'clamped_move', id, x, y, nextX, nextY });
+      warn('tokens:clamp', { reason: 'clamped_move', id, x, y, nextX, nextY });
     }
 
     setTokens(prev => prev.map(token => 
@@ -894,6 +925,7 @@ export const MapViewer = () => {
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
+        setTransformReadyMapId(activeMapId ?? null);
         // Do NOT broadcast on init — would emit (0,0,1) and overwrite saved state.
       }}
     >
@@ -979,6 +1011,7 @@ export const MapViewer = () => {
                 fogTool={fogTool}
                 fogMode={fogMode}
                 opacity={0.45}
+                onReady={() => setFogReadyMapId(activeMapId ?? null)}
               />
             )}
 
@@ -1167,7 +1200,7 @@ export const MapViewer = () => {
         />
 
         {/* Map area */}
-        <div className="flex-1 relative overflow-hidden bg-board-bg">
+        <div ref={mapViewportRef} className="flex-1 relative overflow-hidden bg-board-bg">
           {!mapImage ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -1188,6 +1221,9 @@ export const MapViewer = () => {
             </div>
           ) : (
             renderMapContent()
+          )}
+          {mapImage && !isMapPipelineReady && (
+            <div className="absolute inset-0 z-40 bg-board-bg pointer-events-none" />
           )}
         </div>
       </div>

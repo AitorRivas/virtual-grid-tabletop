@@ -26,6 +26,8 @@ const PlayerView = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transformReadyMapId, setTransformReadyMapId] = useState<string | null>(null);
   const [imageReadyMapId, setImageReadyMapId] = useState<string | null>(null);
+  const [cameraReadyMapId, setCameraReadyMapId] = useState<string | null>(null);
+  const [fogReadyMapId, setFogReadyMapId] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const transformApiRef = useRef<{
@@ -62,6 +64,11 @@ const PlayerView = () => {
     && mapDimensions.width > 0
     && mapDimensions.height > 0;
 
+  const isViewReady = !!activeMap?.id
+    && isMapReady
+    && cameraReadyMapId === activeMap.id
+    && (!fogEnabled || fogReadyMapId === activeMap.id);
+
   // Reset dimensions when map image changes
   useEffect(() => {
     if (mapImage !== prevMapImageRef.current) {
@@ -76,7 +83,13 @@ const PlayerView = () => {
     isHydratingCameraRef.current = true;
     setTransformReadyMapId(null);
     setImageReadyMapId(null);
+    setCameraReadyMapId(null);
+    setFogReadyMapId(fogEnabled ? null : activeMap?.id ?? null);
   }, [activeMap?.id]);
+
+  useEffect(() => {
+    setFogReadyMapId(fogEnabled ? null : activeMap?.id ?? null);
+  }, [activeMap?.id, fogEnabled]);
 
   // Persist the current camera right before leaving a map (or unmounting).
   useEffect(() => {
@@ -139,6 +152,7 @@ const PlayerView = () => {
         api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
         restoredForMapRef.current = activeMap.id;
         isHydratingCameraRef.current = false;
+        setCameraReadyMapId(activeMap.id);
       });
     });
 
@@ -413,7 +427,10 @@ const PlayerView = () => {
                 fogTool="brush"
                 fogMode="reveal"
                 opacity={1}
-                onReady={() => setFogReady(true)}
+                onReady={() => {
+                  setFogReady(true);
+                  setFogReadyMapId(activeMap?.id ?? null);
+                }}
               />
             )}
 
@@ -448,7 +465,7 @@ const PlayerView = () => {
       </TransformWrapper>
 
       {/* Anti-flicker black cover until fog is ready */}
-      {fogEnabled && !fogReady && (
+      {!isViewReady && (
         <div className="absolute inset-0 bg-black pointer-events-none z-40" />
       )}
 
