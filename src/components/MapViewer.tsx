@@ -60,6 +60,8 @@ export interface TokenData {
 
 export const MapViewer = () => {
   const { isGuest, signOut } = useAuth();
+  const { characters: libraryCharacters } = useCharacters();
+  const { monsters: libraryMonsters } = useExtendedMonsters();
   const {
     maps,
     activeMapId,
@@ -663,6 +665,7 @@ export const MapViewer = () => {
       speedFeet: character.speed,
       sizeInCells,
       faction: 'pj',
+      sourceCharacterId: character.id,
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${character.name} añadido al mapa`);
@@ -688,6 +691,7 @@ export const MapViewer = () => {
       speedFeet: monster.speed,
       sizeInCells,
       faction: 'enemy',
+      sourceMonsterId: monster.id,
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
