@@ -1,8 +1,12 @@
 import { useState, useRef, useMemo } from 'react';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
-import { 
-  Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS, 
+import { useLibraryGroups } from '@/hooks/useLibraryGroups';
+import { LibraryGroupsBar } from './library/LibraryGroupsBar';
+import { GroupAssignMenu } from './library/GroupAssignMenu';
+import { EncounterManager } from './EncounterManager';
+import {
+  Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS,
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
   getRaceLabel, getClassLabel, getMonsterTypeLabel, getCreatureSizeLabel
 } from '@/types/dnd';
@@ -15,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X, FileText, Copy, Search, SortAsc, SortDesc, MapPin, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X, FileText, Copy, Search, SortAsc, SortDesc, MapPin, MoreVertical, Swords } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { SharedImagePicker } from './SharedImagePicker';
@@ -52,9 +56,22 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   const [monsterTypeFilter, setMonsterTypeFilter] = useState<string>('all');
   const [monsterCrFilter, setMonsterCrFilter] = useState<string>('all');
 
+  // Group filter (null = todos, '__none__' = sin grupo, else group id)
+  const [charGroupFilter, setCharGroupFilter] = useState<string | null>(null);
+  const [monsterGroupFilter, setMonsterGroupFilter] = useState<string | null>(null);
+  const { getGroupsForEntity } = useLibraryGroups();
+
+  const matchesGroup = (entityId: string, entityType: 'character' | 'monster', filter: string | null) => {
+    if (filter === null) return true;
+    const ids = getGroupsForEntity(entityId, entityType);
+    if (filter === '__none__') return ids.length === 0;
+    return ids.includes(filter);
+  };
+
   // Filtered and sorted characters
   const filteredCharacters = useMemo(() => {
     let list = [...characters];
+    list = list.filter(c => matchesGroup(c.id, 'character', charGroupFilter));
     if (charSearch.trim()) {
       const q = charSearch.toLowerCase();
       list = list.filter(c => 
@@ -71,11 +88,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
       return charSortAsc ? cmp : -cmp;
     });
     return list;
-  }, [characters, charSearch, charSortField, charSortAsc]);
+  }, [characters, charSearch, charSortField, charSortAsc, charGroupFilter, getGroupsForEntity]);
 
   // Filtered and sorted monsters
   const filteredMonsters = useMemo(() => {
     let list = [...monsters];
+    list = list.filter(m => matchesGroup(m.id, 'monster', monsterGroupFilter));
     if (monsterSearch.trim()) {
       const q = monsterSearch.toLowerCase();
       list = list.filter(m => m.name.toLowerCase().includes(q));
@@ -94,7 +112,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
       return monsterSortAsc ? cmp : -cmp;
     });
     return list;
-  }, [monsters, monsterSearch, monsterSortField, monsterSortAsc, monsterTypeFilter, monsterCrFilter]);
+  }, [monsters, monsterSearch, monsterSortField, monsterSortAsc, monsterTypeFilter, monsterCrFilter, monsterGroupFilter, getGroupsForEntity]);
 
   const handleCharImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -309,7 +327,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Tabs defaultValue="characters" className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <TabsList className="grid w-full grid-cols-2 shrink-0 mx-3 mt-3 w-[calc(100%-1.5rem)]">
+        <TabsList className="grid w-full grid-cols-3 shrink-0 mx-3 mt-3 w-[calc(100%-1.5rem)]">
           <TabsTrigger value="characters" className="gap-1">
             <User className="w-4 h-4" />
             Personajes
@@ -318,7 +336,18 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             <Skull className="w-4 h-4" />
             Monstruos
           </TabsTrigger>
+          <TabsTrigger value="encounters" className="gap-1">
+            <Swords className="w-4 h-4" />
+            Encuentros
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="encounters" className="m-0 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
+          <EncounterManager
+            onAddCharacterToMap={onAddCharacterToMap}
+            onAddMonsterToMap={onAddMonsterToMap}
+          />
+        </TabsContent>
 
         <TabsContent value="characters" className="m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
           <Dialog open={showNewCharacter} onOpenChange={setShowNewCharacter}>
@@ -514,6 +543,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             </DialogContent>
           </Dialog>
 
+          {/* Group filter */}
+          <LibraryGroupsBar
+            selectedGroupId={charGroupFilter}
+            onSelectGroup={setCharGroupFilter}
+          />
+
           {/* Search & Sort Controls */}
           <div className="space-y-2">
             <div className="relative">
@@ -587,6 +622,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         >
                           <MapPin className="w-4 h-4" />
                         </Button>
+                        <GroupAssignMenu entityId={char.id} entityType="character" />
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-7 w-7">
@@ -835,6 +871,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             </DialogContent>
           </Dialog>
 
+          {/* Group filter */}
+          <LibraryGroupsBar
+            selectedGroupId={monsterGroupFilter}
+            onSelectGroup={setMonsterGroupFilter}
+          />
+
           {/* Search & Filter Controls */}
           <div className="space-y-2">
             <div className="relative">
@@ -930,6 +972,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         >
                           <MapPin className="w-4 h-4" />
                         </Button>
+                        <GroupAssignMenu entityId={monster.id} entityType="monster" />
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-7 w-7">

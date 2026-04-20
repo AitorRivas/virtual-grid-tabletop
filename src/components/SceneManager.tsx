@@ -194,6 +194,9 @@ export const SceneManager = ({
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
+                <p className="text-[9px] text-muted-foreground/70 leading-tight">
+                  💡 La niebla de guerra se conserva por mapa: al activar la escena se cargará la niebla del mapa vinculado.
+                </p>
               </div>
 
               {/* Narrative image */}
