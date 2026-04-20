@@ -506,13 +506,21 @@ export const MapViewer = () => {
     });
   }, [activeMapId, setDmCamera, saveDmCamera]);
 
+  // Persist outgoing camera before the old TransformWrapper unmounts.
+  useLayoutEffect(() => {
+    return () => {
+      persistCurrentDmCamera(activeMapId);
+    };
+  }, [activeMapId, persistCurrentDmCamera]);
+
   // Restore DM camera once the image is decoded and TransformWrapper api is ready.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!activeMapId) return;
     if (restoredForMapRef.current === activeMapId) return;
+    if (transformReadyMapId !== activeMapId) return;
     if (imageReadyMapId !== activeMapId) return;
     if (!zoomFunctionsRef.current) return;
-    if (mapDimensions.width === 0) return;
+    if (mapDimensions.width === 0 || mapDimensions.height === 0) return;
 
     const api = zoomFunctionsRef.current;
     const container = mapViewportRef.current;
@@ -550,11 +558,11 @@ export const MapViewer = () => {
       requestAnimationFrame(() => {
         if (cancelled) return;
         if (saved) {
-          api.setTransform(target.positionX, target.positionY, target.scale);
+          api.setTransform(target.positionX, target.positionY, target.scale, 0);
           setZoomLevel(target.scale);
           log('camera:restore', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         } else {
-          api.setTransform(target.positionX, target.positionY, target.scale);
+          api.setTransform(target.positionX, target.positionY, target.scale, 0);
           setZoomLevel(target.scale);
           log('camera:default', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         }
@@ -564,7 +572,7 @@ export const MapViewer = () => {
       });
     });
     return () => { cancelled = true; };
-  }, [activeMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras]);
+  }, [activeMapId, transformReadyMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras]);
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
