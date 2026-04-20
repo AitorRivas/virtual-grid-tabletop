@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from '@/components/Token';
 import { FogOfWar } from '@/components/FogOfWar';
@@ -36,6 +36,20 @@ const PlayerView = () => {
   } | null>(null);
   const restoredForMapRef = useRef<string | null>(null);
   const isHydratingCameraRef = useRef(false);
+
+  const persistCurrentPlayerCamera = useCallback((mapId: string | null) => {
+    const api = transformApiRef.current;
+    if (!mapId || !api) return;
+
+    const snapshot = {
+      positionX: api.state.positionX,
+      positionY: api.state.positionY,
+      scale: api.state.scale,
+    };
+
+    log('camera:save', { mapId, snapshot, scope: 'player' });
+    savePlayerCamera(mapId, snapshot);
+  }, [savePlayerCamera]);
 
   // Track narrative transitions
   const [narrativeVisible, setNarrativeVisible] = useState(false);
@@ -91,25 +105,16 @@ const PlayerView = () => {
     setFogReadyMapId(fogEnabled ? null : activeMap?.id ?? null);
   }, [activeMap?.id, fogEnabled]);
 
-  // Persist the current camera right before leaving a map (or unmounting).
-  useEffect(() => {
-    const currentMapId = activeMap?.id;
+  // Persist outgoing camera before the old TransformWrapper unmounts.
+  useLayoutEffect(() => {
     return () => {
-      if (!currentMapId || !transformApiRef.current) return;
-      const state = transformApiRef.current.state;
-      const snapshot = {
-        positionX: state.positionX,
-        positionY: state.positionY,
-        scale: state.scale,
-      };
-      log('camera:save', { mapId: currentMapId, snapshot, scope: 'player' });
-      savePlayerCamera(currentMapId, snapshot);
+      persistCurrentPlayerCamera(activeMap?.id ?? null);
     };
-  }, [activeMap?.id, savePlayerCamera]);
+  }, [activeMap?.id, persistCurrentPlayerCamera]);
 
   // Restore the saved camera only after both the viewport and the map image are ready.
   // This avoids racing against react-zoom-pan-pinch init and cached-image onLoad timing.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!activeMap?.id || !isMapReady || !transformApiRef.current) return;
     if (restoredForMapRef.current === activeMap.id) return;
 
@@ -145,20 +150,10 @@ const PlayerView = () => {
     if (saved) log('camera:restore', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
     else log('camera:default', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
 
-    let cancelled = false;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (cancelled) return;
-        api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
-        restoredForMapRef.current = activeMap.id;
-        isHydratingCameraRef.current = false;
-        setCameraReadyMapId(activeMap.id);
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
+    api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
+    restoredForMapRef.current = activeMap.id;
+    isHydratingCameraRef.current = false;
+    setCameraReadyMapId(activeMap.id);
   }, [activeMap?.id, isMapReady, mapDimensions.width, mapDimensions.height, playerCameras]);
 
   // Handle narrative overlay transitions
