@@ -265,6 +265,11 @@ export const MapViewer = () => {
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
 
+  // DM camera hydration refs (mirror PlayerView pattern)
+  const restoredForMapRef = useRef<string | null>(null);
+  const isHydratingCameraRef = useRef<boolean>(true);
+  const [imageReadyMapId, setImageReadyMapId] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
