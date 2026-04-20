@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Token } from './Token';
 import { CombatTracker, type CombatEntry, type CombatFaction } from './CombatTracker';
@@ -184,6 +184,25 @@ export const MapViewer = () => {
     if (w) w.focus();
   }, []);
 
+  const persistCurrentDmCamera = useCallback((mapId: string | null) => {
+    const api = zoomFunctionsRef.current;
+    if (!mapId || !api) return;
+    const snapshot = {
+      positionX: api.state.positionX,
+      positionY: api.state.positionY,
+      scale: api.state.scale,
+    };
+    log('camera:save', { mapId, snapshot, scope: 'dm' });
+    setDmCamera({ ...snapshot, mapId });
+    saveDmCamera(mapId, snapshot);
+  }, [saveDmCamera, setDmCamera]);
+
+  const handleSelectMap = useCallback((nextMapId: string) => {
+    if (!nextMapId || nextMapId === activeMapId) return;
+    persistCurrentDmCamera(activeMapId);
+    setActiveMapId(nextMapId);
+  }, [activeMapId, persistCurrentDmCamera, setActiveMapId]);
+
   // Scene activation handler
   const handleActivateScene = useCallback((sceneId: string) => {
     const scene = scenes.find(s => s.id === sceneId);
@@ -193,7 +212,7 @@ export const MapViewer = () => {
 
     // Switch to linked map if specified
     if (scene.mapId && scene.mapId !== activeMapId) {
-      setActiveMapId(scene.mapId);
+      handleSelectMap(scene.mapId);
     }
 
     // Show narrative image if specified
@@ -218,7 +237,7 @@ export const MapViewer = () => {
     }
 
     toast.success(`Escena "${scene.name}" activada`);
-  }, [scenes, activeMapId, setActiveMapId, setActiveSceneId, setNarrativeOverlay]);
+  }, [scenes, activeMapId, handleSelectMap, setActiveSceneId, setNarrativeOverlay]);
 
   // Narrative overlay handlers
   const handleShowNarrativeImage = useCallback((image: string, text?: string) => {
