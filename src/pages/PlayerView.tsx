@@ -525,9 +525,9 @@ const PlayerView = () => {
         </TransformWrapper>
       </div>
 
-      {!isViewReady && <div className="absolute inset-0 z-20 bg-black" aria-hidden="true" />}
+      {!isReady && <div className="absolute inset-0 z-20 bg-black" aria-hidden="true" />}
 
-      {isViewReady && (
+      {isReady && (
         <button
           onClick={toggleFullscreen}
           className="absolute bottom-4 right-4 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white/50 hover:text-white transition-all z-10"
