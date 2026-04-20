@@ -8,7 +8,13 @@ import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { useGameState } from '@/hooks/useGameState';
 import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
-import { log } from '@/lib/debug';
+import { log, warn } from '@/lib/debug';
+
+interface LoadingState {
+  mapReady: boolean;
+  fogReady: boolean;
+  cameraReady: boolean;
+}
 
 const PlayerView = () => {
   const {
@@ -28,6 +34,8 @@ const PlayerView = () => {
   const [imageReadyMapId, setImageReadyMapId] = useState<string | null>(null);
   const [cameraReadyMapId, setCameraReadyMapId] = useState<string | null>(null);
   const [fogReadyMapId, setFogReadyMapId] = useState<string | null>(null);
+  const [loadingState, setLoadingState] = useState<LoadingState>({ mapReady: false, fogReady: false, cameraReady: false });
+  const [forceRenderUnlock, setForceRenderUnlock] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const transformApiRef = useRef<{
@@ -36,6 +44,7 @@ const PlayerView = () => {
   } | null>(null);
   const restoredForMapRef = useRef<string | null>(null);
   const isHydratingCameraRef = useRef(false);
+  const renderUnlockedForMapRef = useRef<string | null>(null);
 
   const persistCurrentPlayerCamera = useCallback((mapId: string | null) => {
     const api = transformApiRef.current;
@@ -78,8 +87,22 @@ const PlayerView = () => {
     && mapDimensions.width > 0
     && mapDimensions.height > 0;
 
-  const isFogReady = !fogEnabled || fogReadyMapId === activeMap?.id;
-  const isViewReady = !!activeMap?.id && isMapReady && isFogReady;
+  const markLoadingReady = useCallback((phase: keyof LoadingState) => {
+    const eventName = {
+      mapReady: 'mapReady',
+      fogReady: 'fogReady',
+      cameraReady: 'cameraReady',
+    } as const;
+
+    setLoadingState((prev) => {
+      if (prev[phase]) return prev;
+      log(eventName[phase], { mapId: activeMap?.id ?? null });
+      return { ...prev, [phase]: true };
+    });
+  }, [activeMap?.id]);
+
+  const isPipelineReady = loadingState.mapReady && loadingState.fogReady && loadingState.cameraReady;
+  const isReady = isPipelineReady || forceRenderUnlock;
 
   // Reset dimensions when map image changes
   useEffect(() => {
@@ -92,16 +115,50 @@ const PlayerView = () => {
   // Reset hydration flags whenever the active map changes.
   useEffect(() => {
     restoredForMapRef.current = null;
+    renderUnlockedForMapRef.current = null;
     isHydratingCameraRef.current = true;
+    setForceRenderUnlock(false);
     setTransformReadyMapId(null);
     setImageReadyMapId(null);
     setCameraReadyMapId(null);
     setFogReadyMapId(fogEnabled ? null : activeMap?.id ?? null);
+    setLoadingState({ mapReady: false, fogReady: false, cameraReady: false });
   }, [activeMap?.id]);
 
   useEffect(() => {
     setFogReadyMapId(fogEnabled ? null : activeMap?.id ?? null);
+    if (!fogEnabled && activeMap?.id) {
+      markLoadingReady('fogReady');
+    }
   }, [activeMap?.id, fogEnabled]);
+
+  useEffect(() => {
+    if (isMapReady) {
+      markLoadingReady('mapReady');
+    }
+  }, [isMapReady, markLoadingReady]);
+
+  useEffect(() => {
+    if (!activeMap?.id || !mapImage || isPipelineReady) return;
+
+    const timeoutId = window.setTimeout(() => {
+      if (isPipelineReady) return;
+      console.warn('Force render unlock');
+      warn('renderUnlockForced', {
+        mapId: activeMap.id,
+        loadingState,
+      });
+      setForceRenderUnlock(true);
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeMap?.id, mapImage, isPipelineReady, loadingState]);
+
+  useEffect(() => {
+    if (!activeMap?.id || !isReady || renderUnlockedForMapRef.current === activeMap.id) return;
+    renderUnlockedForMapRef.current = activeMap.id;
+    log('renderUnlocked', { mapId: activeMap.id, forced: forceRenderUnlock, loadingState });
+  }, [activeMap?.id, forceRenderUnlock, isReady, loadingState]);
 
   // Persist outgoing camera before the old TransformWrapper unmounts.
   useLayoutEffect(() => {
