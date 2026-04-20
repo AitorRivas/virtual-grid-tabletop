@@ -309,8 +309,8 @@ const PlayerView = () => {
         {renderNarrative()}
         <div className="text-center text-white/40 space-y-4">
           <div className="text-6xl">🎲</div>
-          <p className="text-xl font-medium">Esperando al GM...</p>
-          <p className="text-sm text-white/25">La vista se actualizará automáticamente cuando el GM cargue un mapa</p>
+          <p className="text-xl font-medium">Esperando al DM...</p>
+          <p className="text-sm text-white/25">La vista se actualizará automáticamente cuando el DM cargue un mapa</p>
         </div>
       </div>
     );
