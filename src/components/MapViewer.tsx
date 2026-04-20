@@ -262,6 +262,24 @@ export const MapViewer = () => {
     log('map:switch', { mapId: activeMapId });
   }, [activeMapId]);
 
+  useEffect(() => {
+    if (!activeMapId) return;
+    const visibleTokenIds = new Set(tokens.map((token) => token.id));
+    const cleanedEntries = combatEntries.filter((entry) => !entry.tokenId || visibleTokenIds.has(entry.tokenId));
+    if (cleanedEntries.length === combatEntries.length) return;
+
+    updateCombat((cur) => {
+      const nextEntries = cur.entries.filter((entry) => !entry.tokenId || visibleTokenIds.has(entry.tokenId));
+      const nextActiveIndex = nextEntries.length === 0 ? 0 : Math.min(cur.activeIndex, nextEntries.length - 1);
+      return {
+        entries: nextEntries,
+        activeIndex: nextActiveIndex,
+        isActive: cur.isActive && nextEntries.length > 0,
+      };
+    });
+    log('combat:cleanup', { mapId: activeMapId, removed: combatEntries.length - cleanedEntries.length });
+  }, [activeMapId, combatEntries, tokens, updateCombat]);
+
   // Auto-create first map
   useEffect(() => {
     if (isLoaded && maps.length === 0) {
@@ -448,23 +466,55 @@ export const MapViewer = () => {
     if (mapDimensions.width === 0) return;
 
     const api = zoomFunctionsRef.current;
+    const container = mapContainerRef.current?.parentElement;
     const saved = dmCameras[activeMapId];
+    const clampCamera = (positionX: number, positionY: number, scale: number) => {
+      const viewportWidth = container?.clientWidth ?? 0;
+      const viewportHeight = container?.clientHeight ?? 0;
+      const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+      const scaledW = mapDimensions.width * safeScale;
+      const scaledH = mapDimensions.height * safeScale;
+
+      let nextX = Number.isFinite(positionX) ? positionX : 0;
+      let nextY = Number.isFinite(positionY) ? positionY : 0;
+
+      if (viewportWidth > 0) {
+        nextX = scaledW <= viewportWidth
+          ? (viewportWidth - scaledW) / 2
+          : Math.min(0, Math.max(viewportWidth - scaledW, nextX));
+      }
+
+      if (viewportHeight > 0) {
+        nextY = scaledH <= viewportHeight
+          ? (viewportHeight - scaledH) / 2
+          : Math.min(0, Math.max(viewportHeight - scaledH, nextY));
+      }
+
+      return { positionX: nextX, positionY: nextY, scale: safeScale };
+    };
+
+    const target = saved
+      ? clampCamera(saved.positionX, saved.positionY, saved.scale)
+      : clampCamera(0, 0, 1);
     let cancelled = false;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (cancelled) return;
         if (saved) {
-          api.setTransform(saved.positionX, saved.positionY, saved.scale);
-          log('camera:restore', { mapId: activeMapId, snapshot: saved });
+          api.setTransform(target.positionX, target.positionY, target.scale, 0);
+          setZoomLevel(target.scale);
+          log('camera:restore', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         } else {
-          log('camera:default', { mapId: activeMapId });
+          api.setTransform(target.positionX, target.positionY, target.scale, 0);
+          setZoomLevel(target.scale);
+          log('camera:default', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         }
         restoredForMapRef.current = activeMapId;
         isHydratingCameraRef.current = false;
       });
     });
     return () => { cancelled = true; };
-  }, [activeMapId, imageReadyMapId, mapDimensions.width, dmCameras]);
+  }, [activeMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras]);
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
@@ -503,8 +553,8 @@ export const MapViewer = () => {
     const rect = mapContainerRef.current?.getBoundingClientRect();
     if (!rect) return;
     
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const x = clampPercent(((event.clientX - rect.left) / rect.width) * 100);
+    const y = clampPercent(((event.clientY - rect.top) / rect.height) * 100);
 
     setPendingTokenPosition({ x, y });
     setNewTokenName(`Token ${tokens.length + 1}`);
@@ -561,14 +611,20 @@ export const MapViewer = () => {
 
   const handleTokenMove = (id: string, x: number, y: number) => {
     const movedToken = tokens.find(t => t.id === id);
+    const nextX = clampPercent(x);
+    const nextY = clampPercent(y);
+
+    if (nextX !== x || nextY !== y) {
+      warn('tokens:remove', { reason: 'clamped_move', id, x, y, nextX, nextY });
+    }
 
     setTokens(prev => prev.map(token => 
-      token.id === id ? { ...token, x, y } : token
+      token.id === id ? { ...token, x: nextX, y: nextY } : token
     ));
 
     // Auto-reveal fog around tokens that have exploration enabled
     if (fogEnabled && mapDimensions.width > 0 && movedToken?.lightEnabled && movedToken.status === 'active') {
-      autoRevealFog(x, y, movedToken.lightRadius ?? 120);
+      autoRevealFog(nextX, nextY, movedToken.lightRadius ?? 120);
     }
   };
 
@@ -673,6 +729,7 @@ export const MapViewer = () => {
   const handleDeleteToken = (id: string) => {
     setTokens(prev => prev.filter(token => token.id !== id));
     setSelectedToken(null);
+    log('tokens:remove', { id, mapId: activeMapId });
     toast.success('Token eliminado');
   };
 
