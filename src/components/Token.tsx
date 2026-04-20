@@ -331,8 +331,8 @@ export const Token = ({
           </div>
         )}
         
-        {/* Token circle (wrapped in HoverCard when combat tooltip available) */}
-        {combatTooltip ? (
+        {/* Token circle (wrapped in HoverCard when combat tooltip available and token is alive) */}
+        {combatTooltip && !isDead ? (
           <HoverCard openDelay={150} closeDelay={80}>
             <HoverCardTrigger asChild>
               <div
