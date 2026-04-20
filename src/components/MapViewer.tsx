@@ -19,8 +19,11 @@ import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X, Upload } from 'lucide-react';
 import { useGameState, MapCombatState } from '@/hooks/useGameState';
 import { useAuth } from '@/hooks/useAuth';
+import { useCharacters } from '@/hooks/useCharacters';
+import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
+import type { CombatTooltipData } from './CombatTokenTooltipContent';
 
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
@@ -50,6 +53,9 @@ export interface TokenData {
   lightFlicker?: boolean;
   /** If true, the token is invisible to players but still shown to the DM (semi-transparent). */
   hidden?: boolean;
+  /** Reference to the source library entity for combat tooltip lookup (DM-only). */
+  sourceMonsterId?: string;
+  sourceCharacterId?: string;
 }
 
 export const MapViewer = () => {
