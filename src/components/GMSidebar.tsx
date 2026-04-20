@@ -57,8 +57,6 @@ interface GMSidebarProps {
   onEndInitiative: () => void;
   onAddFromMapToCombat: () => void;
   isInitiativeActive: boolean;
-  combatMode: boolean;
-  onToggleCombatMode: () => void;
   // Scenes
   scenes: SceneData[];
   activeSceneId: string | null;
@@ -113,8 +111,6 @@ export const GMSidebar = ({
   onEndInitiative,
   onAddFromMapToCombat,
   isInitiativeActive,
-  combatMode,
-  onToggleCombatMode,
   scenes,
   activeSceneId,
   onAddScene,
@@ -129,14 +125,6 @@ export const GMSidebar = ({
 }: GMSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<SidebarSection>('tokens');
-
-  // Auto-switch to initiative section when entering combat mode
-  useEffect(() => {
-    if (combatMode) {
-      setCollapsed(false);
-      setActiveSection('initiative');
-    }
-  }, [combatMode]);
 
   const navItems: { id: SidebarSection; icon: typeof Map; label: string }[] = [
     { id: 'maps', icon: Layers, label: 'Mapas' },
@@ -304,18 +292,6 @@ export const GMSidebar = ({
           {/* Initiative / Combat section */}
           {activeSection === 'initiative' && (
             <div className="flex-1 min-h-0 flex flex-col">
-              <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between gap-2 shrink-0">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Modo combate</span>
-                <Button
-                  size="sm"
-                  variant={combatMode ? 'default' : 'outline'}
-                  className="h-7 text-xs gap-1"
-                  onClick={onToggleCombatMode}
-                >
-                  <Swords className="w-3 h-3" />
-                  {combatMode ? 'Activo' : 'Inactivo'}
-                </Button>
-              </div>
               <CombatTracker
                 embedded
                 entries={combatEntries}
