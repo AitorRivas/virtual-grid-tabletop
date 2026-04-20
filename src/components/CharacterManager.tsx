@@ -1,8 +1,12 @@
 import { useState, useRef, useMemo } from 'react';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
-import { 
-  Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS, 
+import { useLibraryGroups } from '@/hooks/useLibraryGroups';
+import { LibraryGroupsBar } from './library/LibraryGroupsBar';
+import { GroupAssignMenu } from './library/GroupAssignMenu';
+import { EncounterManager } from './EncounterManager';
+import {
+  Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS,
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
   getRaceLabel, getClassLabel, getMonsterTypeLabel, getCreatureSizeLabel
 } from '@/types/dnd';
@@ -15,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X, FileText, Copy, Search, SortAsc, SortDesc, MapPin, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, User, Skull, Shield, Heart, Zap, Upload, Link, X, FileText, Copy, Search, SortAsc, SortDesc, MapPin, MoreVertical, Swords } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { SharedImagePicker } from './SharedImagePicker';
