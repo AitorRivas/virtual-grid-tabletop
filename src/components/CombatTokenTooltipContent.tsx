@@ -1,4 +1,4 @@
-import { Sword, Sparkles, Zap, ShieldCheck, Crown, Skull } from 'lucide-react';
+import { Sword, Sparkles, Zap, ShieldCheck, Crown, Skull, ShieldAlert, ShieldOff, Crosshair } from 'lucide-react';
 import type { CharacterAction, Feature, DamageType, SaveType } from '@/types/dnd5e';
 import { getDamageTypeLabel, getSaveLabel } from '@/types/dnd5e';
 import { getModifier, formatModifier } from '@/types/dnd';
@@ -24,6 +24,9 @@ export interface CombatTooltipData {
   reactions: CharacterAction[];
   legendary: CharacterAction[];
   source?: CombatTooltipSource;
+  resistances?: string[];
+  immunities?: string[];
+  vulnerabilities?: string[];
 }
 
 const SIZE_LABEL: Record<string, string> = {
@@ -165,11 +168,37 @@ export const CombatTokenTooltipContent = ({ data }: { data: CombatTooltipData })
       <Section icon={Crown} title="Acciones legendarias" items={legendaryItems} colorClass="text-[hsl(var(--token-purple))]" />
       <Section icon={Sparkles} title="Rasgos" items={traitItems} colorClass="text-[hsl(var(--token-green))]" />
 
+      {(data.resistances?.length || data.immunities?.length || data.vulnerabilities?.length) ? (
+        <div className="border-t border-border/40 pt-1.5 space-y-0.5">
+          {data.resistances && data.resistances.length > 0 && (
+            <p className="text-[10px] text-muted-foreground leading-snug flex items-start gap-1">
+              <ShieldAlert className="w-3 h-3 mt-0.5 shrink-0 text-[hsl(var(--token-blue))]" />
+              <span><span className="font-semibold">Resistencias:</span> {data.resistances.join(', ')}</span>
+            </p>
+          )}
+          {data.immunities && data.immunities.length > 0 && (
+            <p className="text-[10px] text-muted-foreground leading-snug flex items-start gap-1">
+              <ShieldOff className="w-3 h-3 mt-0.5 shrink-0 text-[hsl(var(--token-yellow))]" />
+              <span><span className="font-semibold">Inmunidades:</span> {data.immunities.join(', ')}</span>
+            </p>
+          )}
+          {data.vulnerabilities && data.vulnerabilities.length > 0 && (
+            <p className="text-[10px] text-muted-foreground leading-snug flex items-start gap-1">
+              <Crosshair className="w-3 h-3 mt-0.5 shrink-0 text-[hsl(var(--token-red))]" />
+              <span><span className="font-semibold">Vulnerabilidades:</span> {data.vulnerabilities.join(', ')}</span>
+            </p>
+          )}
+        </div>
+      ) : null}
+
       {actionItems.length === 0 &&
         bonusItems.length === 0 &&
         reactionItems.length === 0 &&
         legendaryItems.length === 0 &&
-        traitItems.length === 0 && (
+        traitItems.length === 0 &&
+        !data.resistances?.length &&
+        !data.immunities?.length &&
+        !data.vulnerabilities?.length && (
           <p className="text-xs text-muted-foreground italic flex items-center gap-1">
             <Skull className="w-3 h-3" /> Sin habilidades definidas
           </p>

@@ -923,12 +923,16 @@ export const MapViewer = () => {
       if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length) return null;
       const sizeLbl = localizeSize(m.size);
       const typeLbl = localizeType(m.type);
+      const toStrArr = (v: any): string[] => Array.isArray(v) ? v.map(String) : [];
       return {
         name: m.name,
         subtitle: `${sizeLbl} ${typeLbl} · VD ${m.challenge_rating ?? '?'}`.replace(/\s+/g, ' ').trim(),
         hp: { current: token.hpCurrent, max: token.hpMax },
         ac: m.armor_class,
         traits, actions, bonusActions, reactions, legendary,
+        resistances: toStrArr(m.resistances),
+        immunities: toStrArr(m.immunities),
+        vulnerabilities: toStrArr(m.vulnerabilities),
         source: {
           strength: m.strength, dexterity: m.dexterity, constitution: m.constitution,
           intelligence: m.intelligence, wisdom: m.wisdom, charisma: m.charisma,
