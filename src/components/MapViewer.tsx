@@ -24,7 +24,7 @@ import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
-import { log } from '@/lib/debug';
+import { log, warn } from '@/lib/debug';
 
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
@@ -58,6 +58,17 @@ export interface TokenData {
   sourceMonsterId?: string;
   sourceCharacterId?: string;
 }
+
+const clampPercent = (value: number) => {
+  if (!Number.isFinite(value)) return 50;
+  return Math.max(0, Math.min(100, value));
+};
+
+const sanitizeToken = (token: TokenData): TokenData => ({
+  ...token,
+  x: clampPercent(token.x),
+  y: clampPercent(token.y),
+});
 
 export const MapViewer = () => {
   const { isGuest, signOut } = useAuth();
@@ -283,7 +294,7 @@ export const MapViewer = () => {
   const setMapImage = useCallback((img: string | null) => updateActiveMap({ mapImage: img }), [updateActiveMap]);
   const setTokens = useCallback((updater: TokenData[] | ((prev: TokenData[]) => TokenData[])) => {
     updateActiveMap((currentMap) => ({
-      tokens: typeof updater === 'function' ? updater(currentMap?.tokens ?? []) : updater,
+      tokens: (typeof updater === 'function' ? updater(currentMap?.tokens ?? []) : updater).map(sanitizeToken),
     }));
   }, [updateActiveMap]);
   const setShowGrid = useCallback((v: boolean) => updateActiveMap({ showGrid: v }), [updateActiveMap]);
@@ -291,7 +302,10 @@ export const MapViewer = () => {
   const setGridColor = useCallback((v: string) => updateActiveMap({ gridColor: v }), [updateActiveMap]);
   const setGridLineWidth = useCallback((v: number) => updateActiveMap({ gridLineWidth: v }), [updateActiveMap]);
   const setFogEnabled = useCallback((v: boolean) => updateActiveMap({ fogEnabled: v }), [updateActiveMap]);
-  const setFogData = useCallback((v: string | null) => updateActiveMap({ fogData: v }), [updateActiveMap]);
+  const setFogData = useCallback((v: string | null) => {
+    log('fog:apply', { mapId: activeMapId, phase: v ? 'persist' : 'clear' });
+    updateActiveMap({ fogData: v });
+  }, [activeMapId, updateActiveMap]);
   const setGridOffsetX = useCallback((v: number) => updateActiveMap({ gridOffsetX: v }), [updateActiveMap]);
   const setGridOffsetY = useCallback((v: number) => updateActiveMap({ gridOffsetY: v }), [updateActiveMap]);
   const setCellStates = useCallback((updater: Record<string, CellState> | ((prev: Record<string, CellState>) => Record<string, CellState>)) => {
