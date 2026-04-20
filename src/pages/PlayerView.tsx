@@ -308,12 +308,6 @@ const PlayerView = () => {
     );
   };
 
-  // Anti-flicker: keep a black overlay until fog has painted on map switch.
-  const [fogReady, setFogReady] = useState(!fogEnabled);
-  useEffect(() => {
-    setFogReady(!fogEnabled);
-  }, [activeMap?.id, fogEnabled]);
-
   // Players never see hidden tokens.
   const visibleTokens = tokens.filter((t) => !t.hidden);
 
@@ -334,36 +328,37 @@ const PlayerView = () => {
     <div ref={rootRef} className="h-screen w-screen overflow-hidden bg-black relative">
       {renderNarrative()}
 
-      <TransformWrapper
-        key={activeMap?.id ?? 'no-map'}
-        initialScale={1}
-        minScale={0.1}
-        maxScale={10}
-        centerOnInit={false}
-        limitToBounds={true}
-        smooth
-        onInit={(ref) => {
-          transformApiRef.current = ref as any;
-          setTransformReadyMapId(activeMap?.id ?? null);
-        }}
-        onZoom={(ref) => { transformApiRef.current = ref as any; }}
-        onPanning={(ref) => { transformApiRef.current = ref as any; }}
-        onTransformed={(ref, state) => {
-          transformApiRef.current = ref as any;
-          if (activeMap?.id && restoredForMapRef.current === activeMap.id && !isHydratingCameraRef.current) {
-            savePlayerCamera(activeMap.id, {
-              positionX: state.positionX,
-              positionY: state.positionY,
-              scale: state.scale,
-            });
-          }
-        }}
-      >
-        <TransformComponent
-          wrapperStyle={{ width: '100%', height: '100%' }}
-          contentStyle={{ width: '100%', height: '100%' }}
+      <div className="h-full w-full" style={{ visibility: isViewReady ? 'visible' : 'hidden' }}>
+        <TransformWrapper
+          key={activeMap?.id ?? 'no-map'}
+          initialScale={1}
+          minScale={0.1}
+          maxScale={10}
+          centerOnInit={false}
+          limitToBounds={true}
+          smooth
+          onInit={(ref) => {
+            transformApiRef.current = ref as any;
+            setTransformReadyMapId(activeMap?.id ?? null);
+          }}
+          onZoom={(ref) => { transformApiRef.current = ref as any; }}
+          onPanning={(ref) => { transformApiRef.current = ref as any; }}
+          onTransformed={(ref, state) => {
+            transformApiRef.current = ref as any;
+            if (activeMap?.id && restoredForMapRef.current === activeMap.id && !isHydratingCameraRef.current) {
+              savePlayerCamera(activeMap.id, {
+                positionX: state.positionX,
+                positionY: state.positionY,
+                scale: state.scale,
+              });
+            }
+          }}
         >
-          <div ref={mapContainerRef} className="relative">
+          <TransformComponent
+            wrapperStyle={{ width: '100%', height: '100%' }}
+            contentStyle={{ width: '100%', height: '100%' }}
+          >
+            <div ref={mapContainerRef} className="relative">
             <img
               src={mapImage}
               alt="Mapa"
@@ -422,10 +417,7 @@ const PlayerView = () => {
                 fogTool="brush"
                 fogMode="reveal"
                 opacity={1}
-                onReady={() => {
-                  setFogReady(true);
-                  setFogReadyMapId(activeMap?.id ?? null);
-                }}
+                onReady={() => setFogReadyMapId(activeMap?.id ?? null)}
               />
             )}
 
@@ -455,17 +447,22 @@ const PlayerView = () => {
                 mapContainerRef={mapContainerRef}
               />
             ))}
-          </div>
-        </TransformComponent>
-      </TransformWrapper>
+            </div>
+          </TransformComponent>
+        </TransformWrapper>
+      </div>
 
-      <button
-        onClick={toggleFullscreen}
-        className="absolute bottom-4 right-4 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white/50 hover:text-white transition-all z-10"
-        title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-      >
-        {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-      </button>
+      {!isViewReady && <div className="absolute inset-0 z-20 bg-black" aria-hidden="true" />}
+
+      {isViewReady && (
+        <button
+          onClick={toggleFullscreen}
+          className="absolute bottom-4 right-4 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white/50 hover:text-white transition-all z-10"
+          title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        >
+          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+        </button>
+      )}
     </div>
   );
 };
