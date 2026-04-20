@@ -19,8 +19,11 @@ import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X, Upload } from 'lucide-react';
 import { useGameState, MapCombatState } from '@/hooks/useGameState';
 import { useAuth } from '@/hooks/useAuth';
+import { useCharacters } from '@/hooks/useCharacters';
+import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
+import type { CombatTooltipData } from './CombatTokenTooltipContent';
 
 
 export type TokenColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan' | 'black';
@@ -50,10 +53,15 @@ export interface TokenData {
   lightFlicker?: boolean;
   /** If true, the token is invisible to players but still shown to the DM (semi-transparent). */
   hidden?: boolean;
+  /** Reference to the source library entity for combat tooltip lookup (DM-only). */
+  sourceMonsterId?: string;
+  sourceCharacterId?: string;
 }
 
 export const MapViewer = () => {
   const { isGuest, signOut } = useAuth();
+  const { characters: libraryCharacters } = useCharacters();
+  const { monsters: libraryMonsters } = useExtendedMonsters();
   const {
     maps,
     activeMapId,
@@ -657,6 +665,7 @@ export const MapViewer = () => {
       speedFeet: character.speed,
       sizeInCells,
       faction: 'pj',
+      sourceCharacterId: character.id,
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${character.name} añadido al mapa`);
@@ -682,10 +691,51 @@ export const MapViewer = () => {
       speedFeet: monster.speed,
       sizeInCells,
       faction: 'enemy',
+      sourceMonsterId: monster.id,
     };
     setTokens(prev => [...prev, newToken]);
     toast.success(`${monster.name} añadido al mapa`);
   };
+
+  // Build combat tooltip data for a token (only when combat is active and source entity exists with content)
+  const monsterById = useMemo(() => new Map(libraryMonsters.map(m => [m.id, m])), [libraryMonsters]);
+  const characterById = useMemo(() => new Map(libraryCharacters.map(c => [c.id, c])), [libraryCharacters]);
+
+  const getCombatTooltip = useCallback((token: TokenData): CombatTooltipData | null => {
+    if (!isInitiativeActive) return null;
+    if (token.sourceMonsterId) {
+      const m = monsterById.get(token.sourceMonsterId);
+      if (!m) return null;
+      const traits = m.traits ?? [];
+      const actions = m.actions ?? [];
+      const bonusActions = m.bonus_actions ?? [];
+      const reactions = m.reactions ?? [];
+      const legendary = m.legendary_actions?.actions ?? [];
+      if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length) return null;
+      return {
+        name: m.name,
+        subtitle: `${m.size ?? ''} ${m.type ?? ''} · CR ${m.challenge_rating ?? '?'}`.trim(),
+        hp: { current: token.hpCurrent, max: token.hpMax },
+        ac: m.armor_class,
+        traits, actions, bonusActions, reactions, legendary,
+      };
+    }
+    if (token.sourceCharacterId) {
+      const c = characterById.get(token.sourceCharacterId) as any;
+      if (!c) return null;
+      const traits = (c.features ?? []) as any[];
+      const actions = (c.actions ?? []) as any[];
+      if (!traits.length && !actions.length) return null;
+      return {
+        name: c.name,
+        subtitle: `Nivel ${c.level ?? '?'} · ${c.class ?? ''}`.trim(),
+        hp: { current: token.hpCurrent, max: token.hpMax },
+        ac: c.armor_class,
+        traits, actions, bonusActions: [], reactions: [], legendary: [],
+      };
+    }
+    return null;
+  }, [isInitiativeActive, monsterById, characterById]);
 
   // Render map content
   const renderMapContent = () => (
@@ -827,6 +877,7 @@ export const MapViewer = () => {
                 onRotate={handleTokenRotation}
                 onToggleHidden={() => handleToggleHidden(token.id)}
                 mapContainerRef={mapContainerRef}
+                combatTooltip={getCombatTooltip(token)}
               />
             ))}
           </div>
