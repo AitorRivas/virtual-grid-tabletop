@@ -332,6 +332,7 @@ export const MapViewer = () => {
       updateCombat({ activeIndex: 0, isActive: true, round: 1 });
     }
     setCombatMode(true);
+    log('combat:init', { mapId: activeMapId, participants: combatEntries.length || tokens.filter(t => t.status === 'active').length });
     toast.success('¡Combate iniciado!');
   }, [activeMapId, combatEntries.length, tokens, updateCombat]);
 
@@ -363,8 +364,9 @@ export const MapViewer = () => {
 
   const handleEndInitiative = useCallback(() => {
     updateCombat({ isActive: false, activeIndex: 0, round: 1 });
+    log('combat:end', { mapId: activeMapId });
     toast.success('Combate finalizado');
-  }, [updateCombat]);
+  }, [updateCombat, activeMapId]);
 
   const handleAddFromMap = useCallback(() => {
     const factionFromToken = (t: TokenData): CombatFaction =>
