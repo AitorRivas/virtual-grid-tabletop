@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Trash2, Skull, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Skull, Eye, EyeOff, Heart } from 'lucide-react';
 import { TokenColor, TokenStatus } from './MapViewer';
 import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -34,6 +34,7 @@ interface TokenProps {
   onClick: () => void;
   onDelete: () => void;
   onMarkDead: () => void;
+  onRevive?: () => void;
   onRotate: (id: string, rotation: number) => void;
   onToggleHidden?: () => void;
   mapContainerRef: React.RefObject<HTMLDivElement>;
@@ -56,7 +57,7 @@ const colorClasses: Record<TokenColor, string> = {
 export const Token = ({
   id, x, y, color, name, size, status, conditions: tokenConditions, hpMax, hpCurrent, imageUrl, rotation = 0, isSelected, isActiveInitiative = false,
   hidden = false, showHiddenStyle = false,
-  onMove, onClick, onDelete, onMarkDead, onRotate, onToggleHidden, mapContainerRef,
+  onMove, onClick, onDelete, onMarkDead, onRevive, onRotate, onToggleHidden, mapContainerRef,
   combatTooltip = null,
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -476,7 +477,7 @@ export const Token = ({
         </div>
 
         {/* Quick action buttons (with invisible bridge to prevent hover gap) */}
-        {showActions && status === 'active' && (
+        {showActions && (status === 'active' || isDead) && (
           <div
             className="absolute left-1/2 -translate-x-1/2 z-[110]"
             style={{ top: -44, paddingBottom: 44 }}
@@ -484,7 +485,7 @@ export const Token = ({
             onMouseLeave={() => setShowActions(false)}
           >
             <div className="flex gap-1 relative z-[1]">
-              {onToggleHidden && (
+              {status === 'active' && onToggleHidden && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -496,16 +497,30 @@ export const Token = ({
                   {hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
               )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMarkDead();
-                }}
-                className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
-                title="Marcar como muerto"
-              >
-                <Skull className="w-4 h-4" />
-              </button>
+              {status === 'active' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMarkDead();
+                  }}
+                  className="p-1.5 bg-secondary hover:bg-muted rounded text-foreground transition-colors shadow-lg"
+                  title="Marcar como muerto"
+                >
+                  <Skull className="w-4 h-4" />
+                </button>
+              )}
+              {isDead && onRevive && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRevive();
+                  }}
+                  className="p-1.5 bg-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,30%)] rounded text-white transition-colors shadow-lg"
+                  title="Resucitar token"
+                >
+                  <Heart className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
