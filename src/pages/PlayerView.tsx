@@ -152,6 +152,7 @@ const PlayerView = () => {
         api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
         restoredForMapRef.current = activeMap.id;
         isHydratingCameraRef.current = false;
+        setCameraReadyMapId(activeMap.id);
       });
     });
 
@@ -426,7 +427,10 @@ const PlayerView = () => {
                 fogTool="brush"
                 fogMode="reveal"
                 opacity={1}
-                onReady={() => setFogReady(true)}
+                onReady={() => {
+                  setFogReady(true);
+                  setFogReadyMapId(activeMap?.id ?? null);
+                }}
               />
             )}
 
@@ -461,7 +465,7 @@ const PlayerView = () => {
       </TransformWrapper>
 
       {/* Anti-flicker black cover until fog is ready */}
-      {fogEnabled && !fogReady && (
+      {!isViewReady && (
         <div className="absolute inset-0 bg-black pointer-events-none z-40" />
       )}
 

@@ -1200,7 +1200,7 @@ export const MapViewer = () => {
         />
 
         {/* Map area */}
-        <div className="flex-1 relative overflow-hidden bg-board-bg">
+        <div ref={mapViewportRef} className="flex-1 relative overflow-hidden bg-board-bg">
           {!mapImage ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -1221,6 +1221,9 @@ export const MapViewer = () => {
             </div>
           ) : (
             renderMapContent()
+          )}
+          {mapImage && !isMapPipelineReady && (
+            <div className="absolute inset-0 z-40 bg-board-bg pointer-events-none" />
           )}
         </div>
       </div>
