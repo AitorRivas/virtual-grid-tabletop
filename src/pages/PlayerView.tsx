@@ -396,7 +396,7 @@ const PlayerView = () => {
           minScale={0.1}
           maxScale={10}
           centerOnInit={false}
-          limitToBounds={true}
+          limitToBounds={false}
           smooth
           onInit={(ref) => {
             transformApiRef.current = ref as any;
