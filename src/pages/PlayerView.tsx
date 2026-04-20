@@ -464,11 +464,6 @@ const PlayerView = () => {
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Anti-flicker black cover until fog is ready */}
-      {!isViewReady && (
-        <div className="absolute inset-0 bg-black pointer-events-none z-40" />
-      )}
-
       <button
         onClick={toggleFullscreen}
         className="absolute bottom-4 right-4 p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white/50 hover:text-white transition-all z-10"
