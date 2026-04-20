@@ -696,8 +696,9 @@ export const MapViewer = () => {
     const sizeInCells = Math.max(1, Math.min(4, Math.round(baseTokenSize / 100)));
     const tokenSizePx = sizeInCells * gridSize;
 
+    const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
-      id: `char-${Date.now()}`,
+      id: `char-${uid}`,
       x: 50,
       y: 50,
       color: character.token_color,
@@ -715,6 +716,7 @@ export const MapViewer = () => {
       sourceCharacterId: character.id,
     };
     setTokens(prev => [...prev, newToken]);
+    log('tokens:add', { type: 'character', name: character.name, id: newToken.id });
     toast.success(`${character.name} añadido al mapa`);
   };
 
@@ -722,8 +724,9 @@ export const MapViewer = () => {
     const sizeInCells = CREATURE_SIZE_CELLS[monster.size] ?? 1;
     const tokenSizePx = sizeInCells * gridSize;
 
+    const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
-      id: `monster-${Date.now()}`,
+      id: `monster-${uid}`,
       x: 50,
       y: 50,
       color: monster.token_color,
@@ -741,6 +744,7 @@ export const MapViewer = () => {
       sourceMonsterId: monster.id,
     };
     setTokens(prev => [...prev, newToken]);
+    log('tokens:add', { type: 'monster', name: monster.name, id: newToken.id });
     toast.success(`${monster.name} añadido al mapa`);
   };
 
@@ -803,7 +807,7 @@ export const MapViewer = () => {
       initialScale={1}
       minScale={0.1}
       maxScale={10}
-      centerOnInit
+      centerOnInit={false}
       limitToBounds={false}
       panning={{ disabled: isAddingToken }}
       onZoom={(ref) => {
@@ -817,7 +821,7 @@ export const MapViewer = () => {
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
-        broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
+        // Do NOT broadcast on init — would emit (0,0,1) and overwrite saved state.
       }}
     >
       {({ zoomIn, zoomOut, resetTransform, zoomToElement, ...rest }) => (
@@ -847,6 +851,7 @@ export const MapViewer = () => {
               onLoad={(e) => {
                 const img = e.currentTarget;
                 setMapDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                setImageReadyMapId(activeMapId ?? null);
               }}
             />
             
