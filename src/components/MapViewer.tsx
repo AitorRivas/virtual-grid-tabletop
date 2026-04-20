@@ -1098,6 +1098,7 @@ export const MapViewer = () => {
                 onClick={() => setSelectedToken(token.id)}
                 onDelete={() => handleDeleteToken(token.id)}
                 onMarkDead={() => handleStatusChange(token.id, 'dead')}
+                onRevive={() => handleStatusChange(token.id, 'active')}
                 onRotate={handleTokenRotation}
                 onToggleHidden={() => handleToggleHidden(token.id)}
                 mapContainerRef={mapContainerRef}
