@@ -327,7 +327,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Tabs defaultValue="characters" className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <TabsList className="grid w-full grid-cols-2 shrink-0 mx-3 mt-3 w-[calc(100%-1.5rem)]">
+        <TabsList className="grid w-full grid-cols-3 shrink-0 mx-3 mt-3 w-[calc(100%-1.5rem)]">
           <TabsTrigger value="characters" className="gap-1">
             <User className="w-4 h-4" />
             Personajes
@@ -336,7 +336,18 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             <Skull className="w-4 h-4" />
             Monstruos
           </TabsTrigger>
+          <TabsTrigger value="encounters" className="gap-1">
+            <Swords className="w-4 h-4" />
+            Encuentros
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="encounters" className="m-0 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
+          <EncounterManager
+            onAddCharacterToMap={onAddCharacterToMap}
+            onAddMonsterToMap={onAddMonsterToMap}
+          />
+        </TabsContent>
 
         <TabsContent value="characters" className="m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
           <Dialog open={showNewCharacter} onOpenChange={setShowNewCharacter}>
