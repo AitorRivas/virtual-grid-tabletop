@@ -228,6 +228,7 @@ export const useGameState = () => {
     dmCamera: state.dmCamera,
     dmSelectedTokenId: state.dmSelectedTokenId,
     playerCameras: state.playerCameras,
+    dmCameras: state.dmCameras,
     isLoaded,
     setActiveMapId,
     addMap,
@@ -245,6 +246,7 @@ export const useGameState = () => {
     setDmCamera,
     setDmSelectedTokenId,
     savePlayerCamera,
+    saveDmCamera,
     clearSession,
   };
 };
