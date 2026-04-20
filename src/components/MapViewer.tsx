@@ -243,6 +243,11 @@ export const MapViewer = () => {
     setCellEditMode(false);
     setZoomLevel(1);
     setMapDimensions({ width: 0, height: 0 });
+    // Camera hydration: block broadcasts/restores until image+transform ready for THIS map
+    restoredForMapRef.current = null;
+    isHydratingCameraRef.current = true;
+    setImageReadyMapId(null);
+    log('map:switch', { mapId: activeMapId });
   }, [activeMapId]);
 
   // Auto-create first map
