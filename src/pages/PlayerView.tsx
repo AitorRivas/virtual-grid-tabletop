@@ -78,10 +78,8 @@ const PlayerView = () => {
     && mapDimensions.width > 0
     && mapDimensions.height > 0;
 
-  const isViewReady = !!activeMap?.id
-    && isMapReady
-    && cameraReadyMapId === activeMap.id
-    && (!fogEnabled || fogReadyMapId === activeMap.id);
+  const isFogReady = !fogEnabled || fogReadyMapId === activeMap?.id;
+  const isViewReady = !!activeMap?.id && isMapReady && isFogReady;
 
   // Reset dimensions when map image changes
   useEffect(() => {
@@ -127,7 +125,10 @@ const PlayerView = () => {
       if (!api || !root) return;
 
       const rect = root.getBoundingClientRect();
-      if ((!rect.width || !rect.height) && frame < 10) {
+      const viewportWidth = rect.width || root.clientWidth || window.innerWidth;
+      const viewportHeight = rect.height || root.clientHeight || window.innerHeight;
+
+      if ((!viewportWidth || !viewportHeight) && frame < 10) {
         frame += 1;
         rafId = requestAnimationFrame(hydrateCamera);
         return;
@@ -141,11 +142,11 @@ const PlayerView = () => {
         let nextX = positionX;
         let nextY = positionY;
 
-        if (scaledW <= rect.width) nextX = (rect.width - scaledW) / 2;
-        else nextX = Math.min(0, Math.max(rect.width - scaledW, nextX));
+        if (scaledW <= viewportWidth) nextX = (viewportWidth - scaledW) / 2;
+        else nextX = Math.min(0, Math.max(viewportWidth - scaledW, nextX));
 
-        if (scaledH <= rect.height) nextY = (rect.height - scaledH) / 2;
-        else nextY = Math.min(0, Math.max(rect.height - scaledH, nextY));
+        if (scaledH <= viewportHeight) nextY = (viewportHeight - scaledH) / 2;
+        else nextY = Math.min(0, Math.max(viewportHeight - scaledH, nextY));
 
         return { positionX: nextX, positionY: nextY, scale: safeScale };
       };
