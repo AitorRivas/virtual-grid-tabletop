@@ -920,7 +920,8 @@ export const MapViewer = () => {
       const bonusActions = m.bonus_actions ?? [];
       const reactions = m.reactions ?? [];
       const legendary = m.legendary_actions?.actions ?? [];
-      if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length) return null;
+      const res = m.resistances ?? []; const imm = m.immunities ?? []; const vul = m.vulnerabilities ?? [];
+      if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length && !res.length && !imm.length && !vul.length) return null;
       const sizeLbl = localizeSize(m.size);
       const typeLbl = localizeType(m.type);
       const toStrArr = (v: any): string[] => Array.isArray(v) ? v.map(String) : [];
