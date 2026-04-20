@@ -8,6 +8,7 @@ import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { useGameState } from '@/hooks/useGameState';
 import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
+import { log } from '@/lib/debug';
 
 const PlayerView = () => {
   const {
@@ -88,7 +89,7 @@ const PlayerView = () => {
         positionY: state.positionY,
         scale: state.scale,
       };
-      console.log('Saving camera:', currentMapId, snapshot);
+      log('camera:save', { mapId: currentMapId, snapshot, scope: 'player' });
       savePlayerCamera(currentMapId, snapshot);
     };
   }, [activeMap?.id, savePlayerCamera]);
@@ -128,11 +129,8 @@ const PlayerView = () => {
       ? clampCamera(saved.positionX, saved.positionY, saved.scale)
       : clampCamera(0, 0, 1);
 
-    if (saved) {
-      console.log('Restoring camera:', activeMap.id, targetCamera);
-    } else {
-      console.log('Applying default camera:', activeMap.id, targetCamera);
-    }
+    if (saved) log('camera:restore', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
+    else log('camera:default', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
 
     let cancelled = false;
     requestAnimationFrame(() => {
@@ -196,6 +194,12 @@ const PlayerView = () => {
     const targetScale = playerViewConfig.syncZoom ? dmCamera.scale : cur.scale;
 
     transformApiRef.current.setTransform(targetX, targetY, targetScale, 220, 'easeOut');
+    log('sync:player', {
+      mapId: activeMap.id,
+      type: 'camera',
+      syncCamera: playerViewConfig.syncCamera,
+      syncZoom: playerViewConfig.syncZoom,
+    });
   }, [
     dmCamera.tick,
     dmCamera.positionX,
@@ -253,6 +257,7 @@ const PlayerView = () => {
     if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
 
     transformApiRef.current.setTransform(targetX, targetY, scale, 320, 'easeOut');
+    log('sync:player', { mapId: activeMap.id, type: 'selection', tokenId: dmSelectedTokenId });
   }, [
     dmSelectedTokenId,
     playerViewConfig.syncSelection,

@@ -5,6 +5,7 @@ import { Slider } from './ui/slider';
 import { toast } from 'sonner';
 import { useDraggable } from '@/hooks/useDraggable';
 import { useAudioLibrary, isSupportedAudioFile, type LibraryAudioMeta } from '@/hooks/useAudioLibrary';
+import { log, error as logError } from '@/lib/debug';
 
 interface Track {
   id: string;
@@ -126,7 +127,12 @@ export const AmbientPlayer = () => {
 
       if (audioRef.current) {
         audioRef.current.src = data;
-        audioRef.current.play();
+        log('audio:load', { channel, name: newTrack.name, source: 'scene' });
+        audioRef.current.play().catch((err) => {
+          logError('audio:error', { channel, name: newTrack.name, source: 'scene', error: err instanceof Error ? err.message : String(err) });
+          toast.error(`No se pudo reproducir "${newTrack.name}"`);
+          setChannel(prev => ({ ...prev, isPlaying: false }));
+        });
       }
     };
 
@@ -220,8 +226,9 @@ export const AmbientPlayer = () => {
     } else {
       if (audioRef.current) {
         audioRef.current.src = track.url;
+        log('audio:load', { channel: channelNum, name: track.name, source: track.libraryId ? 'library' : 'session' });
         audioRef.current.play().catch((err) => {
-          console.error('Audio play failed:', { id: track.id, name: track.name, url: track.url.slice(0, 64) + '…', error: err });
+          logError('audio:error', { channel: channelNum, id: track.id, name: track.name, error: err instanceof Error ? err.message : String(err) });
           toast.error(`No se pudo reproducir "${track.name}"`);
           setChannel(prev => ({ ...prev, isPlaying: false }));
         });
@@ -240,7 +247,12 @@ export const AmbientPlayer = () => {
     if (channel.isPlaying) {
       audioRef.current?.pause();
     } else {
-      audioRef.current?.play();
+      log('audio:load', { channel: channelNum, name: channel.currentTrack.name, source: 'resume' });
+      audioRef.current?.play().catch((err) => {
+        logError('audio:error', { channel: channelNum, name: channel.currentTrack?.name, source: 'resume', error: err instanceof Error ? err.message : String(err) });
+        toast.error(`No se pudo reproducir "${channel.currentTrack?.name ?? 'audio'}"`);
+        setChannel(prev => ({ ...prev, isPlaying: false }));
+      });
     }
     setChannel(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
   };
@@ -359,8 +371,9 @@ export const AmbientPlayer = () => {
     });
     if (audioRef.current) {
       audioRef.current.src = audioData;
+      log('audio:load', { channel: channelNum, name: item.name, source: 'library' });
       audioRef.current.play().catch((err) => {
-        console.error('Audio play failed (library):', { id: item.id, name: item.name, error: err });
+        logError('audio:error', { channel: channelNum, id: item.id, name: item.name, source: 'library', error: err instanceof Error ? err.message : String(err) });
         toast.error(`No se pudo reproducir "${item.name}"`);
       });
     }
@@ -505,12 +518,18 @@ export const AmbientPlayer = () => {
       <audio 
         ref={audioRef1} 
         onEnded={() => !channel1.isLooping && setChannel1(prev => ({ ...prev, isPlaying: false }))}
-        onError={() => toast.error('Error al reproducir el audio')}
+        onError={() => {
+          logError('audio:error', { channel: 1, name: channel1.currentTrack?.name ?? null, source: 'element' });
+          toast.error('Error al reproducir el audio');
+        }}
       />
       <audio 
         ref={audioRef2} 
         onEnded={() => !channel2.isLooping && setChannel2(prev => ({ ...prev, isPlaying: false }))}
-        onError={() => toast.error('Error al reproducir el audio')}
+        onError={() => {
+          logError('audio:error', { channel: 2, name: channel2.currentTrack?.name ?? null, source: 'element' });
+          toast.error('Error al reproducir el audio');
+        }}
       />
       
       <input
