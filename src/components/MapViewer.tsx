@@ -697,6 +697,46 @@ export const MapViewer = () => {
     toast.success(`${monster.name} añadido al mapa`);
   };
 
+  // Build combat tooltip data for a token (only when combat is active and source entity exists with content)
+  const monsterById = useMemo(() => new Map(libraryMonsters.map(m => [m.id, m])), [libraryMonsters]);
+  const characterById = useMemo(() => new Map(libraryCharacters.map(c => [c.id, c])), [libraryCharacters]);
+
+  const getCombatTooltip = useCallback((token: TokenData): CombatTooltipData | null => {
+    if (!isInitiativeActive) return null;
+    if (token.sourceMonsterId) {
+      const m = monsterById.get(token.sourceMonsterId);
+      if (!m) return null;
+      const traits = m.traits ?? [];
+      const actions = m.actions ?? [];
+      const bonusActions = m.bonus_actions ?? [];
+      const reactions = m.reactions ?? [];
+      const legendary = m.legendary_actions?.actions ?? [];
+      if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length) return null;
+      return {
+        name: m.name,
+        subtitle: `${m.size ?? ''} ${m.type ?? ''} · CR ${m.challenge_rating ?? '?'}`.trim(),
+        hp: { current: token.hpCurrent, max: token.hpMax },
+        ac: m.armor_class,
+        traits, actions, bonusActions, reactions, legendary,
+      };
+    }
+    if (token.sourceCharacterId) {
+      const c = characterById.get(token.sourceCharacterId) as any;
+      if (!c) return null;
+      const traits = (c.features ?? []) as any[];
+      const actions = (c.actions ?? []) as any[];
+      if (!traits.length && !actions.length) return null;
+      return {
+        name: c.name,
+        subtitle: `Nivel ${c.level ?? '?'} · ${c.class ?? ''}`.trim(),
+        hp: { current: token.hpCurrent, max: token.hpMax },
+        ac: c.armor_class,
+        traits, actions, bonusActions: [], reactions: [], legendary: [],
+      };
+    }
+    return null;
+  }, [isInitiativeActive, monsterById, characterById]);
+
   // Render map content
   const renderMapContent = () => (
     <TransformWrapper
