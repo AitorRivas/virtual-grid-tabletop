@@ -501,11 +501,11 @@ export const MapViewer = () => {
       requestAnimationFrame(() => {
         if (cancelled) return;
         if (saved) {
-          api.setTransform(target.positionX, target.positionY, target.scale, 0);
+          api.setTransform(target.positionX, target.positionY, target.scale);
           setZoomLevel(target.scale);
           log('camera:restore', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         } else {
-          api.setTransform(target.positionX, target.positionY, target.scale, 0);
+          api.setTransform(target.positionX, target.positionY, target.scale);
           setZoomLevel(target.scale);
           log('camera:default', { mapId: activeMapId, snapshot: target, scope: 'dm' });
         }
