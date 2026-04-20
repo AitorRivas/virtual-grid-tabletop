@@ -330,44 +330,94 @@ export const Token = ({
           </div>
         )}
         
-        {/* Token circle */}
-        <div
-          className={`w-full h-full rounded-full ${!imageUrl ? colorClasses[displayColor] : ''} border-2 ${
-            isSelected ? 'border-primary' : 'border-foreground/30'
-          } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative overflow-hidden ${flashClass}`}
-          style={{
-            boxShadow: isSelected 
-              ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
-              : 'var(--token-shadow)',
-            fontSize: size * 0.4,
-            transform: `rotate(${rotation}deg)`,
-          }}
-        >
-          {imageUrl ? (
-            <>
-              <img 
-                src={imageUrl} 
-                alt={name}
-                className="w-full h-full object-cover rounded-full"
-                draggable={false}
+        {/* Token circle (wrapped in HoverCard when combat tooltip available) */}
+        {combatTooltip ? (
+          <HoverCard openDelay={150} closeDelay={80}>
+            <HoverCardTrigger asChild>
+              <div
+                className={`w-full h-full rounded-full ${!imageUrl ? colorClasses[displayColor] : ''} border-2 ${
+                  isSelected ? 'border-primary' : 'border-foreground/30'
+                } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative overflow-hidden ${flashClass}`}
+                style={{
+                  boxShadow: isSelected 
+                    ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
+                    : 'var(--token-shadow)',
+                  fontSize: size * 0.4,
+                  transform: `rotate(${rotation}deg)`,
+                }}
+              >
+                {imageUrl ? (
+                  <>
+                    <img 
+                      src={imageUrl} 
+                      alt={name}
+                      className="w-full h-full object-cover rounded-full"
+                      draggable={false}
+                    />
+                    {isDead && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full">
+                        <Skull className="w-1/2 h-1/2 text-white" style={{ transform: `rotate(-${rotation}deg)` }} />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()
+                )}
+                {floatingNumbers.some(f => f.type === 'crit') && (
+                  <div className="absolute inset-0 rounded-full animate-crit-burst pointer-events-none"
+                    style={{ border: '3px solid hsl(0, 84%, 60%)', background: 'hsl(0, 84%, 60% / 0.15)' }}
+                  />
+                )}
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent
+              side="right"
+              align="start"
+              sideOffset={12}
+              className={`w-auto p-3 bg-card/95 backdrop-blur-sm border-border shadow-2xl pointer-events-none ${
+                isActiveInitiative ? 'ring-2 ring-[hsl(48,95%,55%)]/60' : ''
+              }`}
+            >
+              <CombatTokenTooltipContent data={combatTooltip} />
+            </HoverCardContent>
+          </HoverCard>
+        ) : (
+          <div
+            className={`w-full h-full rounded-full ${!imageUrl ? colorClasses[displayColor] : ''} border-2 ${
+              isSelected ? 'border-primary' : 'border-foreground/30'
+            } transition-all duration-200 flex items-center justify-center font-bold text-white shadow-lg relative overflow-hidden ${flashClass}`}
+            style={{
+              boxShadow: isSelected 
+                ? '0 0 0 3px hsl(var(--primary) / 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)' 
+                : 'var(--token-shadow)',
+              fontSize: size * 0.4,
+              transform: `rotate(${rotation}deg)`,
+            }}
+          >
+            {imageUrl ? (
+              <>
+                <img 
+                  src={imageUrl} 
+                  alt={name}
+                  className="w-full h-full object-cover rounded-full"
+                  draggable={false}
+                />
+                {isDead && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full">
+                    <Skull className="w-1/2 h-1/2 text-white" style={{ transform: `rotate(-${rotation}deg)` }} />
+                  </div>
+                )}
+              </>
+            ) : (
+              isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()
+            )}
+            {floatingNumbers.some(f => f.type === 'crit') && (
+              <div className="absolute inset-0 rounded-full animate-crit-burst pointer-events-none"
+                style={{ border: '3px solid hsl(0, 84%, 60%)', background: 'hsl(0, 84%, 60% / 0.15)' }}
               />
-              {isDead && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full">
-                  <Skull className="w-1/2 h-1/2 text-white" style={{ transform: `rotate(-${rotation}deg)` }} />
-                </div>
-              )}
-            </>
-          ) : (
-            isDead ? <Skull className="w-1/2 h-1/2" /> : name.charAt(0).toUpperCase()
-          )}
-
-          {/* Crit burst effect overlay */}
-          {floatingNumbers.some(f => f.type === 'crit') && (
-            <div className="absolute inset-0 rounded-full animate-crit-burst pointer-events-none"
-              style={{ border: '3px solid hsl(0, 84%, 60%)', background: 'hsl(0, 84%, 60% / 0.15)' }}
-            />
-          )}
-        </div>
+            )}
+          </div>
+        )}
         
         {/* Floating damage/heal numbers */}
         {floatingNumbers.map((fn) => (
