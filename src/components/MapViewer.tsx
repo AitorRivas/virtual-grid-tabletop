@@ -403,6 +403,9 @@ export const MapViewer = () => {
   }, [activeInitiativeTokenId, setActiveInitiativeTokenId]);
 
   // Broadcast DM camera state for syncCamera/syncZoom (rAF throttled)
+  // Skip broadcasts AND persistence while we are still hydrating the saved camera
+  // for the active map — otherwise the initial (0,0,1) from key-remount would
+  // overwrite both the player snapshot and our own saved camera.
   const cameraRafRef = useRef<number | null>(null);
   const pendingCameraRef = useRef<{ x: number; y: number; s: number } | null>(null);
   const broadcastCamera = useCallback((x: number, y: number, s: number) => {
@@ -412,9 +415,40 @@ export const MapViewer = () => {
       cameraRafRef.current = null;
       const p = pendingCameraRef.current;
       if (!p) return;
+      // Drop emissions until camera has been restored for the current map.
+      if (!activeMapId) return;
+      if (restoredForMapRef.current !== activeMapId || isHydratingCameraRef.current) return;
       setDmCamera({ positionX: p.x, positionY: p.y, scale: p.s, mapId: activeMapId });
+      saveDmCamera(activeMapId, { positionX: p.x, positionY: p.y, scale: p.s });
     });
-  }, [activeMapId, setDmCamera]);
+  }, [activeMapId, setDmCamera, saveDmCamera]);
+
+  // Restore DM camera once the image is decoded and TransformWrapper api is ready.
+  useEffect(() => {
+    if (!activeMapId) return;
+    if (restoredForMapRef.current === activeMapId) return;
+    if (imageReadyMapId !== activeMapId) return;
+    if (!zoomFunctionsRef.current) return;
+    if (mapDimensions.width === 0) return;
+
+    const api = zoomFunctionsRef.current;
+    const saved = dmCameras[activeMapId];
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        if (saved) {
+          api.setTransform(saved.positionX, saved.positionY, saved.scale);
+          log('camera:restore', { mapId: activeMapId, snapshot: saved });
+        } else {
+          log('camera:default', { mapId: activeMapId });
+        }
+        restoredForMapRef.current = activeMapId;
+        isHydratingCameraRef.current = false;
+      });
+    });
+    return () => { cancelled = true; };
+  }, [activeMapId, imageReadyMapId, mapDimensions.width, dmCameras]);
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
