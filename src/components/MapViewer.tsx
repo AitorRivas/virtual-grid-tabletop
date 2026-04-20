@@ -325,7 +325,7 @@ export const MapViewer = () => {
 
   // Zoom functions
   const zoomFunctionsRef = useRef<{
-    setTransform: (x: number, y: number, scale: number) => void;
+    setTransform: (x: number, y: number, scale: number, animationTime?: number, animationType?: string) => void;
     state: { positionX: number; positionY: number; scale: number };
   } | null>(null);
 
