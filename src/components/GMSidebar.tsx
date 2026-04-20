@@ -126,14 +126,6 @@ export const GMSidebar = ({
   const [collapsed, setCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState<SidebarSection>('tokens');
 
-  // Auto-switch to initiative section when entering combat mode
-  useEffect(() => {
-    if (combatMode) {
-      setCollapsed(false);
-      setActiveSection('initiative');
-    }
-  }, [combatMode]);
-
   const navItems: { id: SidebarSection; icon: typeof Map; label: string }[] = [
     { id: 'maps', icon: Layers, label: 'Mapas' },
     { id: 'tokens', icon: Users, label: 'Tokens' },

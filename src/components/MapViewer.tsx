@@ -152,7 +152,7 @@ export const MapViewer = () => {
   const combatEntries = combat.entries;
   const activeInitiativeIndex = combat.activeIndex;
   const isInitiativeActive = combat.isActive;
-  const [combatMode, setCombatMode] = useState(false);
+  
 
   const updateCombat = useCallback((updater: Partial<MapCombatState> | ((prev: MapCombatState) => Partial<MapCombatState>)) => {
     updateActiveMap((currentMap) => {
@@ -412,7 +412,7 @@ export const MapViewer = () => {
     } else {
       updateCombat({ activeIndex: 0, isActive: true, round: 1 });
     }
-    setCombatMode(true);
+    
     log('combat:init', { mapId: activeMapId, participants: combatEntries.length || tokens.filter(t => t.status === 'active').length });
     toast.success('¡Combate iniciado!');
   }, [activeMapId, combatEntries.length, tokens, updateCombat]);
@@ -1164,8 +1164,6 @@ export const MapViewer = () => {
         onEndInitiative={handleEndInitiative}
         onAddFromMapToCombat={handleAddFromMap}
         isInitiativeActive={isInitiativeActive}
-        combatMode={combatMode}
-        onToggleCombatMode={() => setCombatMode(prev => !prev)}
         scenes={scenes}
         activeSceneId={activeSceneId}
         onAddScene={addScene}
@@ -1222,8 +1220,6 @@ export const MapViewer = () => {
           tokens={tokens}
           narrativeLightFollowTokenId={narrativeLight.followTokenId}
           onNarrativeLightFollowToken={(id) => setNarrativeLight({ followTokenId: id })}
-          combatMode={combatMode}
-          onToggleCombatMode={() => setCombatMode(prev => !prev)}
         />
 
         {/* Map area */}
