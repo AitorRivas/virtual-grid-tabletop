@@ -161,6 +161,136 @@ export type Database = {
         }
         Relationships: []
       }
+      encounter_entities: {
+        Row: {
+          created_at: string
+          encounter_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          position: number
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encounter_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          position?: number
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encounter_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          position?: number
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encounter_entities_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encounters: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      entity_groups: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "library_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       monsters: {
         Row: {
           actions: Json | null
