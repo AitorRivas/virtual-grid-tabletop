@@ -3,6 +3,11 @@
  *
  * Categories used across the app (keep in sync as you add):
  *   map:switch       — Active map changed
+ *   mapReady         — Player View map pipeline ready
+ *   cameraReady      — Player View camera hydration finished
+ *   fogReady         — Player View fog restored or bypassed
+ *   renderUnlocked   — Player View render gate opened
+ *   renderUnlockForced — Player View render gate opened by failsafe
  *   camera:save      — Camera snapshot persisted
  *   camera:restore   — Camera snapshot restored
  *   camera:default   — Default camera applied (no snapshot)
@@ -39,6 +44,11 @@ const isEnabled = (): boolean => {
 
 export type DebugCategory =
   | 'map:switch'
+  | 'mapReady'
+  | 'cameraReady'
+  | 'fogReady'
+  | 'renderUnlocked'
+  | 'renderUnlockForced'
   | 'camera:save'
   | 'camera:restore'
   | 'camera:default'
