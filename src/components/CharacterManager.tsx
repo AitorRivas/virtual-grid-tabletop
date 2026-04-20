@@ -56,9 +56,22 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   const [monsterTypeFilter, setMonsterTypeFilter] = useState<string>('all');
   const [monsterCrFilter, setMonsterCrFilter] = useState<string>('all');
 
+  // Group filter (null = todos, '__none__' = sin grupo, else group id)
+  const [charGroupFilter, setCharGroupFilter] = useState<string | null>(null);
+  const [monsterGroupFilter, setMonsterGroupFilter] = useState<string | null>(null);
+  const { getGroupsForEntity } = useLibraryGroups();
+
+  const matchesGroup = (entityId: string, entityType: 'character' | 'monster', filter: string | null) => {
+    if (filter === null) return true;
+    const ids = getGroupsForEntity(entityId, entityType);
+    if (filter === '__none__') return ids.length === 0;
+    return ids.includes(filter);
+  };
+
   // Filtered and sorted characters
   const filteredCharacters = useMemo(() => {
     let list = [...characters];
+    list = list.filter(c => matchesGroup(c.id, 'character', charGroupFilter));
     if (charSearch.trim()) {
       const q = charSearch.toLowerCase();
       list = list.filter(c => 
@@ -75,11 +88,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
       return charSortAsc ? cmp : -cmp;
     });
     return list;
-  }, [characters, charSearch, charSortField, charSortAsc]);
+  }, [characters, charSearch, charSortField, charSortAsc, charGroupFilter, getGroupsForEntity]);
 
   // Filtered and sorted monsters
   const filteredMonsters = useMemo(() => {
     let list = [...monsters];
+    list = list.filter(m => matchesGroup(m.id, 'monster', monsterGroupFilter));
     if (monsterSearch.trim()) {
       const q = monsterSearch.toLowerCase();
       list = list.filter(m => m.name.toLowerCase().includes(q));
@@ -98,7 +112,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
       return monsterSortAsc ? cmp : -cmp;
     });
     return list;
-  }, [monsters, monsterSearch, monsterSortField, monsterSortAsc, monsterTypeFilter, monsterCrFilter]);
+  }, [monsters, monsterSearch, monsterSortField, monsterSortAsc, monsterTypeFilter, monsterCrFilter, monsterGroupFilter, getGroupsForEntity]);
 
   const handleCharImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
