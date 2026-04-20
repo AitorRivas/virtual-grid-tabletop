@@ -1,6 +1,17 @@
 import { Sword, Sparkles, Zap, ShieldCheck, Crown, Skull } from 'lucide-react';
-import type { CharacterAction, Feature } from '@/types/dnd5e';
-import { formatModifier } from '@/types/dnd';
+import type { CharacterAction, Feature, DamageType, SaveType } from '@/types/dnd5e';
+import { getDamageTypeLabel, getSaveLabel } from '@/types/dnd5e';
+import { getModifier, formatModifier } from '@/types/dnd';
+
+export interface CombatTooltipSource {
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
+  charisma?: number;
+  proficiency_bonus?: number | null;
+}
 
 export interface CombatTooltipData {
   name: string;
@@ -12,22 +23,74 @@ export interface CombatTooltipData {
   bonusActions: CharacterAction[];
   reactions: CharacterAction[];
   legendary: CharacterAction[];
+  source?: CombatTooltipSource;
 }
 
-const formatActionLine = (a: CharacterAction): string => {
+const SIZE_LABEL: Record<string, string> = {
+  tiny: 'Diminuto',
+  small: 'Pequeño',
+  medium: 'Mediano',
+  large: 'Grande',
+  huge: 'Enorme',
+  gargantuan: 'Gargantuesco',
+};
+
+const TYPE_LABEL: Record<string, string> = {
+  aberration: 'Aberración',
+  beast: 'Bestia',
+  celestial: 'Celestial',
+  construct: 'Constructo',
+  dragon: 'Dragón',
+  elemental: 'Elemental',
+  fey: 'Feérico',
+  fiend: 'Demonio',
+  giant: 'Gigante',
+  humanoid: 'Humanoide',
+  monstrosity: 'Monstruosidad',
+  ooze: 'Cieno',
+  plant: 'Planta',
+  undead: 'No-Muerto',
+};
+
+export const localizeSize = (s?: string) => (s ? SIZE_LABEL[s.toLowerCase()] ?? s : '');
+export const localizeType = (t?: string) => (t ? TYPE_LABEL[t.toLowerCase()] ?? t : '');
+
+const abilityScore = (src: CombatTooltipSource | undefined, ability?: string): number | undefined => {
+  if (!src || !ability) return undefined;
+  return (src as any)[ability];
+};
+
+const formatActionLine = (a: CharacterAction, source?: CombatTooltipSource): string => {
   const parts: string[] = [];
+  const prof = source?.proficiency_bonus ?? 0;
+
   if (a.is_attack) {
-    const atk = a.attack_bonus !== undefined ? formatModifier(a.attack_bonus) : '';
-    parts.push(`${atk ? `${atk} ataque` : 'Ataque'}`);
+    // attack_bonus is a stored extra; total = ability mod + prof + extra
+    const score = abilityScore(source, a.attack_ability);
+    const abilMod = score !== undefined ? getModifier(score) : 0;
+    const extra = a.attack_bonus ?? 0;
+    const total = abilMod + (source ? prof : 0) + extra;
+    parts.push(`${formatModifier(total)} al ataque`);
   }
+
   if (a.damage_dice) {
-    const bonus = a.damage_bonus ? (a.damage_bonus >= 0 ? `+${a.damage_bonus}` : `${a.damage_bonus}`) : '';
-    parts.push(`${a.damage_dice}${bonus} ${a.damage_type ?? ''} daño`.trim());
+    const dmgScore = a.damage_ability && a.damage_ability !== 'none' ? abilityScore(source, a.damage_ability) : undefined;
+    const abilMod = dmgScore !== undefined ? getModifier(dmgScore) : 0;
+    const extra = a.damage_bonus ?? 0;
+    const total = abilMod + extra;
+    const bonusStr = total === 0 ? '' : total > 0 ? `+${total}` : `${total}`;
+    const dmgLabel = a.damage_type ? getDamageTypeLabel(a.damage_type as DamageType) : '';
+    parts.push(`${a.damage_dice}${bonusStr}${dmgLabel ? ` ${dmgLabel.toLowerCase()}` : ''}`);
   }
+
   if (a.save_dc_ability) {
-    const dc = a.save_dc_bonus ?? '';
-    parts.push(`Salv. ${a.save_type ?? ''} CD ${dc}`.trim());
+    const saveScore = abilityScore(source, a.save_dc_ability);
+    const abilMod = saveScore !== undefined ? getModifier(saveScore) : 0;
+    const dc = 8 + (source ? prof : 0) + abilMod + (a.save_dc_bonus ?? 0);
+    const saveLbl = a.save_type ? getSaveLabel(a.save_type as SaveType) : '';
+    parts.push(`Salv. ${saveLbl} CD ${dc}`.trim());
   }
+
   if (a.range) parts.push(`alc. ${a.range}`);
   return parts.join(' · ');
 };
@@ -66,15 +129,16 @@ const Section = ({
 };
 
 export const CombatTokenTooltipContent = ({ data }: { data: CombatTooltipData }) => {
+  const src = data.source;
   const traitItems = data.traits.map(t => ({
     name: t.name,
     line: '',
     description: t.description ?? '',
   }));
-  const actionItems = data.actions.map(a => ({ name: a.name, line: formatActionLine(a), description: a.description }));
-  const bonusItems = data.bonusActions.map(a => ({ name: a.name, line: formatActionLine(a), description: a.description }));
-  const reactionItems = data.reactions.map(a => ({ name: a.name, line: formatActionLine(a), description: a.description }));
-  const legendaryItems = data.legendary.map(a => ({ name: a.name, line: formatActionLine(a), description: a.description }));
+  const actionItems = data.actions.map(a => ({ name: a.name, line: formatActionLine(a, src), description: a.description }));
+  const bonusItems = data.bonusActions.map(a => ({ name: a.name, line: formatActionLine(a, src), description: a.description }));
+  const reactionItems = data.reactions.map(a => ({ name: a.name, line: formatActionLine(a, src), description: a.description }));
+  const legendaryItems = data.legendary.map(a => ({ name: a.name, line: formatActionLine(a, src), description: a.description }));
 
   return (
     <div className="space-y-2 max-w-[320px]">
