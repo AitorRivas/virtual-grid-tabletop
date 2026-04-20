@@ -871,6 +871,12 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             </DialogContent>
           </Dialog>
 
+          {/* Group filter */}
+          <LibraryGroupsBar
+            selectedGroupId={monsterGroupFilter}
+            onSelectGroup={setMonsterGroupFilter}
+          />
+
           {/* Search & Filter Controls */}
           <div className="space-y-2">
             <div className="relative">
@@ -966,6 +972,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                         >
                           <MapPin className="w-4 h-4" />
                         </Button>
+                        <GroupAssignMenu entityId={monster.id} entityType="monster" />
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" className="h-7 w-7">
