@@ -25,8 +25,6 @@ const PlayerView = () => {
     playerViewConfig,
     dmCamera,
     dmSelectedTokenId,
-    playerCameras,
-    savePlayerCamera,
   } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -45,20 +43,6 @@ const PlayerView = () => {
   const restoredForMapRef = useRef<string | null>(null);
   const isHydratingCameraRef = useRef(false);
   const renderUnlockedForMapRef = useRef<string | null>(null);
-
-  const persistCurrentPlayerCamera = useCallback((mapId: string | null) => {
-    const api = transformApiRef.current;
-    if (!mapId || !api) return;
-
-    const snapshot = {
-      positionX: api.state.positionX,
-      positionY: api.state.positionY,
-      scale: api.state.scale,
-    };
-
-    log('camera:save', { mapId, snapshot, scope: 'player' });
-    savePlayerCamera(mapId, snapshot);
-  }, [savePlayerCamera]);
 
   // Track narrative transitions
   const [narrativeVisible, setNarrativeVisible] = useState(false);
@@ -172,15 +156,7 @@ const PlayerView = () => {
     log('renderUnlocked', { mapId: activeMap.id, forced: forceRenderUnlock, loadingState });
   }, [activeMap?.id, forceRenderUnlock, isReady, loadingState]);
 
-  // Persist outgoing camera before the old TransformWrapper unmounts.
-  useLayoutEffect(() => {
-    return () => {
-      persistCurrentPlayerCamera(activeMap?.id ?? null);
-    };
-  }, [activeMap?.id, persistCurrentPlayerCamera]);
-
-  // Restore the saved camera only after both the viewport and the map image are ready.
-  // This avoids racing against react-zoom-pan-pinch init and cached-image onLoad timing.
+  // Center the camera on the map once the viewport and image are ready.
   useLayoutEffect(() => {
     if (!activeMap?.id || !isMapReady || !transformApiRef.current) return;
     if (restoredForMapRef.current === activeMap.id) return;
@@ -188,7 +164,7 @@ const PlayerView = () => {
     let frame = 0;
     let rafId = 0;
 
-    const hydrateCamera = () => {
+    const centerCamera = () => {
       const api = transformApiRef.current;
       const root = rootRef.current;
       if (!api || !root) return;
@@ -199,47 +175,47 @@ const PlayerView = () => {
 
       if ((!viewportWidth || !viewportHeight) && frame < 10) {
         frame += 1;
-        rafId = requestAnimationFrame(hydrateCamera);
+        rafId = requestAnimationFrame(centerCamera);
         return;
       }
 
-      const clampCamera = (positionX: number, positionY: number, scale: number) => {
-        const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-        const scaledW = mapDimensions.width * safeScale;
-        const scaledH = mapDimensions.height * safeScale;
+      const scale = 1;
+      const scaledW = mapDimensions.width * scale;
+      const scaledH = mapDimensions.height * scale;
 
-        let nextX = positionX;
-        let nextY = positionY;
+      // Center the map inside the viewport. With limitToBounds=true we work in
+      // screen-space offsets; positive X/Y move content right/down.
+      const targetX = scaledW <= viewportWidth
+        ? (viewportWidth - scaledW) / 2
+        : Math.min(0, Math.max(viewportWidth - scaledW, (viewportWidth - scaledW) / 2));
+      const targetY = scaledH <= viewportHeight
+        ? (viewportHeight - scaledH) / 2
+        : Math.min(0, Math.max(viewportHeight - scaledH, (viewportHeight - scaledH) / 2));
 
-        if (scaledW <= viewportWidth) nextX = (viewportWidth - scaledW) / 2;
-        else nextX = Math.min(0, Math.max(viewportWidth - scaledW, nextX));
+      log('camera:default', {
+        mapId: activeMap.id,
+        scope: 'player',
+        mapWidth: mapDimensions.width,
+        mapHeight: mapDimensions.height,
+        viewportWidth,
+        viewportHeight,
+        targetX,
+        targetY,
+        scale,
+      });
 
-        if (scaledH <= viewportHeight) nextY = (viewportHeight - scaledH) / 2;
-        else nextY = Math.min(0, Math.max(viewportHeight - scaledH, nextY));
-
-        return { positionX: nextX, positionY: nextY, scale: safeScale };
-      };
-
-      const saved = playerCameras[activeMap.id];
-      const targetCamera = saved
-        ? clampCamera(saved.positionX, saved.positionY, saved.scale)
-        : clampCamera(0, 0, 1);
-
-      if (saved) log('camera:restore', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
-      else log('camera:default', { mapId: activeMap.id, snapshot: targetCamera, scope: 'player' });
-
-      api.setTransform(targetCamera.positionX, targetCamera.positionY, targetCamera.scale, 0);
+      api.setTransform(targetX, targetY, scale, 0);
       restoredForMapRef.current = activeMap.id;
       isHydratingCameraRef.current = false;
       setCameraReadyMapId(activeMap.id);
     };
 
     rafId = requestAnimationFrame(() => {
-      rafId = requestAnimationFrame(hydrateCamera);
+      rafId = requestAnimationFrame(centerCamera);
     });
 
     return () => cancelAnimationFrame(rafId);
-  }, [activeMap?.id, isMapReady, mapDimensions.width, mapDimensions.height, playerCameras]);
+  }, [activeMap?.id, isMapReady, mapDimensions.width, mapDimensions.height]);
 
   // Handle narrative overlay transitions
   useEffect(() => {
@@ -428,16 +404,7 @@ const PlayerView = () => {
           }}
           onZoom={(ref) => { transformApiRef.current = ref as any; }}
           onPanning={(ref) => { transformApiRef.current = ref as any; }}
-          onTransformed={(ref, state) => {
-            transformApiRef.current = ref as any;
-            if (activeMap?.id && restoredForMapRef.current === activeMap.id && !isHydratingCameraRef.current) {
-              savePlayerCamera(activeMap.id, {
-                positionX: state.positionX,
-                positionY: state.positionY,
-                scale: state.scale,
-              });
-            }
-          }}
+          onTransformed={(ref) => { transformApiRef.current = ref as any; }}
         >
           <TransformComponent
             wrapperStyle={{ width: '100%', height: '100%' }}
