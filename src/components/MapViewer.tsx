@@ -877,6 +877,7 @@ export const MapViewer = () => {
                 onRotate={handleTokenRotation}
                 onToggleHidden={() => handleToggleHidden(token.id)}
                 mapContainerRef={mapContainerRef}
+                combatTooltip={getCombatTooltip(token)}
               />
             ))}
           </div>
