@@ -676,7 +676,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
           {/* Character Sheet Dialog */}
           <Dialog open={!!selectedCharacter} onOpenChange={(open) => !open && setSelectedCharacter(null)}>
-            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden">
+            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden [&>button]:hidden">
               {selectedCharacter && (
                 <CharacterSheet
                   character={selectedCharacter}
