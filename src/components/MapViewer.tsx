@@ -24,6 +24,7 @@ import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
+import { getDamageTypeLabel } from '@/types/dnd5e';
 import { log, warn } from '@/lib/debug';
 
 
