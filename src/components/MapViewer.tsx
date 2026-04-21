@@ -1219,6 +1219,7 @@ export const MapViewer = () => {
               />
             ))}
           </div>
+          </MapContextMenu>
         </TransformComponent>
       )}
     </TransformWrapper>
