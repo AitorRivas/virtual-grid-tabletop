@@ -6,6 +6,7 @@ import { FogOfWar } from '@/components/FogOfWar';
 import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { useGameState } from '@/hooks/useGameState';
+import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 import { log, warn } from '@/lib/debug';
