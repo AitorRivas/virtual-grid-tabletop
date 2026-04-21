@@ -1026,10 +1026,11 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
           {/* Monster Sheet Dialog */}
           <Dialog open={!!selectedMonster} onOpenChange={(open) => !open && setSelectedMonster(null)}>
-            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden">
+            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden [&>button]:hidden">
               {selectedMonster && (
                 <MonsterSheet
                   monster={selectedMonster}
+                  onClose={() => setSelectedMonster(null)}
                   onSave={async (m) => {
                     const success = await updateMonster(m.id, m);
                     if (success) {
