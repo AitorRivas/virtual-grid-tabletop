@@ -21,7 +21,7 @@ import { useGameState, MapCombatState } from '@/hooks/useGameState';
 import { useAuth } from '@/hooks/useAuth';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
-import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
+import { GridConfig, CellState, CREATURE_SIZE_CELLS, CREATURE_SIZE_PIXELS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
 import { MapContextMenu } from './MapContextMenu';
