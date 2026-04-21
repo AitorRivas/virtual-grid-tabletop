@@ -912,7 +912,6 @@ export const MapViewer = () => {
   const characterById = useMemo(() => new Map(libraryCharacters.map(c => [c.id, c])), [libraryCharacters]);
 
   const getCombatTooltip = useCallback((token: TokenData): CombatTooltipData | null => {
-    if (!isInitiativeActive) return null;
     if (token.sourceMonsterId) {
       const m = monsterById.get(token.sourceMonsterId) as any;
       if (!m) return null;
