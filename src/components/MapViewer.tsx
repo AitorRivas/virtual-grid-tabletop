@@ -24,6 +24,7 @@ import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
+import { MapContextMenu } from './MapContextMenu';
 import { getDamageTypeLabel } from '@/types/dnd5e';
 import { log, warn } from '@/lib/debug';
 
@@ -719,6 +720,79 @@ export const MapViewer = () => {
     img.src = fogDataCurrent;
   }, [activeMap?.fogData, mapDimensions, setFogData]);
 
+  // Paint a fog circle at a percent point. mode 'reveal' clears, 'hide' adds.
+  const paintFogAt = useCallback((xPercent: number, yPercent: number, mode: 'reveal' | 'hide') => {
+    if (mapDimensions.width === 0) return;
+    const radius = Math.max(40, gridSize * 1.5);
+    const offscreen = document.createElement('canvas');
+    offscreen.width = mapDimensions.width;
+    offscreen.height = mapDimensions.height;
+    const ctx2 = offscreen.getContext('2d');
+    if (!ctx2) return;
+
+    const px = (xPercent / 100) * mapDimensions.width;
+    const py = (yPercent / 100) * mapDimensions.height;
+
+    const apply = () => {
+      if (mode === 'reveal') {
+        ctx2.globalCompositeOperation = 'destination-out';
+      } else {
+        ctx2.globalCompositeOperation = 'source-over';
+        ctx2.fillStyle = 'rgba(0,0,0,1)';
+      }
+      ctx2.beginPath();
+      ctx2.arc(px, py, radius, 0, Math.PI * 2);
+      ctx2.fill();
+      ctx2.globalCompositeOperation = 'source-over';
+      setFogData(offscreen.toDataURL('image/png', 0.6));
+    };
+
+    const current = activeMap?.fogData;
+    if (current) {
+      const img = new Image();
+      img.onload = () => {
+        ctx2.drawImage(img, 0, 0, mapDimensions.width, mapDimensions.height);
+        apply();
+      };
+      img.src = current;
+    } else {
+      // No existing fog: only "hide" makes sense (start a fresh fog at this point)
+      if (mode === 'hide') apply();
+    }
+  }, [activeMap?.fogData, mapDimensions, setFogData, gridSize]);
+
+  // Add an entity at specific percent coordinates (for context-menu "Add token here").
+  const addCharacterAt = useCallback((character: Character, xPercent: number, yPercent: number) => {
+    handleAddCharacterToMap(character);
+    setTokens(prev => prev.map((t, idx) =>
+      idx === prev.length - 1 ? { ...t, x: xPercent, y: yPercent } : t
+    ));
+  }, []);
+
+  const addMonsterAt = useCallback((monster: Monster, xPercent: number, yPercent: number) => {
+    handleAddMonsterToMap(monster);
+    setTokens(prev => prev.map((t, idx) =>
+      idx === prev.length - 1 ? { ...t, x: xPercent, y: yPercent } : t
+    ));
+  }, []);
+
+  // Smooth-center the camera on a token (uses TransformWrapper API).
+  const centerCameraOnToken = useCallback((token: TokenData) => {
+    const api = zoomFunctionsRef.current;
+    const container = mapContainerRef.current;
+    if (!api || !container || mapDimensions.width === 0) return;
+    const { scale } = api.state;
+    const wrapper = container.parentElement?.parentElement; // TransformComponent wrapper
+    const viewportW = wrapper?.clientWidth ?? window.innerWidth;
+    const viewportH = wrapper?.clientHeight ?? window.innerHeight;
+    const tokenPxX = (token.x / 100) * mapDimensions.width;
+    const tokenPxY = (token.y / 100) * mapDimensions.height;
+    const targetX = viewportW / 2 - tokenPxX * scale;
+    const targetY = viewportH / 2 - tokenPxY * scale;
+    api.setTransform(targetX, targetY, scale, 350, 'easeOut');
+  }, [mapDimensions]);
+
+
   const handleTokenRotation = (id: string, rotation: number) => {
     setTokens(prev => prev.map(token => 
       token.id === id ? { ...token, rotation } : token
@@ -1009,6 +1083,31 @@ export const MapViewer = () => {
             justifyContent: 'center',
           }}
         >
+          <MapContextMenu
+            tokens={tokens}
+            characters={libraryCharacters}
+            monsters={libraryMonsters as any}
+            fogEnabled={fogEnabled}
+            mapContainerRef={mapContainerRef}
+            onViewSheet={(t) => {
+              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: t.sourceCharacterId }));
+              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: t.sourceMonsterId }));
+              else toast.info('Este token no tiene ficha asociada');
+            }}
+            onEditSheet={(t) => {
+              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: t.sourceCharacterId }));
+              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: t.sourceMonsterId }));
+              else toast.info('Este token no tiene ficha asociada');
+            }}
+            onToggleHidden={handleToggleHidden}
+            onDeleteToken={handleDeleteToken}
+            onCenterCamera={centerCameraOnToken}
+            onRevealFog={(x, y) => paintFogAt(x, y, 'reveal')}
+            onHideFog={(x, y) => paintFogAt(x, y, 'hide')}
+            onResetFog={() => setFogData(null)}
+            onAddCharacterAt={addCharacterAt}
+            onAddMonsterAt={addMonsterAt}
+          >
           <div
             ref={mapContainerRef}
             className="relative"
@@ -1120,6 +1219,7 @@ export const MapViewer = () => {
               />
             ))}
           </div>
+          </MapContextMenu>
         </TransformComponent>
       )}
     </TransformWrapper>
