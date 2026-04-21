@@ -242,8 +242,8 @@ export const CharacterSheet = ({
             </>
           )}
           {onClose && (
-            <Button size="icon" variant="ghost" onClick={onClose} title="Cerrar">
-              <X className="w-4 h-4" />
+            <Button size="sm" variant="ghost" onClick={onClose}>
+              Cerrar
             </Button>
           )}
         </div>
