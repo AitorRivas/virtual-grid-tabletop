@@ -46,6 +46,26 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
   const charFileInputRef = useRef<HTMLInputElement>(null);
   const monsterFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Open sheets via global CustomEvent (used by the map context menu).
+  useEffect(() => {
+    const openCharacter = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      const char = characters.find(c => c.id === id);
+      if (char) setSelectedCharacter(char as ExtendedCharacter);
+    };
+    const openMonster = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      const mon = monsters.find(m => m.id === id);
+      if (mon) setSelectedMonster(mon as ExtendedMonster);
+    };
+    window.addEventListener('vtt:open-character-sheet', openCharacter);
+    window.addEventListener('vtt:open-monster-sheet', openMonster);
+    return () => {
+      window.removeEventListener('vtt:open-character-sheet', openCharacter);
+      window.removeEventListener('vtt:open-monster-sheet', openMonster);
+    };
+  }, [characters, monsters]);
+
   // Search & filter state
   const [charSearch, setCharSearch] = useState('');
   const [charSortField, setCharSortField] = useState<'name' | 'level' | 'class'>('name');
