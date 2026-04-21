@@ -680,6 +680,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
               {selectedCharacter && (
                 <CharacterSheet
                   character={selectedCharacter}
+                  onClose={() => setSelectedCharacter(null)}
                   onSave={async (char) => {
                     const success = await updateCharacter(char.id, char as Partial<Character>);
                     if (success) {
