@@ -484,21 +484,26 @@ const PlayerView = () => {
               />
             )}
 
-            {visibleTokens.map(token => (
-              <Token
-                key={token.id}
-                {...token}
-                isSelected={false}
-                isActiveInitiative={token.id === activeInitiativeTokenId}
-                showHiddenStyle={false}
-                onMove={() => {}}
-                onClick={() => {}}
-                onDelete={() => {}}
-                onMarkDead={() => {}}
-                onRotate={() => {}}
-                mapContainerRef={mapContainerRef}
-              />
-            ))}
+            {visibleTokens.map(token => {
+              const isPj = (token.faction ?? (token.id.startsWith('char-') ? 'pj' : token.id.startsWith('monster-') ? 'enemy' : 'npc')) === 'pj';
+              const hideHpBar = !isPj && !playerViewConfig.showEnemyHpBars;
+              return (
+                <Token
+                  key={token.id}
+                  {...token}
+                  isSelected={false}
+                  isActiveInitiative={token.id === activeInitiativeTokenId}
+                  showHiddenStyle={false}
+                  hideHpBar={hideHpBar}
+                  onMove={() => {}}
+                  onClick={() => {}}
+                  onDelete={() => {}}
+                  onMarkDead={() => {}}
+                  onRotate={() => {}}
+                  mapContainerRef={mapContainerRef}
+                />
+              );
+            })}
             </div>
           </TransformComponent>
         </TransformWrapper>
