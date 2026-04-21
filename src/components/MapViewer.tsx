@@ -24,6 +24,7 @@ import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
+import { getDamageTypeLabel } from '@/types/dnd5e';
 import { log, warn } from '@/lib/debug';
 
 
@@ -920,20 +921,29 @@ export const MapViewer = () => {
       const bonusActions = m.bonus_actions ?? [];
       const reactions = m.reactions ?? [];
       const legendary = m.legendary_actions?.actions ?? [];
-      const res = m.resistances ?? []; const imm = m.immunities ?? []; const vul = m.vulnerabilities ?? [];
-      if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length && !res.length && !imm.length && !vul.length) return null;
+      const normalizeResList = (v: any): string[] => {
+        if (!v) return [];
+        if (Array.isArray(v)) return v.map(x => getDamageTypeLabel(String(x) as any));
+        const out: string[] = [];
+        if (Array.isArray(v.damage)) out.push(...v.damage.map((x: any) => getDamageTypeLabel(String(x) as any)));
+        if (Array.isArray(v.conditions)) out.push(...v.conditions.map(String));
+        return out;
+      };
+      const resArr = normalizeResList(m.resistances);
+      const immArr = normalizeResList(m.immunities);
+      const vulArr = normalizeResList(m.vulnerabilities);
+      if (!traits.length && !actions.length && !bonusActions.length && !reactions.length && !legendary.length && !resArr.length && !immArr.length && !vulArr.length) return null;
       const sizeLbl = localizeSize(m.size);
       const typeLbl = localizeType(m.type);
-      const toStrArr = (v: any): string[] => Array.isArray(v) ? v.map(String) : [];
       return {
         name: m.name,
         subtitle: `${sizeLbl} ${typeLbl} · VD ${m.challenge_rating ?? '?'}`.replace(/\s+/g, ' ').trim(),
         hp: { current: token.hpCurrent, max: token.hpMax },
         ac: m.armor_class,
         traits, actions, bonusActions, reactions, legendary,
-        resistances: toStrArr(m.resistances),
-        immunities: toStrArr(m.immunities),
-        vulnerabilities: toStrArr(m.vulnerabilities),
+        resistances: resArr,
+        immunities: immArr,
+        vulnerabilities: vulArr,
         source: {
           strength: m.strength, dexterity: m.dexterity, constitution: m.constitution,
           intelligence: m.intelligence, wisdom: m.wisdom, charisma: m.charisma,
