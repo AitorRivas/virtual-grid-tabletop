@@ -3,6 +3,7 @@ import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { CharacterSheet } from './character-sheet';
 import { MonsterSheet } from './monster-sheet';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { ExtendedCharacter, ExtendedMonster } from '@/types/dnd5e';
 
 /**
