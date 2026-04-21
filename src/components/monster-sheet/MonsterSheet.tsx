@@ -362,10 +362,14 @@ export const MonsterSheet = ({
                 proficiencyBonus={monster.proficiency_bonus}
                 onChange={(updates) => updateMultiple(updates)}
                 onProficienciesChange={(profs) => {
-                  // Convert back to monster format
+                  // Convert back to monster format. Encode expertise via doubled bonus.
+                  const pb = monster.proficiency_bonus;
                   updateMultiple({
                     saves: profs.saves.map(s => ({ ability: s, bonus: 0 })),
-                    skills: profs.skills.map(s => ({ skill: s, bonus: 0 })),
+                    skills: profs.skills.map(s => ({
+                      skill: s,
+                      bonus: profs.expertise.includes(s) ? pb * 2 : pb
+                    })),
                     languages: profs.languages
                   } as Partial<ExtendedMonster>);
                 }}
