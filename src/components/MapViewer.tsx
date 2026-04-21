@@ -1083,6 +1083,31 @@ export const MapViewer = () => {
             justifyContent: 'center',
           }}
         >
+          <MapContextMenu
+            tokens={tokens}
+            characters={libraryCharacters}
+            monsters={libraryMonsters as any}
+            fogEnabled={fogEnabled}
+            mapContainerRef={mapContainerRef}
+            onViewSheet={(t) => {
+              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: t.sourceCharacterId }));
+              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: t.sourceMonsterId }));
+              else toast.info('Este token no tiene ficha asociada');
+            }}
+            onEditSheet={(t) => {
+              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: t.sourceCharacterId }));
+              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: t.sourceMonsterId }));
+              else toast.info('Este token no tiene ficha asociada');
+            }}
+            onToggleHidden={handleToggleHidden}
+            onDeleteToken={handleDeleteToken}
+            onCenterCamera={centerCameraOnToken}
+            onRevealFog={(x, y) => paintFogAt(x, y, 'reveal')}
+            onHideFog={(x, y) => paintFogAt(x, y, 'hide')}
+            onResetFog={() => setFogData(null)}
+            onAddCharacterAt={addCharacterAt}
+            onAddMonsterAt={addMonsterAt}
+          >
           <div
             ref={mapContainerRef}
             className="relative"
