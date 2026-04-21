@@ -676,10 +676,11 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
           {/* Character Sheet Dialog */}
           <Dialog open={!!selectedCharacter} onOpenChange={(open) => !open && setSelectedCharacter(null)}>
-            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden">
+            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden [&>button]:hidden">
               {selectedCharacter && (
                 <CharacterSheet
                   character={selectedCharacter}
+                  onClose={() => setSelectedCharacter(null)}
                   onSave={async (char) => {
                     const success = await updateCharacter(char.id, char as Partial<Character>);
                     if (success) {
@@ -1026,10 +1027,11 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
 
           {/* Monster Sheet Dialog */}
           <Dialog open={!!selectedMonster} onOpenChange={(open) => !open && setSelectedMonster(null)}>
-            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden">
+            <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden [&>button]:hidden">
               {selectedMonster && (
                 <MonsterSheet
                   monster={selectedMonster}
+                  onClose={() => setSelectedMonster(null)}
                   onSave={async (m) => {
                     const success = await updateMonster(m.id, m);
                     if (success) {
