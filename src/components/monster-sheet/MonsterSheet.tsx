@@ -122,15 +122,16 @@ export const MonsterSheet = ({
   };
 
   // Convert monster saves/skills to proficiencies format for AbilityScoresPanel
+  // Expertise is detected by bonus === proficiency_bonus * 2
   const proficiencies: CharacterProficiencies = useMemo(() => ({
     saves: monster.saves.map(s => s.ability),
     skills: monster.skills.map(s => s.skill),
-    expertise: [],
+    expertise: monster.skills.filter(s => s.bonus === monster.proficiency_bonus * 2).map(s => s.skill),
     weapons: [],
     armor: [],
     tools: [],
     languages: monster.languages
-  }), [monster.saves, monster.skills, monster.languages]);
+  }), [monster.saves, monster.skills, monster.languages, monster.proficiency_bonus]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -361,10 +362,14 @@ export const MonsterSheet = ({
                 proficiencyBonus={monster.proficiency_bonus}
                 onChange={(updates) => updateMultiple(updates)}
                 onProficienciesChange={(profs) => {
-                  // Convert back to monster format
+                  // Convert back to monster format. Encode expertise via doubled bonus.
+                  const pb = monster.proficiency_bonus;
                   updateMultiple({
                     saves: profs.saves.map(s => ({ ability: s, bonus: 0 })),
-                    skills: profs.skills.map(s => ({ skill: s, bonus: 0 })),
+                    skills: profs.skills.map(s => ({
+                      skill: s,
+                      bonus: profs.expertise.includes(s) ? pb * 2 : pb
+                    })),
                     languages: profs.languages
                   } as Partial<ExtendedMonster>);
                 }}
