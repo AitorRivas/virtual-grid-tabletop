@@ -219,6 +219,7 @@ export const Token = ({
     <TooltipProvider>
       <div
         ref={tokenRef}
+        data-token-id={id}
         className={`absolute ${status === 'active' ? '' : 'cursor-not-allowed'}`}
         style={{
           left: `${x}%`,
