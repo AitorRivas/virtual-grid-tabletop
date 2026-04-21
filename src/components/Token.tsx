@@ -42,6 +42,8 @@ interface TokenProps {
   combatTooltip?: CombatTooltipData | null;
   /** When true, the HP bar underneath the token is not rendered (used by Player View to hide enemy/NPC HP). */
   hideHpBar?: boolean;
+  /** When true, the token is read-only: no hover action buttons (kill/delete/hide) are shown. */
+  readOnly?: boolean;
 }
 
 const colorClasses: Record<TokenColor, string> = {
@@ -62,6 +64,7 @@ export const Token = ({
   onMove, onClick, onDelete, onMarkDead, onRevive, onRotate, onToggleHidden, mapContainerRef,
   combatTooltip = null,
   hideHpBar = false,
+  readOnly = false,
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
@@ -483,7 +486,7 @@ export const Token = ({
         </div>
 
         {/* Quick action buttons (with invisible bridge to prevent hover gap) */}
-        {showActions && (status === 'active' || isDead) && (
+        {!readOnly && showActions && (status === 'active' || isDead) && (
           <div
             className="absolute left-1/2 -translate-x-1/2 z-[110]"
             style={{ top: -44, paddingBottom: 44 }}

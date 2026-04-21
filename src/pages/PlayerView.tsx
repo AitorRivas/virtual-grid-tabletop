@@ -518,6 +518,7 @@ const PlayerView = () => {
                   isActiveInitiative={token.id === activeInitiativeTokenId}
                   showHiddenStyle={false}
                   hideHpBar={hideHpBar}
+                  readOnly={true}
                   onMove={() => {}}
                   onClick={() => {}}
                   onDelete={() => {}}
