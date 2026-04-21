@@ -5,6 +5,14 @@ import { FogOfWar } from '@/components/FogOfWar';
 
 import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
+import { GlobalSheetOpener } from '@/components/GlobalSheetOpener';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
+import { FileText } from 'lucide-react';
 import { useGameState } from '@/hooks/useGameState';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig } from '@/lib/gridEngine/types';
@@ -501,7 +509,8 @@ const PlayerView = () => {
               const hideHpBar =
                 (!isPj && !playerViewConfig.showEnemyHpBars) ||
                 (playerViewConfig.hideUndeadHpBars && isUndead);
-              return (
+              const hasSheet = !!(token.sourceCharacterId || token.sourceMonsterId);
+              const tokenEl = (
                 <Token
                   key={token.id}
                   {...token}
@@ -516,6 +525,25 @@ const PlayerView = () => {
                   onRotate={() => {}}
                   mapContainerRef={mapContainerRef}
                 />
+              );
+              if (!hasSheet) return tokenEl;
+              return (
+                <ContextMenu key={token.id}>
+                  <ContextMenuTrigger asChild>{tokenEl}</ContextMenuTrigger>
+                  <ContextMenuContent className="w-48">
+                    <ContextMenuItem
+                      onSelect={() => {
+                        if (token.sourceCharacterId) {
+                          window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: { id: token.sourceCharacterId } }));
+                        } else if (token.sourceMonsterId) {
+                          window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: { id: token.sourceMonsterId } }));
+                        }
+                      }}
+                    >
+                      <FileText className="w-4 h-4 mr-2" /> Ver ficha
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
             </div>
