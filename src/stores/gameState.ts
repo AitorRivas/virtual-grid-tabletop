@@ -67,6 +67,8 @@ export interface PlayerViewConfig {
   syncCamera: boolean;
   syncZoom: boolean;
   syncSelection: boolean;
+  /** When false (default), HP bars of enemies/NPCs are hidden in Player View. PJ bars always visible. */
+  showEnemyHpBars: boolean;
 }
 
 export interface DmCameraState {
@@ -125,6 +127,7 @@ const defaultPlayerViewConfig: PlayerViewConfig = {
   syncCamera: false,
   syncZoom: false,
   syncSelection: false,
+  showEnemyHpBars: false,
 };
 
 const defaultDmCamera: DmCameraState = {

@@ -40,6 +40,8 @@ interface TokenProps {
   mapContainerRef: React.RefObject<HTMLDivElement>;
   /** When provided (DM + combat active + entity has stats), shows a hover card with categorized actions/traits. */
   combatTooltip?: CombatTooltipData | null;
+  /** When true, the HP bar underneath the token is not rendered (used by Player View to hide enemy/NPC HP). */
+  hideHpBar?: boolean;
 }
 
 const colorClasses: Record<TokenColor, string> = {
@@ -59,6 +61,7 @@ export const Token = ({
   hidden = false, showHiddenStyle = false,
   onMove, onClick, onDelete, onMarkDead, onRevive, onRotate, onToggleHidden, mapContainerRef,
   combatTooltip = null,
+  hideHpBar = false,
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
@@ -445,7 +448,7 @@ export const Token = ({
         ))}
 
         {/* HP Bar underneath the token */}
-        {hpMax > 0 && status === 'active' && (
+        {hpMax > 0 && status === 'active' && !hideHpBar && (
           <div 
             className="absolute left-1/2 -translate-x-1/2 rounded-full overflow-hidden border border-foreground/30 bg-secondary"
             style={{
