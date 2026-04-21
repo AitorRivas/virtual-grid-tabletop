@@ -944,7 +944,7 @@ export const MapViewer = () => {
   const handleAddCharacterToMap = (character: Character) => {
     const baseTokenSize = character.token_size > 0 ? character.token_size : 100;
     const sizeInCells = Math.max(1, Math.min(4, Math.round(baseTokenSize / 100)));
-    const tokenSizePx = sizeInCells * gridSize;
+    const tokenSizePx = baseTokenSize;
 
     const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
