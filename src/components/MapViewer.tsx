@@ -25,6 +25,7 @@ import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/typ
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
 import { MapContextMenu } from './MapContextMenu';
+import { GlobalSheetOpener } from './GlobalSheetOpener';
 import { getDamageTypeLabel } from '@/types/dnd5e';
 import { log, warn } from '@/lib/debug';
 
