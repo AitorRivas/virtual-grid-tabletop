@@ -1267,6 +1267,7 @@ export const MapViewer = () => {
   // Normal View
   return (
     <div className="h-screen w-screen overflow-hidden bg-board-bg flex">
+      <GlobalSheetOpener />
       {/* GM Sidebar */}
       <GMSidebar
         maps={maps}
