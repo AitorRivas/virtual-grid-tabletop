@@ -494,6 +494,7 @@ export const MapViewer = () => {
   // overwrite both the player snapshot and our own saved camera.
   const cameraRafRef = useRef<number | null>(null);
   const pendingCameraRef = useRef<{ x: number; y: number; s: number } | null>(null);
+  const cameraSaveTimerRef = useRef<number | null>(null);
   const broadcastCamera = useCallback((x: number, y: number, s: number) => {
     pendingCameraRef.current = { x, y, s };
     if (cameraRafRef.current !== null) return;
@@ -504,8 +505,22 @@ export const MapViewer = () => {
       // Drop emissions until camera has been restored for the current map.
       if (!activeMapId) return;
       if (restoredForMapRef.current !== activeMapId || isHydratingCameraRef.current) return;
+      // Live broadcast only — Player View receives this for syncCamera.
       setDmCamera({ positionX: p.x, positionY: p.y, scale: p.s, mapId: activeMapId });
-      saveDmCamera(activeMapId, { positionX: p.x, positionY: p.y, scale: p.s });
+      // Persistence is debounced: writing the entire game state (including
+      // base64 maps + fog DataURLs) to localStorage every frame would stall
+      // the main thread and cause the pan to "jump". Save once the user
+      // pauses interaction; map-switch/unmount also flush via persistCurrentDmCamera.
+      if (cameraSaveTimerRef.current !== null) {
+        window.clearTimeout(cameraSaveTimerRef.current);
+      }
+      cameraSaveTimerRef.current = window.setTimeout(() => {
+        cameraSaveTimerRef.current = null;
+        const last = pendingCameraRef.current;
+        if (!last || !activeMapId) return;
+        if (restoredForMapRef.current !== activeMapId || isHydratingCameraRef.current) return;
+        saveDmCamera(activeMapId, { positionX: last.x, positionY: last.y, scale: last.s });
+      }, 250);
     });
   }, [activeMapId, setDmCamera, saveDmCamera]);
 
