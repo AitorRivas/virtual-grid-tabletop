@@ -40,26 +40,34 @@ export const GlobalSheetOpener = () => {
 
   return (
     <>
-      {character && (
-        <CharacterSheet
-          character={character}
-          onClose={() => setCharacter(null)}
-          onSave={async (updated) => {
-            const ok = await updateCharacter(character.id, updated as any);
-            return !!ok;
-          }}
-        />
-      )}
-      {monster && (
-        <MonsterSheet
-          monster={monster}
-          onClose={() => setMonster(null)}
-          onSave={async (updated) => {
-            const ok = await updateMonster(monster.id, updated as any);
-            return !!ok;
-          }}
-        />
-      )}
+      <Dialog open={!!character} onOpenChange={(o) => !o && setCharacter(null)}>
+        <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden [&>button]:hidden">
+          {character && (
+            <CharacterSheet
+              character={character}
+              onClose={() => setCharacter(null)}
+              onSave={async (updated) => {
+                const ok = await updateCharacter(character.id, updated as any);
+                return !!ok;
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!monster} onOpenChange={(o) => !o && setMonster(null)}>
+        <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden [&>button]:hidden">
+          {monster && (
+            <MonsterSheet
+              monster={monster}
+              onClose={() => setMonster(null)}
+              onSave={async (updated) => {
+                const ok = await updateMonster(monster.id, updated as any);
+                return !!ok;
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
