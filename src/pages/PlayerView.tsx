@@ -530,7 +530,9 @@ const PlayerView = () => {
               if (!hasSheet) return tokenEl;
               return (
                 <ContextMenu key={token.id}>
-                  <ContextMenuTrigger asChild>{tokenEl}</ContextMenuTrigger>
+                  <ContextMenuTrigger asChild>
+                    <div className="contents">{tokenEl}</div>
+                  </ContextMenuTrigger>
                   <ContextMenuContent className="w-48">
                     <ContextMenuItem
                       onSelect={() => {
