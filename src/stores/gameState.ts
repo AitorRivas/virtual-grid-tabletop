@@ -69,6 +69,8 @@ export interface PlayerViewConfig {
   syncSelection: boolean;
   /** When false (default), HP bars of enemies/NPCs are hidden in Player View. PJ bars always visible. */
   showEnemyHpBars: boolean;
+  /** When true, HP bars of undead-type creatures are hidden (overrides showEnemyHpBars for that subset). */
+  hideUndeadHpBars: boolean;
 }
 
 export interface DmCameraState {
@@ -128,6 +130,7 @@ const defaultPlayerViewConfig: PlayerViewConfig = {
   syncZoom: false,
   syncSelection: false,
   showEnemyHpBars: false,
+  hideUndeadHpBars: false,
 };
 
 const defaultDmCamera: DmCameraState = {
