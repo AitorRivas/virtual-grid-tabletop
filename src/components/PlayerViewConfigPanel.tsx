@@ -1,4 +1,4 @@
-import { ZoomIn, MousePointerClick, Settings2, Heart } from 'lucide-react';
+import { ZoomIn, MousePointerClick, Settings2, Heart, Skull } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
@@ -28,6 +28,12 @@ const ITEMS: { key: keyof PlayerViewConfig; label: string; description: string; 
     label: 'Mostrar vida de enemigos y NPCs',
     description: 'Si está desactivado, los jugadores solo ven la barra de vida de los aliados (PJ)',
     icon: Heart,
+  },
+  {
+    key: 'hideUndeadHpBars',
+    label: 'Ocultar vida de no-muertos',
+    description: 'Oculta la barra de vida de criaturas de tipo no-muerto, aunque el resto de enemigos sí se muestren',
+    icon: Skull,
   },
 ];
 

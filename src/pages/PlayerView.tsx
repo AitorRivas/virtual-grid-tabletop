@@ -6,6 +6,7 @@ import { FogOfWar } from '@/components/FogOfWar';
 import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { useGameState } from '@/hooks/useGameState';
+import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 import { log, warn } from '@/lib/debug';
@@ -372,6 +373,14 @@ const PlayerView = () => {
   // Players never see hidden tokens.
   const visibleTokens = tokens.filter((t) => !t.hidden);
 
+  // Map of monsterId -> type for undead detection
+  const { monsters } = useExtendedMonsters();
+  const monsterTypeById = useMemo(() => {
+    const map = new Map<string, string>();
+    monsters.forEach((m) => map.set(m.id, (m.type ?? '').toLowerCase()));
+    return map;
+  }, [monsters]);
+
   if (!mapImage) {
     return (
       <div ref={rootRef} className="h-screen w-screen bg-black flex items-center justify-center">
@@ -486,7 +495,12 @@ const PlayerView = () => {
 
             {visibleTokens.map(token => {
               const isPj = (token.faction ?? (token.id.startsWith('char-') ? 'pj' : token.id.startsWith('monster-') ? 'enemy' : 'npc')) === 'pj';
-              const hideHpBar = !isPj && !playerViewConfig.showEnemyHpBars;
+              const isUndead = token.sourceMonsterId
+                ? monsterTypeById.get(token.sourceMonsterId) === 'undead'
+                : false;
+              const hideHpBar =
+                (!isPj && !playerViewConfig.showEnemyHpBars) ||
+                (playerViewConfig.hideUndeadHpBars && isUndead);
               return (
                 <Token
                   key={token.id}
