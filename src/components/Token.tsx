@@ -194,14 +194,14 @@ export const Token = ({
   }, [isDragging, isRotating, dragStart, rotationStart, id, onMove, onRotate, mapContainerRef, calculateAngle]);
 
   const handleMouseMoveForCursor = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (status !== 'active') return;
+    if (status !== 'active' || readOnly) return;
     const target = e.currentTarget;
     if (isOnEdge(e.clientX, e.clientY)) {
       target.style.cursor = 'grab';
     } else {
       target.style.cursor = 'move';
     }
-  }, [status, isOnEdge]);
+  }, [status, isOnEdge, readOnly]);
 
   const isDead = status === 'dead';
   const isInactive = status === 'inactive';
