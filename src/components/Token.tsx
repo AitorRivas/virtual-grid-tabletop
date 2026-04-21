@@ -124,11 +124,14 @@ export const Token = ({
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Allow right-click to bubble up so wrapping ContextMenuTrigger can capture it.
+    if (e.button === 2) return;
     e.stopPropagation();
     onClick();
     
     if (!mapContainerRef.current) return;
     if (status !== 'active') return;
+    if (readOnly) return;
     
     if (isOnEdge(e.clientX, e.clientY)) {
       setIsRotating(true);
