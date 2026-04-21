@@ -44,7 +44,7 @@ export const GlobalSheetOpener = () => {
           character={character}
           onClose={() => setCharacter(null)}
           onSave={async (updated) => {
-            const ok = await updateCharacter(character.id, updated);
+            const ok = await updateCharacter(character.id, updated as any);
             return !!ok;
           }}
         />
