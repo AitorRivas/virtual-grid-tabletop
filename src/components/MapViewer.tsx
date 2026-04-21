@@ -25,6 +25,7 @@ import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/typ
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
 import { MapContextMenu } from './MapContextMenu';
+import { GlobalSheetOpener } from './GlobalSheetOpener';
 import { getDamageTypeLabel } from '@/types/dnd5e';
 import { log, warn } from '@/lib/debug';
 
@@ -1267,6 +1268,7 @@ export const MapViewer = () => {
   // Normal View
   return (
     <div className="h-screen w-screen overflow-hidden bg-board-bg flex">
+      <GlobalSheetOpener />
       {/* GM Sidebar */}
       <GMSidebar
         maps={maps}
