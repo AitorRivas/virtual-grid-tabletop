@@ -486,7 +486,7 @@ export const Token = ({
         </div>
 
         {/* Quick action buttons (with invisible bridge to prevent hover gap) */}
-        {showActions && (status === 'active' || isDead) && (
+        {!readOnly && showActions && (status === 'active' || isDead) && (
           <div
             className="absolute left-1/2 -translate-x-1/2 z-[110]"
             style={{ top: -44, paddingBottom: 44 }}
