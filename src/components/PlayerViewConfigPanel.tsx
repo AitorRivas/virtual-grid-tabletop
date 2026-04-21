@@ -1,4 +1,4 @@
-import { Camera, ZoomIn, MousePointerClick, Settings2 } from 'lucide-react';
+import { ZoomIn, MousePointerClick, Settings2, Heart } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
@@ -10,13 +10,7 @@ interface PlayerViewConfigPanelProps {
   onChange: (updates: Partial<PlayerViewConfig>) => void;
 }
 
-const ITEMS: { key: keyof PlayerViewConfig; label: string; description: string; icon: typeof Camera }[] = [
-  {
-    key: 'syncCamera',
-    label: 'Sincronizar cámara',
-    description: 'La Vista de Jugadores replica el desplazamiento del DM',
-    icon: Camera,
-  },
+const ITEMS: { key: keyof PlayerViewConfig; label: string; description: string; icon: typeof ZoomIn }[] = [
   {
     key: 'syncZoom',
     label: 'Sincronizar zoom',
@@ -28,6 +22,12 @@ const ITEMS: { key: keyof PlayerViewConfig; label: string; description: string; 
     label: 'Centrar en token seleccionado',
     description: 'Al seleccionar un token, la vista de jugadores lo enfoca',
     icon: MousePointerClick,
+  },
+  {
+    key: 'showEnemyHpBars',
+    label: 'Mostrar vida de enemigos y NPCs',
+    description: 'Si está desactivado, los jugadores solo ven la barra de vida de los aliados (PJ)',
+    icon: Heart,
   },
 ];
 
