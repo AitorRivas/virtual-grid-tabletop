@@ -21,7 +21,7 @@ import { useGameState, MapCombatState } from '@/hooks/useGameState';
 import { useAuth } from '@/hooks/useAuth';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
-import { GridConfig, CellState, CREATURE_SIZE_CELLS } from '@/lib/gridEngine/types';
+import { GridConfig, CellState, CREATURE_SIZE_CELLS, CREATURE_SIZE_PIXELS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
 import { MapContextMenu } from './MapContextMenu';
@@ -944,7 +944,7 @@ export const MapViewer = () => {
   const handleAddCharacterToMap = (character: Character) => {
     const baseTokenSize = character.token_size > 0 ? character.token_size : 100;
     const sizeInCells = Math.max(1, Math.min(4, Math.round(baseTokenSize / 100)));
-    const tokenSizePx = sizeInCells * gridSize;
+    const tokenSizePx = baseTokenSize;
 
     const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
@@ -972,7 +972,9 @@ export const MapViewer = () => {
 
   const handleAddMonsterToMap = (monster: Monster) => {
     const sizeInCells = CREATURE_SIZE_CELLS[monster.size] ?? 1;
-    const tokenSizePx = sizeInCells * gridSize;
+    const tokenSizePx = (monster as any).token_size && (monster as any).token_size > 0
+      ? (monster as any).token_size
+      : (CREATURE_SIZE_PIXELS[monster.size] ?? 100);
 
     const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
