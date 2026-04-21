@@ -972,7 +972,9 @@ export const MapViewer = () => {
 
   const handleAddMonsterToMap = (monster: Monster) => {
     const sizeInCells = CREATURE_SIZE_CELLS[monster.size] ?? 1;
-    const tokenSizePx = sizeInCells * gridSize;
+    const tokenSizePx = (monster as any).token_size && (monster as any).token_size > 0
+      ? (monster as any).token_size
+      : (CREATURE_SIZE_PIXELS[monster.size] ?? 100);
 
     const uid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const newToken: TokenData = {
