@@ -562,6 +562,8 @@ const PlayerView = () => {
           {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
         </button>
       )}
+
+      <GlobalSheetOpener />
     </div>
   );
 };
