@@ -1089,17 +1089,25 @@ export const MapViewer = () => {
             characters={libraryCharacters}
             monsters={libraryMonsters as any}
             fogEnabled={fogEnabled}
+            combatActive={isInitiativeActive}
+            activeTurnTokenId={activeInitiativeTokenId}
             mapContainerRef={mapContainerRef}
             onViewSheet={(t) => {
-              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: t.sourceCharacterId }));
-              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: t.sourceMonsterId }));
+              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: { id: t.sourceCharacterId } }));
+              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: { id: t.sourceMonsterId } }));
               else toast.info('Este token no tiene ficha asociada');
             }}
             onEditSheet={(t) => {
-              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: t.sourceCharacterId }));
-              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: t.sourceMonsterId }));
+              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: { id: t.sourceCharacterId } }));
+              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: { id: t.sourceMonsterId } }));
               else toast.info('Este token no tiene ficha asociada');
             }}
+            onAttack={(t) => {
+              if (t.sourceCharacterId) window.dispatchEvent(new CustomEvent('vtt:open-character-sheet', { detail: { id: t.sourceCharacterId, tab: 'actions' } }));
+              else if (t.sourceMonsterId) window.dispatchEvent(new CustomEvent('vtt:open-monster-sheet', { detail: { id: t.sourceMonsterId, tab: 'actions' } }));
+              else toast.info('Este token no tiene ficha con acciones');
+            }}
+            onEndTurn={handleNextTurn}
             onToggleHidden={handleToggleHidden}
             onDeleteToken={handleDeleteToken}
             onCenterCamera={centerCameraOnToken}

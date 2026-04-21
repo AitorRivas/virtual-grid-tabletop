@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import {
   Eye, EyeOff, Trash2, Crosshair, FileText, Pencil,
   Cloud, CloudOff, RotateCcw, Plus, Search, User, Skull,
+  Swords, SkipForward,
 } from 'lucide-react';
 import type { TokenData } from './MapViewer';
 import type { Character, Monster } from '@/types/dnd';
@@ -46,12 +47,19 @@ interface MapContextMenuProps {
   characters: Character[];
   monsters: Monster[];
   fogEnabled: boolean;
+  /** Whether combat/initiative is currently active for the displayed map. */
+  combatActive?: boolean;
+  /** Token id whose turn is currently active (used to gate "Terminar turno"). */
+  activeTurnTokenId?: string | null;
   /** Token actions. */
   onViewSheet: (token: TokenData) => void;
   onEditSheet: (token: TokenData) => void;
   onToggleHidden: (id: string) => void;
   onDeleteToken: (id: string) => void;
   onCenterCamera: (token: TokenData) => void;
+  /** Combat-mode actions (only used when combatActive=true). */
+  onAttack?: (token: TokenData) => void;
+  onEndTurn?: () => void;
   /** Map actions. */
   onRevealFog: (xPercent: number, yPercent: number) => void;
   onHideFog: (xPercent: number, yPercent: number) => void;
@@ -64,7 +72,9 @@ interface MapContextMenuProps {
 
 export const MapContextMenu = ({
   children, tokens, characters, monsters, fogEnabled,
+  combatActive = false, activeTurnTokenId = null,
   onViewSheet, onEditSheet, onToggleHidden, onDeleteToken, onCenterCamera,
+  onAttack, onEndTurn,
   onRevealFog, onHideFog, onResetFog, onAddCharacterAt, onAddMonsterAt,
   mapContainerRef,
 }: MapContextMenuProps) => {
@@ -120,28 +130,52 @@ export const MapContextMenu = ({
         </ContextMenuTrigger>
         <ContextMenuContent className="w-56">
           {token ? (
-            <>
-              <ContextMenuItem onSelect={() => onViewSheet(token)}>
-                <FileText className="w-4 h-4 mr-2" /> Ver ficha
-              </ContextMenuItem>
-              <ContextMenuItem onSelect={() => onCenterCamera(token)}>
-                <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem onSelect={() => onToggleHidden(token.id)}>
-                {token.hidden ? (
-                  <><Eye className="w-4 h-4 mr-2" /> Mostrar a jugadores</>
-                ) : (
-                  <><EyeOff className="w-4 h-4 mr-2" /> Ocultar a jugadores</>
-                )}
-              </ContextMenuItem>
-              <ContextMenuItem
-                onSelect={() => onDeleteToken(token.id)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" /> Eliminar
-              </ContextMenuItem>
-            </>
+            combatActive ? (
+              <>
+                <ContextMenuItem
+                  onSelect={() => onAttack?.(token)}
+                  disabled={!onAttack}
+                >
+                  <Swords className="w-4 h-4 mr-2" /> Atacar
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onSelect={() => onEndTurn?.()}
+                  disabled={!onEndTurn || activeTurnTokenId !== token.id}
+                >
+                  <SkipForward className="w-4 h-4 mr-2" /> Terminar turno
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem onSelect={() => onViewSheet(token)}>
+                  <FileText className="w-4 h-4 mr-2" /> Ver ficha
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => onCenterCamera(token)}>
+                  <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
+                </ContextMenuItem>
+              </>
+            ) : (
+              <>
+                <ContextMenuItem onSelect={() => onViewSheet(token)}>
+                  <FileText className="w-4 h-4 mr-2" /> Ver ficha
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => onCenterCamera(token)}>
+                  <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem onSelect={() => onToggleHidden(token.id)}>
+                  {token.hidden ? (
+                    <><Eye className="w-4 h-4 mr-2" /> Mostrar a jugadores</>
+                  ) : (
+                    <><EyeOff className="w-4 h-4 mr-2" /> Ocultar a jugadores</>
+                  )}
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onSelect={() => onDeleteToken(token.id)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                </ContextMenuItem>
+              </>
+            )
           ) : (
             <>
               <ContextMenuItem

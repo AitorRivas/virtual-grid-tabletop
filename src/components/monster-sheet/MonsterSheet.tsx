@@ -30,13 +30,16 @@ interface MonsterSheetProps {
   onSave: (monster: ExtendedMonster) => Promise<boolean>;
   onClose?: () => void;
   initialReadOnly?: boolean;
+  /** When provided, the sheet opens on this tab (e.g. 'actions'). */
+  initialTab?: string;
 }
 
 export const MonsterSheet = ({ 
   monster: initialMonster, 
   onSave, 
   onClose,
-  initialReadOnly = true 
+  initialReadOnly = true,
+  initialTab,
 }: MonsterSheetProps) => {
   const [monster, setMonster] = useState<ExtendedMonster>(initialMonster);
   const [readOnly, setReadOnly] = useState(initialReadOnly);
@@ -328,7 +331,7 @@ export const MonsterSheet = ({
             </div>
           </div>
 
-          <Tabs defaultValue="abilities" className="w-full">
+          <Tabs defaultValue={initialTab ?? "abilities"} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="abilities" className="text-xs gap-1">
                 <User className="w-3 h-3" />

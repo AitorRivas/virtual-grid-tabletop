@@ -38,13 +38,16 @@ interface CharacterSheetProps {
   onSave: (character: ExtendedCharacter) => Promise<boolean>;
   onClose?: () => void;
   initialReadOnly?: boolean;
+  /** When provided, the sheet opens on this tab (e.g. 'actions'). */
+  initialTab?: string;
 }
 
 export const CharacterSheet = ({ 
   character: initialCharacter, 
   onSave, 
   onClose,
-  initialReadOnly = true 
+  initialReadOnly = true,
+  initialTab,
 }: CharacterSheetProps) => {
   const [character, setCharacter] = useState<ExtendedCharacter>(initialCharacter);
   const [readOnly, setReadOnly] = useState(initialReadOnly);
@@ -270,7 +273,7 @@ export const CharacterSheet = ({
           />
 
 
-          <Tabs defaultValue="abilities" className="w-full">
+          <Tabs defaultValue={initialTab ?? "abilities"} className="w-full">
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="abilities" className="text-xs gap-1">
                 <User className="w-3 h-3" />
