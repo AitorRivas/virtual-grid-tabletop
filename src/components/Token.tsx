@@ -64,6 +64,7 @@ export const Token = ({
   onMove, onClick, onDelete, onMarkDead, onRevive, onRotate, onToggleHidden, mapContainerRef,
   combatTooltip = null,
   hideHpBar = false,
+  readOnly = false,
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
