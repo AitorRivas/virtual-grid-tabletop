@@ -42,17 +42,21 @@ export const GlobalSheetOpener = () => {
       {character && (
         <CharacterSheet
           character={character}
-          open={!!character}
           onClose={() => setCharacter(null)}
-          onUpdate={(updates) => updateCharacter(character.id, updates)}
+          onSave={async (updated) => {
+            const ok = await updateCharacter(character.id, updated);
+            return !!ok;
+          }}
         />
       )}
       {monster && (
         <MonsterSheet
           monster={monster}
-          open={!!monster}
           onClose={() => setMonster(null)}
-          onUpdate={(updates) => updateMonster(monster.id, updates)}
+          onSave={async (updated) => {
+            const ok = await updateMonster(monster.id, updated);
+            return !!ok;
+          }}
         />
       )}
     </>
