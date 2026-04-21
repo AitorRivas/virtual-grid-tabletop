@@ -594,6 +594,7 @@ export const MapViewer = () => {
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
+    if (cameraSaveTimerRef.current !== null) window.clearTimeout(cameraSaveTimerRef.current);
   }, []);
 
   // Broadcast selected token for syncSelection
