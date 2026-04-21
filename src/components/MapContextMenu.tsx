@@ -124,9 +124,6 @@ export const MapContextMenu = ({
               <ContextMenuItem onSelect={() => onViewSheet(token)}>
                 <FileText className="w-4 h-4 mr-2" /> Ver ficha
               </ContextMenuItem>
-              <ContextMenuItem onSelect={() => onEditSheet(token)}>
-                <Pencil className="w-4 h-4 mr-2" /> Editar
-              </ContextMenuItem>
               <ContextMenuItem onSelect={() => onCenterCamera(token)}>
                 <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
               </ContextMenuItem>
@@ -158,18 +155,6 @@ export const MapContextMenu = ({
                 <Plus className="w-4 h-4 mr-2" /> Añadir token aquí
               </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem
-                disabled={!fogEnabled}
-                onSelect={() => ctx && onRevealFog(ctx.xPercent, ctx.yPercent)}
-              >
-                <Cloud className="w-4 h-4 mr-2" /> Revelar niebla aquí
-              </ContextMenuItem>
-              <ContextMenuItem
-                disabled={!fogEnabled}
-                onSelect={() => ctx && onHideFog(ctx.xPercent, ctx.yPercent)}
-              >
-                <CloudOff className="w-4 h-4 mr-2" /> Ocultar niebla aquí
-              </ContextMenuItem>
               <ContextMenuItem
                 disabled={!fogEnabled}
                 onSelect={() => setConfirmReset(true)}

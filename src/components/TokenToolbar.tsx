@@ -479,7 +479,7 @@ export const TokenToolbar = ({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="library" className="m-0 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
+        <TabsContent forceMount value="library" className="m-0 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
           {user ? (
             <CharacterManager
               onAddCharacterToMap={onAddCharacterToMap}
