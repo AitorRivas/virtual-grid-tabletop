@@ -54,7 +54,7 @@ export const GlobalSheetOpener = () => {
           monster={monster}
           onClose={() => setMonster(null)}
           onSave={async (updated) => {
-            const ok = await updateMonster(monster.id, updated);
+            const ok = await updateMonster(monster.id, updated as any);
             return !!ok;
           }}
         />
