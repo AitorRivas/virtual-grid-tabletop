@@ -358,26 +358,53 @@ const PlayerView = () => {
     feetPerCell: 5,
   }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
 
-  const currentTurnName = useMemo(() => {
+  const initiativeFeed = useMemo(() => {
     const combat = activeMap?.combat;
     if (!combat?.isActive || combat.entries.length === 0) return null;
 
-    const activeEntry = combat.entries[combat.activeIndex] ?? combat.entries[0];
-    if (!activeEntry) return null;
+    const count = combat.entries.length;
+    const activeIndex = ((combat.activeIndex % count) + count) % count;
+    const getName = (index: number) => {
+      const entry = combat.entries[index];
+      const token = entry?.tokenId ? tokens.find((t) => t.id === entry.tokenId) : null;
+      return token?.name || entry?.name || 'Desconocido';
+    };
 
-    const activeToken = activeEntry.tokenId
-      ? tokens.find((token) => token.id === activeEntry.tokenId)
-      : null;
-
-    return activeToken?.name || activeEntry.name || null;
+    return {
+      previous: count > 1 ? getName((activeIndex - 1 + count) % count) : null,
+      current: getName(activeIndex),
+      next: count > 1 ? getName((activeIndex + 1) % count) : null,
+      round: combat.round,
+    };
   }, [activeMap?.combat, tokens]);
 
-  const renderCurrentTurnIndicator = () => {
-    if (!currentTurnName) return null;
+  const renderInitiativeFeed = () => {
+    if (!initiativeFeed) return null;
 
     return (
-      <div className="fixed left-4 top-4 z-40 rounded-md border border-border bg-card/90 px-4 py-2 text-card-foreground shadow-lg backdrop-blur-sm">
-        <span className="text-sm font-semibold">Turno Actual - {currentTurnName}</span>
+      <div className="fixed left-4 top-4 z-40 w-72 max-w-[calc(100vw-2rem)] animate-fade-in rounded-lg border border-border bg-card/90 p-3 text-card-foreground shadow-2xl backdrop-blur-md">
+        <div className="mb-2 flex items-center justify-between gap-3 border-b border-border/70 pb-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Iniciativa</span>
+          <span className="rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">Ronda {initiativeFeed.round}</span>
+        </div>
+        <div className="space-y-1.5">
+          {initiativeFeed.previous && (
+            <div className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm text-muted-foreground">
+              <span className="text-xs uppercase">Anterior</span>
+              <span className="truncate font-medium">{initiativeFeed.previous}</span>
+            </div>
+          )}
+          <div className="rounded-md border border-primary/50 bg-primary/15 px-2.5 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.18)]">
+            <span className="block text-xs font-semibold uppercase text-primary">Turno Actual</span>
+            <span className="block truncate text-lg font-bold leading-tight text-card-foreground">{initiativeFeed.current}</span>
+          </div>
+          {initiativeFeed.next && (
+            <div className="flex items-center justify-between gap-3 rounded-md bg-secondary/70 px-2 py-1.5 text-sm text-secondary-foreground">
+              <span className="text-xs uppercase text-muted-foreground">Siguiente</span>
+              <span className="truncate font-semibold">{initiativeFeed.next}</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -417,7 +444,7 @@ const PlayerView = () => {
     return (
       <div ref={rootRef} className="h-screen w-screen bg-black flex items-center justify-center">
         {renderNarrative()}
-        {renderCurrentTurnIndicator()}
+        {renderInitiativeFeed()}
         <div className="text-center text-white/40 space-y-4">
           <div className="text-6xl">🎲</div>
           <p className="text-xl font-medium">Esperando al DM...</p>
@@ -430,7 +457,7 @@ const PlayerView = () => {
   return (
     <div ref={rootRef} className="h-screen w-screen overflow-hidden bg-black relative">
       {renderNarrative()}
-      {renderCurrentTurnIndicator()}
+      {renderInitiativeFeed()}
 
       <div className="h-full w-full">
         <TransformWrapper
