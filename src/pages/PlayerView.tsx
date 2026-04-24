@@ -358,6 +358,30 @@ const PlayerView = () => {
     feetPerCell: 5,
   }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
 
+  const currentTurnName = useMemo(() => {
+    const combat = activeMap?.combat;
+    if (!combat?.isActive || combat.entries.length === 0) return null;
+
+    const activeEntry = combat.entries[combat.activeIndex] ?? combat.entries[0];
+    if (!activeEntry) return null;
+
+    const activeToken = activeEntry.tokenId
+      ? tokens.find((token) => token.id === activeEntry.tokenId)
+      : null;
+
+    return activeToken?.name || activeEntry.name || null;
+  }, [activeMap?.combat, tokens]);
+
+  const renderCurrentTurnIndicator = () => {
+    if (!currentTurnName) return null;
+
+    return (
+      <div className="fixed left-4 top-4 z-40 rounded-md border border-border bg-card/90 px-4 py-2 text-card-foreground shadow-lg backdrop-blur-sm">
+        <span className="text-sm font-semibold">Turno Actual - {currentTurnName}</span>
+      </div>
+    );
+  };
+
   // Narrative overlay component
   const renderNarrative = () => {
     if (!(narrativeVisible || narrativeFading) || !narrativeImage) return null;
@@ -393,6 +417,7 @@ const PlayerView = () => {
     return (
       <div ref={rootRef} className="h-screen w-screen bg-black flex items-center justify-center">
         {renderNarrative()}
+        {renderCurrentTurnIndicator()}
         <div className="text-center text-white/40 space-y-4">
           <div className="text-6xl">🎲</div>
           <p className="text-xl font-medium">Esperando al DM...</p>
@@ -405,6 +430,7 @@ const PlayerView = () => {
   return (
     <div ref={rootRef} className="h-screen w-screen overflow-hidden bg-black relative">
       {renderNarrative()}
+      {renderCurrentTurnIndicator()}
 
       <div className="h-full w-full">
         <TransformWrapper
