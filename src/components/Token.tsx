@@ -256,12 +256,10 @@ export const Token = ({
         )}
         {/* Initiative active halo */}
         {isActiveInitiative && status === 'active' && (
-          <div 
-            className="absolute inset-[-6px] rounded-full animate-initiative-pulse pointer-events-none"
-            style={{
-              border: '2px solid hsl(48, 95%, 55%)',
-            }}
-          />
+          <>
+            <div className="absolute inset-[-10px] rounded-full border-2 border-primary/80 animate-initiative-pulse pointer-events-none" />
+            <div className="absolute inset-[-4px] rounded-full border border-primary bg-primary/10 animate-initiative-glow pointer-events-none" />
+          </>
         )}
 
         {/* Rotation indicator ring */}
