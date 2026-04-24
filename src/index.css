@@ -107,6 +107,36 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  @keyframes initiative-pulse {
+    0%, 100% {
+      opacity: 0.65;
+      transform: scale(1);
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35), 0 0 22px hsl(var(--primary) / 0.22);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.04);
+      box-shadow: 0 0 0 8px hsl(var(--primary) / 0.08), 0 0 34px hsl(var(--primary) / 0.38);
+    }
+  }
+
+  @keyframes initiative-glow {
+    0%, 100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-initiative-pulse {
+    animation: initiative-pulse 1.8s ease-in-out infinite;
+  }
+
+  .animate-initiative-glow {
+    animation: initiative-glow 1.8s ease-in-out infinite;
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted)) transparent;
