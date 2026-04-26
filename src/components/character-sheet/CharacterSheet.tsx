@@ -56,7 +56,9 @@ export const CharacterSheet = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
-  
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const imageFileRef = useRef<HTMLInputElement>(null);
+
   const { createCharacterTemplate } = useTemplates();
 
   const profBonus = useMemo(() => getProficiencyBonus(character.level), [character.level]);
