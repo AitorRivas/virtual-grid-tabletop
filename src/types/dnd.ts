@@ -57,6 +57,7 @@ export interface Monster {
 export const DND_RACES = [
   { value: 'Human', label: 'Humano' },
   { value: 'Elf', label: 'Elfo' },
+  { value: 'Drow', label: 'Drow (Elfo Oscuro)' },
   { value: 'Dwarf', label: 'Enano' },
   { value: 'Halfling', label: 'Mediano' },
   { value: 'Gnome', label: 'Gnomo' },
