@@ -321,7 +321,7 @@ export const CharacterSheet = ({
                   <Button variant="outline" size="sm" className="gap-1 flex-1" onClick={() => imageFileRef.current?.click()}>
                     <Upload className="w-3 h-3" /> Subir imagen
                   </Button>
-                  <SharedImagePicker category="character" onSelect={(data) => updateCharacter('image_url', data)} selectedImage={character.image_url || undefined} />
+                  <SharedImagePicker category="hero" onSelect={(data) => updateCharacter('image_url', data)} selectedImage={character.image_url || undefined} />
                 </div>
               ) : (
                 <Input
