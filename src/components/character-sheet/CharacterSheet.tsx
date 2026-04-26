@@ -153,8 +153,22 @@ export const CharacterSheet = ({
     event.target.value = '';
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Sube una imagen válida'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Máximo 5MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      updateCharacter('image_url', e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    if (imageFileRef.current) imageFileRef.current.value = '';
+  };
+
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 overflow-hidden">
+      <input ref={imageFileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-card/50">
         <div className="flex items-center gap-2">
