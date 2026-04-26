@@ -1,13 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Swords, Package, Sparkles, BookOpen, Edit, Save, X, Download, Upload, Bookmark } from 'lucide-react';
+import { User, Swords, Package, Sparkles, BookOpen, Edit, Save, X, Download, Upload, Bookmark, Image as ImageIcon, Link as LinkIcon, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SharedImagePicker } from '@/components/SharedImagePicker';
 import { CharacterSheetHeader } from './CharacterSheetHeader';
 import { AbilityScoresPanel } from './AbilityScoresPanel';
 import { CombatPanel } from './CombatPanel';
@@ -55,7 +56,9 @@ export const CharacterSheet = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
-  
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const imageFileRef = useRef<HTMLInputElement>(null);
+
   const { createCharacterTemplate } = useTemplates();
 
   const profBonus = useMemo(() => getProficiencyBonus(character.level), [character.level]);
@@ -150,8 +153,22 @@ export const CharacterSheet = ({
     event.target.value = '';
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Sube una imagen válida'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Máximo 5MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      updateCharacter('image_url', e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    if (imageFileRef.current) imageFileRef.current.value = '';
+  };
+
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 overflow-hidden">
+      <input ref={imageFileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-card/50">
         <div className="flex items-center gap-2">
@@ -272,6 +289,50 @@ export const CharacterSheet = ({
             readOnly={readOnly}
           />
 
+          {/* Image editing section (only in edit mode) */}
+          {!readOnly && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1">
+                <ImageIcon className="w-4 h-4" /> Imagen
+              </Label>
+              {character.image_url && (
+                <div className="relative group w-24 h-24">
+                  <img src={character.image_url} alt="" className="w-full h-full object-cover rounded-lg border border-border" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => updateCharacter('image_url', null)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-1 mb-1">
+                <Button type="button" size="sm" variant={imageInputMode === 'upload' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('upload')}>
+                  <Upload className="w-3 h-3 mr-1" /> Archivo
+                </Button>
+                <Button type="button" size="sm" variant={imageInputMode === 'url' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('url')}>
+                  <LinkIcon className="w-3 h-3 mr-1" /> URL
+                </Button>
+              </div>
+              {imageInputMode === 'upload' ? (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1 flex-1" onClick={() => imageFileRef.current?.click()}>
+                    <Upload className="w-3 h-3" /> Subir imagen
+                  </Button>
+                  <SharedImagePicker category="hero" onSelect={(data) => updateCharacter('image_url', data)} selectedImage={character.image_url || undefined} />
+                </div>
+              ) : (
+                <Input
+                  value={character.image_url || ''}
+                  onChange={(e) => updateCharacter('image_url', e.target.value || null)}
+                  placeholder="https://..."
+                  className="h-7 text-xs"
+                />
+              )}
+            </div>
+          )}
 
           <Tabs defaultValue={initialTab ?? "abilities"} className="w-full">
             <TabsList className="grid w-full grid-cols-6">
