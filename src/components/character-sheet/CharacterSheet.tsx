@@ -289,6 +289,50 @@ export const CharacterSheet = ({
             readOnly={readOnly}
           />
 
+          {/* Image editing section (only in edit mode) */}
+          {!readOnly && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1">
+                <ImageIcon className="w-4 h-4" /> Imagen
+              </Label>
+              {character.image_url && (
+                <div className="relative group w-24 h-24">
+                  <img src={character.image_url} alt="" className="w-full h-full object-cover rounded-lg border border-border" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => updateCharacter('image_url', null)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-1 mb-1">
+                <Button type="button" size="sm" variant={imageInputMode === 'upload' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('upload')}>
+                  <Upload className="w-3 h-3 mr-1" /> Archivo
+                </Button>
+                <Button type="button" size="sm" variant={imageInputMode === 'url' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setImageInputMode('url')}>
+                  <LinkIcon className="w-3 h-3 mr-1" /> URL
+                </Button>
+              </div>
+              {imageInputMode === 'upload' ? (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1 flex-1" onClick={() => imageFileRef.current?.click()}>
+                    <Upload className="w-3 h-3" /> Subir imagen
+                  </Button>
+                  <SharedImagePicker category="character" onSelect={(data) => updateCharacter('image_url', data)} selectedImage={character.image_url || undefined} />
+                </div>
+              ) : (
+                <Input
+                  value={character.image_url || ''}
+                  onChange={(e) => updateCharacter('image_url', e.target.value || null)}
+                  placeholder="https://..."
+                  className="h-7 text-xs"
+                />
+              )}
+            </div>
+          )}
 
           <Tabs defaultValue={initialTab ?? "abilities"} className="w-full">
             <TabsList className="grid w-full grid-cols-6">
