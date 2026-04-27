@@ -11,6 +11,8 @@ export type CombatFaction = 'pj' | 'enemy' | 'npc';
 export interface CombatEntry {
   id: string;          // unique id of the entry
   tokenId?: string;    // optional link to a map token (highlight on map)
+  /** Map this combatant belongs to (global combat). Optional for purely manual entries. */
+  mapId?: string | null;
   name: string;
   initiative: number;
   faction: CombatFaction;
