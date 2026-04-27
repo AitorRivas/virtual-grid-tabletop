@@ -142,6 +142,8 @@ export interface GameState {
   dmCameras: Record<string, PlayerCameraSnapshot>;
   /** Single global combat state. Independent of activeMapId — combatants reference their own map via entry.mapId. */
   globalCombat: GlobalCombatState;
+  /** Global decision timer shared across windows. */
+  timer: TimerState;
 }
 
 const defaultGlobalCombat: GlobalCombatState = {
