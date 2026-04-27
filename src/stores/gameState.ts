@@ -12,12 +12,23 @@ const BROADCAST_CHANNEL = 'vtt-gamestate-sync';
 export interface CombatEntryStored {
   id: string;
   tokenId?: string;
+  /** Map this combatant belongs to. Required in the global model so we know where each token lives. */
+  mapId?: string | null;
   name: string;
   initiative: number;
   faction: 'pj' | 'enemy' | 'npc';
 }
 
+/** @deprecated Legacy per-map combat state. Migrated to GlobalCombatState. Kept only for type compatibility while reading old payloads. */
 export interface MapCombatState {
+  entries: CombatEntryStored[];
+  activeIndex: number;
+  isActive: boolean;
+  round: number;
+}
+
+/** Single global combat shared across all maps in a session. */
+export interface GlobalCombatState {
   entries: CombatEntryStored[];
   activeIndex: number;
   isActive: boolean;
