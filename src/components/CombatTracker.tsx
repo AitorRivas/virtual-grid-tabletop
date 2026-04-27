@@ -24,6 +24,10 @@ interface CombatTrackerProps {
   activeIndex: number;
   isActive: boolean;
   tokens: TokenData[];
+  /** All session maps — used to resolve entry.mapId into a readable name and offer "Go to combatant". */
+  maps?: MapData[];
+  /** Currently active map; combatants on a different map get a "Ir al combatiente" action. */
+  activeMapId?: string | null;
   onEntriesChange: (entries: CombatEntry[]) => void;
   onActiveIndexChange: (index: number) => void;
   onStart: () => void;
@@ -31,6 +35,7 @@ interface CombatTrackerProps {
   onNext: () => void;
   onPrev: () => void;
   onAddFromMap: () => void;
+  onGoToCombatant?: (entry: CombatEntry) => void;
   embedded?: boolean;
 }
 
