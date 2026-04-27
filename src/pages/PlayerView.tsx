@@ -34,6 +34,8 @@ const PlayerView = () => {
     playerViewConfig,
     dmCamera,
     dmSelectedTokenId,
+    globalCombat,
+    maps,
   } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
