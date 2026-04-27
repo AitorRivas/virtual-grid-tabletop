@@ -56,6 +56,7 @@ interface GMSidebarProps {
   onPrevTurn: () => void;
   onEndInitiative: () => void;
   onAddFromMapToCombat: () => void;
+  onGoToCombatant: (entry: CombatEntry) => void;
   isInitiativeActive: boolean;
   // Scenes
   scenes: SceneData[];
