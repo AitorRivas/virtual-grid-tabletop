@@ -82,6 +82,20 @@ export interface PlayerViewConfig {
   showEnemyHpBars: boolean;
   /** When true, HP bars of undead-type creatures are hidden (overrides showEnemyHpBars for that subset). */
   hideUndeadHpBars: boolean;
+  /** When true, the global timer is also rendered in Player View. */
+  showTimer: boolean;
+}
+
+/** Global decision timer shown in the top bar. Synced across windows. */
+export interface TimerState {
+  /** True while counting down. */
+  active: boolean;
+  /** Configured total duration in ms (used by Reset and presets). */
+  durationMs: number;
+  /** Epoch ms when the current run will hit zero. Only meaningful while active. */
+  endsAt: number | null;
+  /** Cached remaining ms when paused (so Resume continues from here). */
+  remainingMs: number;
 }
 
 export interface DmCameraState {
