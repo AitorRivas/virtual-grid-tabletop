@@ -300,6 +300,8 @@ export const GMSidebar = ({
                 activeIndex={activeInitiativeIndex}
                 isActive={isInitiativeActive}
                 tokens={tokens}
+                maps={maps}
+                activeMapId={activeMapId}
                 onEntriesChange={onCombatEntriesChange}
                 onActiveIndexChange={onActiveInitiativeIndexChange}
                 onStart={onStartInitiative}
@@ -307,6 +309,7 @@ export const GMSidebar = ({
                 onNext={onNextTurn}
                 onPrev={onPrevTurn}
                 onAddFromMap={onAddFromMapToCombat}
+                onGoToCombatant={onGoToCombatant}
               />
             </div>
           )}
