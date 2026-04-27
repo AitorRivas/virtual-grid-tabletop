@@ -17,7 +17,7 @@ import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { Character, Monster, getModifier } from '@/types/dnd';
 import { Film, X, Upload } from 'lucide-react';
-import { useGameState, MapCombatState } from '@/hooks/useGameState';
+import { useGameState, GlobalCombatState } from '@/hooks/useGameState';
 import { useAuth } from '@/hooks/useAuth';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
