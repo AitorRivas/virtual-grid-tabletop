@@ -105,6 +105,8 @@ export const MapViewer = () => {
     setDmSelectedTokenId,
     dmCameras,
     saveDmCamera,
+    globalCombat,
+    updateGlobalCombat,
   } = useGameState();
 
   // Derive current map state from activeMap
