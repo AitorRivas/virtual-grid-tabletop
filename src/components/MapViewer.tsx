@@ -152,24 +152,19 @@ export const MapViewer = () => {
   const [cellBrushState, setCellBrushState] = useState<CellState>('blocked');
   const [isCalibrating, setIsCalibrating] = useState(false);
 
-  // Combat / Initiative system — derived from active map's combat state (scoped per map)
-  const combat = activeMap?.combat ?? { entries: [], activeIndex: 0, isActive: false, round: 1 };
+  // Combat / Initiative system — GLOBAL across all maps. Each entry carries its own mapId.
+  const combat = globalCombat;
   const combatEntries = combat.entries;
   const activeInitiativeIndex = combat.activeIndex;
   const isInitiativeActive = combat.isActive;
-  
 
-  const updateCombat = useCallback((updater: Partial<MapCombatState> | ((prev: MapCombatState) => Partial<MapCombatState>)) => {
-    updateActiveMap((currentMap) => {
-      const cur = currentMap?.combat ?? { entries: [], activeIndex: 0, isActive: false, round: 1 };
-      const patch = typeof updater === 'function' ? updater(cur) : updater;
-      return { combat: { ...cur, ...patch } };
-    });
-  }, [updateActiveMap]);
+  const updateCombat = useCallback((updater: Partial<GlobalCombatState> | ((prev: GlobalCombatState) => Partial<GlobalCombatState>)) => {
+    updateGlobalCombat(updater);
+  }, [updateGlobalCombat]);
 
   const setCombatEntries = useCallback((updater: CombatEntry[] | ((prev: CombatEntry[]) => CombatEntry[])) => {
     updateCombat((cur) => ({
-      entries: typeof updater === 'function' ? updater(cur.entries) : updater,
+      entries: typeof updater === 'function' ? updater(cur.entries as CombatEntry[]) : updater,
     }));
   }, [updateCombat]);
 
