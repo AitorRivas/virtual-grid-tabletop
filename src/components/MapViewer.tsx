@@ -386,6 +386,17 @@ export const MapViewer = () => {
   // Combat handlers
   const handleStartInitiative = useCallback(() => {
     if (!activeMapId) return;
+  // Helper: jump activeMapId to the map of the given entry (and persist DM camera before).
+  const jumpToCombatantMap = useCallback((entry: CombatEntry | undefined) => {
+    if (!entry?.mapId) return;
+    if (entry.mapId === activeMapId) return;
+    persistCurrentDmCamera(activeMapId);
+    setActiveMapId(entry.mapId);
+  }, [activeMapId, persistCurrentDmCamera, setActiveMapId]);
+
+  // Combat handlers
+  const handleStartInitiative = useCallback(() => {
+    if (!activeMapId) return;
     if (combatEntries.length === 0) {
       // Auto-import ONLY tokens of the currently active map (no cross-map leakage)
       const factionFromToken = (t: TokenData): CombatFaction =>
@@ -402,6 +413,7 @@ export const MapViewer = () => {
         .map(t => ({
           id: `combat-${t.id}`,
           tokenId: t.id,
+          mapId: activeMapId,
           name: t.name,
           initiative: t.initiative,
           faction: factionFromToken(t),
@@ -414,7 +426,7 @@ export const MapViewer = () => {
     } else {
       updateCombat({ activeIndex: 0, isActive: true, round: 1 });
     }
-    
+
     log('combat:init', { mapId: activeMapId, participants: combatEntries.length || tokens.filter(t => t.status === 'active').length });
     toast.success('¡Combate iniciado!');
   }, [activeMapId, combatEntries.length, tokens, updateCombat]);
@@ -426,24 +438,30 @@ export const MapViewer = () => {
       activeIndex: next,
       round: next === 0 ? cur.round + 1 : cur.round,
     }));
-    const entry = combatEntries[next];
+    const entry = combatEntries[next] as CombatEntry;
     if (entry) {
       toast.info(`Turno de ${entry.name}`);
-      // Auto-select the active token so Player View centers on it (if syncSelection is on)
-      // and the DM also sees its selection halo.
-      if (entry.tokenId) {
+      // If the next combatant lives on a different map, follow them.
+      if (entry.mapId && entry.mapId !== activeMapId) {
+        jumpToCombatantMap(entry);
+      } else if (entry.tokenId) {
+        // Auto-select the active token so Player View centers on it (if syncSelection is on)
         setSelectedToken(entry.tokenId);
       }
     }
-  }, [combatEntries, activeInitiativeIndex, updateCombat]);
+  }, [combatEntries, activeInitiativeIndex, activeMapId, updateCombat, jumpToCombatantMap]);
 
   const handlePrevTurn = useCallback(() => {
     if (combatEntries.length === 0) return;
     const next = (activeInitiativeIndex - 1 + combatEntries.length) % combatEntries.length;
     setActiveInitiativeIndex(next);
-    const entry = combatEntries[next];
-    if (entry?.tokenId) setSelectedToken(entry.tokenId);
-  }, [combatEntries, activeInitiativeIndex, setActiveInitiativeIndex]);
+    const entry = combatEntries[next] as CombatEntry;
+    if (entry?.mapId && entry.mapId !== activeMapId) {
+      jumpToCombatantMap(entry);
+    } else if (entry?.tokenId) {
+      setSelectedToken(entry.tokenId);
+    }
+  }, [combatEntries, activeInitiativeIndex, activeMapId, setActiveInitiativeIndex, jumpToCombatantMap]);
 
   const handleEndInitiative = useCallback(() => {
     updateCombat({ isActive: false, activeIndex: 0, round: 1 });
@@ -464,6 +482,7 @@ export const MapViewer = () => {
       additions.push({
         id: `combat-${t.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         tokenId: t.id,
+        mapId: activeMapId,
         name: t.name,
         initiative: t.initiative,
         faction: factionFromToken(t),
@@ -474,8 +493,20 @@ export const MapViewer = () => {
       return;
     }
     setCombatEntries(prev => [...prev, ...additions]);
-    toast.success(`${additions.length} combatiente(s) añadido(s)`);
-  }, [combatEntries, tokens, setCombatEntries]);
+    toast.success(`${additions.length} combatiente(s) añadido(s) desde "${activeMap?.name ?? 'mapa actual'}"`);
+  }, [activeMap?.name, activeMapId, combatEntries, tokens, setCombatEntries]);
+
+  // Handler bound to "Ir al combatiente" button in tracker: switch map and center on token.
+  const handleGoToCombatant = useCallback((entry: CombatEntry) => {
+    if (!entry.mapId) {
+      toast.info('Este combatiente no está vinculado a ningún mapa');
+      return;
+    }
+    if (entry.mapId !== activeMapId) {
+      jumpToCombatantMap(entry);
+    }
+    if (entry.tokenId) setSelectedToken(entry.tokenId);
+  }, [activeMapId, jumpToCombatantMap]);
 
   // Get the currently active initiative token id (for halo on map)
   const activeInitiativeTokenId = isInitiativeActive && combatEntries.length > 0
