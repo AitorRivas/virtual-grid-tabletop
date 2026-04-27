@@ -237,6 +237,8 @@ export const useGameState = () => {
     dmSelectedTokenId: state.dmSelectedTokenId,
     playerCameras: state.playerCameras,
     dmCameras: state.dmCameras,
+    globalCombat: state.globalCombat,
+    updateGlobalCombat,
     isLoaded,
     setActiveMapId,
     addMap,
