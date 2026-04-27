@@ -361,24 +361,34 @@ const PlayerView = () => {
   }), [showGrid, gridSize, gridOffsetX, gridOffsetY, mapDimensions]);
 
   const initiativeFeed = useMemo(() => {
-    const combat = activeMap?.combat;
+    const combat = globalCombat;
     if (!combat?.isActive || combat.entries.length === 0) return null;
 
     const count = combat.entries.length;
     const activeIndex = ((combat.activeIndex % count) + count) % count;
-    const getName = (index: number) => {
+    // For tokens that live in another map, fall back to entry name (token isn't on this view).
+    const allTokensById = new Map<string, { name: string; mapId: string }>();
+    for (const m of maps) for (const t of m.tokens) allTokensById.set(t.id, { name: t.name, mapId: m.id });
+    const getEntryInfo = (index: number) => {
       const entry = combat.entries[index];
-      const token = entry?.tokenId ? tokens.find((t) => t.id === entry.tokenId) : null;
-      return token?.name || entry?.name || 'Desconocido';
+      const tok = entry?.tokenId ? allTokensById.get(entry.tokenId) : null;
+      const mapName = entry?.mapId ? maps.find((m) => m.id === entry.mapId)?.name ?? null : null;
+      return {
+        name: tok?.name || entry?.name || 'Desconocido',
+        mapName,
+        mapId: entry?.mapId ?? null,
+      };
     };
 
+    const current = getEntryInfo(activeIndex);
     return {
-      previous: count > 1 ? getName((activeIndex - 1 + count) % count) : null,
-      current: getName(activeIndex),
-      next: count > 1 ? getName((activeIndex + 1) % count) : null,
+      previous: count > 1 ? getEntryInfo((activeIndex - 1 + count) % count) : null,
+      current,
+      next: count > 1 ? getEntryInfo((activeIndex + 1) % count) : null,
       round: combat.round,
+      currentOnOtherMap: !!current.mapId && !!activeMap?.id && current.mapId !== activeMap.id,
     };
-  }, [activeMap?.combat, tokens]);
+  }, [globalCombat, maps, activeMap?.id]);
 
   const renderInitiativeFeed = () => {
     if (!initiativeFeed) return null;
