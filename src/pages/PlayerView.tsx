@@ -18,6 +18,7 @@ import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { GridConfig } from '@/lib/gridEngine/types';
 import { Maximize, Minimize } from 'lucide-react';
 import { log, warn } from '@/lib/debug';
+import { cn } from '@/lib/utils';
 
 interface LoadingState {
   mapReady: boolean;
