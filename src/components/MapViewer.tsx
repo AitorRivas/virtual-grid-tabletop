@@ -291,14 +291,16 @@ export const MapViewer = () => {
     setFogReadyMapId(fogEnabled ? null : activeMapId);
   }, [activeMapId, fogEnabled]);
 
+  // Cleanup global combat: drop entries whose token no longer exists in ANY map.
   useEffect(() => {
-    if (!activeMapId) return;
-    const visibleTokenIds = new Set(tokens.map((token) => token.id));
-    const cleanedEntries = combatEntries.filter((entry) => !entry.tokenId || visibleTokenIds.has(entry.tokenId));
+    if (combatEntries.length === 0) return;
+    const allTokenIds = new Set<string>();
+    for (const m of maps) for (const t of m.tokens) allTokenIds.add(t.id);
+    const cleanedEntries = combatEntries.filter((entry) => !entry.tokenId || allTokenIds.has(entry.tokenId));
     if (cleanedEntries.length === combatEntries.length) return;
 
     updateCombat((cur) => {
-      const nextEntries = cur.entries.filter((entry) => !entry.tokenId || visibleTokenIds.has(entry.tokenId));
+      const nextEntries = cur.entries.filter((entry) => !entry.tokenId || allTokenIds.has(entry.tokenId));
       const nextActiveIndex = nextEntries.length === 0 ? 0 : Math.min(cur.activeIndex, nextEntries.length - 1);
       return {
         entries: nextEntries,
@@ -306,8 +308,8 @@ export const MapViewer = () => {
         isActive: cur.isActive && nextEntries.length > 0,
       };
     });
-    log('combat:cleanup', { mapId: activeMapId, removed: combatEntries.length - cleanedEntries.length });
-  }, [activeMapId, combatEntries, tokens, updateCombat]);
+    log('combat:cleanup', { removed: combatEntries.length - cleanedEntries.length });
+  }, [maps, combatEntries, updateCombat]);
 
   // Auto-create first map
   useEffect(() => {
