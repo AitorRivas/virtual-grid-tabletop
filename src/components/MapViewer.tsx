@@ -620,7 +620,7 @@ export const MapViewer = () => {
       });
     });
     return () => { cancelled = true; };
-  }, [activeMapId, transformReadyMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras]);
+  }, [activeMapId, transformReadyMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras, clampCameraToViewport]);
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
