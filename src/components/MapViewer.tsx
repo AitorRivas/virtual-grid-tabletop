@@ -383,9 +383,6 @@ export const MapViewer = () => {
     setTokens(sanitizedTokens);
   }, [activeMapId, tokens, setTokens]);
 
-  // Combat handlers
-  const handleStartInitiative = useCallback(() => {
-    if (!activeMapId) return;
   // Helper: jump activeMapId to the map of the given entry (and persist DM camera before).
   const jumpToCombatantMap = useCallback((entry: CombatEntry | undefined) => {
     if (!entry?.mapId) return;
@@ -393,6 +390,10 @@ export const MapViewer = () => {
     persistCurrentDmCamera(activeMapId);
     setActiveMapId(entry.mapId);
   }, [activeMapId, persistCurrentDmCamera, setActiveMapId]);
+
+  // Combat handlers
+  const handleStartInitiative = useCallback(() => {
+    if (!activeMapId) return;
 
   // Combat handlers
   const handleStartInitiative = useCallback(() => {
