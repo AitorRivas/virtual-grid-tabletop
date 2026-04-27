@@ -111,6 +111,7 @@ export const GMSidebar = ({
   onPrevTurn,
   onEndInitiative,
   onAddFromMapToCombat,
+  onGoToCombatant,
   isInitiativeActive,
   scenes,
   activeSceneId,
