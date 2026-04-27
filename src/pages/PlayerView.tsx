@@ -393,6 +393,28 @@ const PlayerView = () => {
   const renderInitiativeFeed = () => {
     if (!initiativeFeed) return null;
 
+    const renderRow = (
+      label: string,
+      info: { name: string; mapName: string | null } | null,
+      tone: 'previous' | 'next',
+    ) => {
+      if (!info) return null;
+      const toneClass = tone === 'previous'
+        ? 'text-muted-foreground'
+        : 'bg-secondary/70 text-secondary-foreground';
+      return (
+        <div className={cn('flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm', toneClass)}>
+          <span className="text-xs uppercase text-muted-foreground">{label}</span>
+          <div className="flex flex-col items-end min-w-0">
+            <span className="truncate font-medium">{info.name}</span>
+            {info.mapName && (
+              <span className="text-[10px] text-muted-foreground truncate">en {info.mapName}</span>
+            )}
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div className="fixed left-4 top-4 z-40 w-72 max-w-[calc(100vw-2rem)] animate-fade-in rounded-lg border border-border bg-card/90 p-3 text-card-foreground shadow-2xl backdrop-blur-md">
         <div className="mb-2 flex items-center justify-between gap-3 border-b border-border/70 pb-2">
@@ -400,22 +422,20 @@ const PlayerView = () => {
           <span className="rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">Ronda {initiativeFeed.round}</span>
         </div>
         <div className="space-y-1.5">
-          {initiativeFeed.previous && (
-            <div className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm text-muted-foreground">
-              <span className="text-xs uppercase">Anterior</span>
-              <span className="truncate font-medium">{initiativeFeed.previous}</span>
-            </div>
-          )}
+          {renderRow('Anterior', initiativeFeed.previous, 'previous')}
           <div className="rounded-md border border-primary/50 bg-primary/15 px-2.5 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.18)]">
             <span className="block text-xs font-semibold uppercase text-primary">Turno Actual</span>
-            <span className="block truncate text-lg font-bold leading-tight text-card-foreground">{initiativeFeed.current}</span>
+            <span className="block truncate text-lg font-bold leading-tight text-card-foreground">{initiativeFeed.current.name}</span>
+            {initiativeFeed.current.mapName && (
+              <span className={cn(
+                'mt-0.5 block text-[11px]',
+                initiativeFeed.currentOnOtherMap ? 'text-amber-400 font-medium' : 'text-muted-foreground',
+              )}>
+                {initiativeFeed.currentOnOtherMap ? '↪ en ' : 'en '}{initiativeFeed.current.mapName}
+              </span>
+            )}
           </div>
-          {initiativeFeed.next && (
-            <div className="flex items-center justify-between gap-3 rounded-md bg-secondary/70 px-2 py-1.5 text-sm text-secondary-foreground">
-              <span className="text-xs uppercase text-muted-foreground">Siguiente</span>
-              <span className="truncate font-semibold">{initiativeFeed.next}</span>
-            </div>
-          )}
+          {renderRow('Siguiente', initiativeFeed.next, 'next')}
         </div>
       </div>
     );
