@@ -1355,7 +1355,7 @@ export const MapViewer = () => {
         onAddCharacterToMap={handleAddCharacterToMap}
         onAddMonsterToMap={handleAddMonsterToMap}
         onOpenPlayerView={openPlayerWindow}
-        combatEntries={combatEntries}
+        combatEntries={combatEntries as CombatEntry[]}
         onCombatEntriesChange={setCombatEntries}
         activeInitiativeIndex={activeInitiativeIndex}
         onActiveInitiativeIndexChange={setActiveInitiativeIndex}
@@ -1364,6 +1364,7 @@ export const MapViewer = () => {
         onPrevTurn={handlePrevTurn}
         onEndInitiative={handleEndInitiative}
         onAddFromMapToCombat={handleAddFromMap}
+        onGoToCombatant={handleGoToCombatant}
         isInitiativeActive={isInitiativeActive}
         scenes={scenes}
         activeSceneId={activeSceneId}
