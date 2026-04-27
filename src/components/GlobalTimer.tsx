@@ -7,7 +7,7 @@
  *   ≥50% normal · <50% soft warning · <20% urgent (subtle pulse) · 0% time-up
  */
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Play, Pause, RotateCcw, Plus, Minus, Hourglass, ChevronDown, ChevronUp } from 'lucide-react';
 import { useGameState } from '@/hooks/useGameState';
 import { Button } from '@/components/ui/button';
@@ -41,13 +41,10 @@ export const GlobalTimer = ({ readOnly = false }: GlobalTimerProps) => {
   // Hide entirely in PlayerView when DM hasn't enabled it.
   if (readOnly && !playerViewConfig.showTimer) return null;
 
-  // Derive live remaining time without writing to state on every frame.
-  const liveRemaining = useMemo(() => {
-    if (timer.active && timer.endsAt != null) {
-      return Math.max(0, timer.endsAt - Date.now());
-    }
-    return timer.remainingMs;
-  }, [timer.active, timer.endsAt, timer.remainingMs]);
+  // Derive live remaining time on every repaint without writing to state on every frame.
+  const liveRemaining = timer.active && timer.endsAt != null
+    ? Math.max(0, timer.endsAt - Date.now())
+    : timer.remainingMs;
 
   // rAF loop while active, just to repaint.
   useEffect(() => {
