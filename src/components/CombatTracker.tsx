@@ -53,6 +53,8 @@ export const CombatTracker = ({
   activeIndex,
   isActive,
   tokens,
+  maps = [],
+  activeMapId = null,
   onEntriesChange,
   onActiveIndexChange,
   onStart,
@@ -60,6 +62,7 @@ export const CombatTracker = ({
   onNext,
   onPrev,
   onAddFromMap,
+  onGoToCombatant,
   embedded = false,
 }: CombatTrackerProps) => {
   const [newName, setNewName] = useState('');
