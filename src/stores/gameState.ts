@@ -165,6 +165,14 @@ const defaultPlayerViewConfig: PlayerViewConfig = {
   syncSelection: false,
   showEnemyHpBars: false,
   hideUndeadHpBars: false,
+  showTimer: false,
+};
+
+const defaultTimer: TimerState = {
+  active: false,
+  durationMs: 60_000,
+  endsAt: null,
+  remainingMs: 60_000,
 };
 
 const defaultDmCamera: DmCameraState = {
