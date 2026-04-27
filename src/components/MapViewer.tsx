@@ -394,10 +394,6 @@ export const MapViewer = () => {
   // Combat handlers
   const handleStartInitiative = useCallback(() => {
     if (!activeMapId) return;
-
-  // Combat handlers
-  const handleStartInitiative = useCallback(() => {
-    if (!activeMapId) return;
     if (combatEntries.length === 0) {
       // Auto-import ONLY tokens of the currently active map (no cross-map leakage)
       const factionFromToken = (t: TokenData): CombatFaction =>
