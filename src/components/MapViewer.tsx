@@ -1110,9 +1110,23 @@ export const MapViewer = () => {
         zoomFunctionsRef.current = ref;
         broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
+      onZoomStop={(ref) => {
+        const t = clampCameraToViewport(ref.state.positionX, ref.state.positionY, ref.state.scale);
+        if (t.positionX !== ref.state.positionX || t.positionY !== ref.state.positionY) {
+          ref.setTransform(t.positionX, t.positionY, t.scale, 120);
+          broadcastCamera(t.positionX, t.positionY, t.scale);
+        }
+      }}
       onPanning={(ref) => {
         zoomFunctionsRef.current = ref;
         broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
+      }}
+      onPanningStop={(ref) => {
+        const t = clampCameraToViewport(ref.state.positionX, ref.state.positionY, ref.state.scale);
+        if (t.positionX !== ref.state.positionX || t.positionY !== ref.state.positionY) {
+          ref.setTransform(t.positionX, t.positionY, t.scale, 200);
+          broadcastCamera(t.positionX, t.positionY, t.scale);
+        }
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
