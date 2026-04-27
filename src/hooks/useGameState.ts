@@ -147,6 +147,14 @@ export const useGameState = () => {
     ));
   }, []);
 
+  const updateGlobalCombat = useCallback((updater: Partial<GlobalCombatState> | ((prev: GlobalCombatState) => Partial<GlobalCombatState>)) => {
+    gameStateStore.setState((prev) => {
+      const cur = prev.globalCombat;
+      const patch = typeof updater === 'function' ? updater(cur) : updater;
+      return { ...prev, globalCombat: { ...cur, ...patch } };
+    });
+  }, []);
+
   const setPlayerViewConfig = useCallback((updates: Partial<PlayerViewConfig>) => {
     gameStateStore.setState((prev) => ({
       ...prev,
