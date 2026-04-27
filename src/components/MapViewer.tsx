@@ -558,6 +558,33 @@ export const MapViewer = () => {
     };
   }, [activeMapId, persistCurrentDmCamera]);
 
+  // Shared clamp helper: keeps the map within the viewport so panning/zooming can't push it off-screen.
+  const clampCameraToViewport = useCallback((positionX: number, positionY: number, scale: number) => {
+    const container = mapViewportRef.current;
+    const viewportWidth = container?.clientWidth ?? 0;
+    const viewportHeight = container?.clientHeight ?? 0;
+    const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const scaledW = mapDimensions.width * safeScale;
+    const scaledH = mapDimensions.height * safeScale;
+
+    let nextX = Number.isFinite(positionX) ? positionX : 0;
+    let nextY = Number.isFinite(positionY) ? positionY : 0;
+
+    if (viewportWidth > 0 && mapDimensions.width > 0) {
+      nextX = scaledW <= viewportWidth
+        ? (viewportWidth - scaledW) / 2
+        : Math.min(0, Math.max(viewportWidth - scaledW, nextX));
+    }
+
+    if (viewportHeight > 0 && mapDimensions.height > 0) {
+      nextY = scaledH <= viewportHeight
+        ? (viewportHeight - scaledH) / 2
+        : Math.min(0, Math.max(viewportHeight - scaledH, nextY));
+    }
+
+    return { positionX: nextX, positionY: nextY, scale: safeScale };
+  }, [mapDimensions.width, mapDimensions.height]);
+
   // Restore DM camera once the image is decoded and TransformWrapper api is ready.
   useLayoutEffect(() => {
     if (!activeMapId) return;
@@ -568,32 +595,8 @@ export const MapViewer = () => {
     if (mapDimensions.width === 0 || mapDimensions.height === 0) return;
 
     const api = zoomFunctionsRef.current;
-    const container = mapViewportRef.current;
     const saved = dmCameras[activeMapId];
-    const clampCamera = (positionX: number, positionY: number, scale: number) => {
-      const viewportWidth = container?.clientWidth ?? 0;
-      const viewportHeight = container?.clientHeight ?? 0;
-      const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-      const scaledW = mapDimensions.width * safeScale;
-      const scaledH = mapDimensions.height * safeScale;
-
-      let nextX = Number.isFinite(positionX) ? positionX : 0;
-      let nextY = Number.isFinite(positionY) ? positionY : 0;
-
-      if (viewportWidth > 0) {
-        nextX = scaledW <= viewportWidth
-          ? (viewportWidth - scaledW) / 2
-          : Math.min(0, Math.max(viewportWidth - scaledW, nextX));
-      }
-
-      if (viewportHeight > 0) {
-        nextY = scaledH <= viewportHeight
-          ? (viewportHeight - scaledH) / 2
-          : Math.min(0, Math.max(viewportHeight - scaledH, nextY));
-      }
-
-      return { positionX: nextX, positionY: nextY, scale: safeScale };
-    };
+    const clampCamera = clampCameraToViewport;
 
     const target = saved
       ? clampCamera(saved.positionX, saved.positionY, saved.scale)
@@ -617,7 +620,7 @@ export const MapViewer = () => {
       });
     });
     return () => { cancelled = true; };
-  }, [activeMapId, transformReadyMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras]);
+  }, [activeMapId, transformReadyMapId, imageReadyMapId, mapDimensions.width, mapDimensions.height, dmCameras, clampCameraToViewport]);
 
   useEffect(() => () => {
     if (cameraRafRef.current !== null) cancelAnimationFrame(cameraRafRef.current);
@@ -1107,9 +1110,23 @@ export const MapViewer = () => {
         zoomFunctionsRef.current = ref;
         broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
       }}
+      onZoomStop={(ref) => {
+        const t = clampCameraToViewport(ref.state.positionX, ref.state.positionY, ref.state.scale);
+        if (t.positionX !== ref.state.positionX || t.positionY !== ref.state.positionY) {
+          ref.setTransform(t.positionX, t.positionY, t.scale, 120);
+          broadcastCamera(t.positionX, t.positionY, t.scale);
+        }
+      }}
       onPanning={(ref) => {
         zoomFunctionsRef.current = ref;
         broadcastCamera(ref.state.positionX, ref.state.positionY, ref.state.scale);
+      }}
+      onPanningStop={(ref) => {
+        const t = clampCameraToViewport(ref.state.positionX, ref.state.positionY, ref.state.scale);
+        if (t.positionX !== ref.state.positionX || t.positionY !== ref.state.positionY) {
+          ref.setTransform(t.positionX, t.positionY, t.scale, 200);
+          broadcastCamera(t.positionX, t.positionY, t.scale);
+        }
       }}
       onInit={(ref) => {
         zoomFunctionsRef.current = ref;
