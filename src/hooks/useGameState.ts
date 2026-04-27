@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored, PlayerCameraSnapshot } from '@/stores/gameState';
+import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, GlobalCombatState, CombatEntryStored, PlayerCameraSnapshot } from '@/stores/gameState';
 
-export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, CombatEntryStored, PlayerCameraSnapshot };
+export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, GlobalCombatState, CombatEntryStored, PlayerCameraSnapshot };
 
 type MapUpdate =
   | Partial<MapData>
@@ -147,6 +147,14 @@ export const useGameState = () => {
     ));
   }, []);
 
+  const updateGlobalCombat = useCallback((updater: Partial<GlobalCombatState> | ((prev: GlobalCombatState) => Partial<GlobalCombatState>)) => {
+    gameStateStore.setState((prev) => {
+      const cur = prev.globalCombat;
+      const patch = typeof updater === 'function' ? updater(cur) : updater;
+      return { ...prev, globalCombat: { ...cur, ...patch } };
+    });
+  }, []);
+
   const setPlayerViewConfig = useCallback((updates: Partial<PlayerViewConfig>) => {
     gameStateStore.setState((prev) => ({
       ...prev,
@@ -229,6 +237,8 @@ export const useGameState = () => {
     dmSelectedTokenId: state.dmSelectedTokenId,
     playerCameras: state.playerCameras,
     dmCameras: state.dmCameras,
+    globalCombat: state.globalCombat,
+    updateGlobalCombat,
     isLoaded,
     setActiveMapId,
     addMap,

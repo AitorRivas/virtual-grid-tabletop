@@ -12,12 +12,23 @@ const BROADCAST_CHANNEL = 'vtt-gamestate-sync';
 export interface CombatEntryStored {
   id: string;
   tokenId?: string;
+  /** Map this combatant belongs to. Required in the global model so we know where each token lives. */
+  mapId?: string | null;
   name: string;
   initiative: number;
   faction: 'pj' | 'enemy' | 'npc';
 }
 
+/** @deprecated Legacy per-map combat state. Migrated to GlobalCombatState. Kept only for type compatibility while reading old payloads. */
 export interface MapCombatState {
+  entries: CombatEntryStored[];
+  activeIndex: number;
+  isActive: boolean;
+  round: number;
+}
+
+/** Single global combat shared across all maps in a session. */
+export interface GlobalCombatState {
   entries: CombatEntryStored[];
   activeIndex: number;
   isActive: boolean;
@@ -115,7 +126,16 @@ export interface GameState {
   playerCameras: Record<string, PlayerCameraSnapshot>;
   /** Per-map saved DM camera so switching maps restores the previous DM viewport (mirrors playerCameras). */
   dmCameras: Record<string, PlayerCameraSnapshot>;
+  /** Single global combat state. Independent of activeMapId — combatants reference their own map via entry.mapId. */
+  globalCombat: GlobalCombatState;
 }
+
+const defaultGlobalCombat: GlobalCombatState = {
+  entries: [],
+  activeIndex: 0,
+  isActive: false,
+  round: 1,
+};
 
 const defaultNarrativeLight: NarrativeLightData = {
   enabled: false,
@@ -156,15 +176,72 @@ const defaultState: GameState = {
   dmSelectedTokenId: null,
   playerCameras: {},
   dmCameras: {},
+  globalCombat: { ...defaultGlobalCombat },
 };
+
+/**
+ * Build a single global combat from per-map combats (legacy migration).
+ * Strategy: merge ALL entries across maps, attach the source mapId to each entry,
+ * sort by initiative desc, and keep `isActive` if any source combat was active.
+ * The current activeIndex resets to 0 because per-map indices are no longer comparable.
+ */
+function buildGlobalCombatFromMaps(maps: any[]): GlobalCombatState {
+  if (!Array.isArray(maps) || maps.length === 0) return { ...defaultGlobalCombat };
+  const merged: CombatEntryStored[] = [];
+  let anyActive = false;
+  let maxRound = 1;
+  for (const m of maps) {
+    const c = m?.combat;
+    if (!c || !Array.isArray(c.entries)) continue;
+    if (c.isActive) anyActive = true;
+    if (typeof c.round === 'number' && c.round > maxRound) maxRound = c.round;
+    for (const e of c.entries) {
+      if (!e) continue;
+      // Avoid token duplicates across maps (same tokenId in two maps is unlikely, but guard).
+      if (e.tokenId && merged.some((x) => x.tokenId === e.tokenId)) continue;
+      merged.push({
+        id: e.id ?? `combat-${m.id}-${Math.random().toString(36).slice(2, 8)}`,
+        tokenId: e.tokenId,
+        mapId: e.mapId ?? m.id ?? null,
+        name: e.name ?? 'Combatiente',
+        initiative: typeof e.initiative === 'number' ? e.initiative : 0,
+        faction: (e.faction as any) ?? 'npc',
+      });
+    }
+  }
+  merged.sort((a, b) => b.initiative - a.initiative);
+  return {
+    entries: merged,
+    activeIndex: 0,
+    isActive: anyActive && merged.length > 0,
+    round: maxRound,
+  };
+}
 
 // Migrate old session formats
 function migrateState(raw: any): GameState {
   if (raw && Array.isArray(raw.maps)) {
+    // Strip legacy per-map combat (keeps storage clean) and lift it to a single global combat.
+    const cleanedMaps = raw.maps.map((m: any) => {
+      if (m && 'combat' in m) {
+        const { combat, ...rest } = m;
+        return rest;
+      }
+      return m;
+    });
+    const globalCombat: GlobalCombatState = raw.globalCombat
+      ? {
+          entries: Array.isArray(raw.globalCombat.entries) ? raw.globalCombat.entries : [],
+          activeIndex: Number(raw.globalCombat.activeIndex ?? 0),
+          isActive: !!raw.globalCombat.isActive,
+          round: Number(raw.globalCombat.round ?? 1),
+        }
+      : buildGlobalCombatFromMaps(raw.maps);
+
     return {
       revision: Number(raw.revision ?? 0),
       updatedAt: Number(raw.updatedAt ?? 0),
-      maps: raw.maps,
+      maps: cleanedMaps,
       activeMapId: raw.activeMapId ?? null,
       scenes: raw.scenes ?? [],
       activeSceneId: raw.activeSceneId ?? null,
@@ -176,6 +253,7 @@ function migrateState(raw: any): GameState {
       dmSelectedTokenId: raw.dmSelectedTokenId ?? null,
       playerCameras: raw.playerCameras ?? {},
       dmCameras: raw.dmCameras ?? {},
+      globalCombat,
     };
   }
 
@@ -212,6 +290,7 @@ function migrateState(raw: any): GameState {
       dmSelectedTokenId: null,
       playerCameras: {},
       dmCameras: {},
+      globalCombat: { ...defaultGlobalCombat },
     };
   }
 
