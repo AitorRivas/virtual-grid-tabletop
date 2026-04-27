@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Swords, Skull, Shield, User, Users, X } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronLeft, Swords, Skull, Shield, User, Users, X, MapPin, Crosshair } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { TokenData } from './MapViewer';
+import type { MapData } from '@/hooks/useGameState';
 
 export type CombatFaction = 'pj' | 'enemy' | 'npc';
 
