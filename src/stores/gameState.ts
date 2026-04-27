@@ -126,7 +126,16 @@ export interface GameState {
   playerCameras: Record<string, PlayerCameraSnapshot>;
   /** Per-map saved DM camera so switching maps restores the previous DM viewport (mirrors playerCameras). */
   dmCameras: Record<string, PlayerCameraSnapshot>;
+  /** Single global combat state. Independent of activeMapId — combatants reference their own map via entry.mapId. */
+  globalCombat: GlobalCombatState;
 }
+
+const defaultGlobalCombat: GlobalCombatState = {
+  entries: [],
+  activeIndex: 0,
+  isActive: false,
+  round: 1,
+};
 
 const defaultNarrativeLight: NarrativeLightData = {
   enabled: false,
