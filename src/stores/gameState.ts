@@ -255,14 +255,6 @@ function migrateState(raw: any): GameState {
       playerCameras: raw.playerCameras ?? {},
       dmCameras: raw.dmCameras ?? {},
       globalCombat,
-      timer: raw.timer
-        ? {
-            active: !!raw.timer.active,
-            durationMs: Number(raw.timer.durationMs ?? defaultTimer.durationMs),
-            endsAt: raw.timer.endsAt != null ? Number(raw.timer.endsAt) : null,
-            remainingMs: Number(raw.timer.remainingMs ?? raw.timer.durationMs ?? defaultTimer.remainingMs),
-          }
-        : { ...defaultTimer },
     };
   }
 
@@ -300,7 +292,6 @@ function migrateState(raw: any): GameState {
       playerCameras: {},
       dmCameras: {},
       globalCombat: { ...defaultGlobalCombat },
-      timer: { ...defaultTimer },
     };
   }
 
