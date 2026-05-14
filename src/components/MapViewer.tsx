@@ -11,7 +11,6 @@ import { NarrativeLight } from './NarrativeLight';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
 import { GMSidebar } from './GMSidebar';
-import { GMSidebar } from './GMSidebar';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
