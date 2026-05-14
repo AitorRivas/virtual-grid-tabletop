@@ -82,8 +82,6 @@ export interface PlayerViewConfig {
   showEnemyHpBars: boolean;
   /** When true, HP bars of undead-type creatures are hidden (overrides showEnemyHpBars for that subset). */
   hideUndeadHpBars: boolean;
-  /** When true, the global timer is also rendered in Player View. */
-  showTimer: boolean;
 }
 
 /** Global decision timer shown in the top bar. Synced across windows. */
