@@ -84,17 +84,6 @@ export interface PlayerViewConfig {
   hideUndeadHpBars: boolean;
 }
 
-/** Global decision timer shown in the top bar. Synced across windows. */
-export interface TimerState {
-  /** True while counting down. */
-  active: boolean;
-  /** Configured total duration in ms (used by Reset and presets). */
-  durationMs: number;
-  /** Epoch ms when the current run will hit zero. Only meaningful while active. */
-  endsAt: number | null;
-  /** Cached remaining ms when paused (so Resume continues from here). */
-  remainingMs: number;
-}
 
 export interface DmCameraState {
   /** Position from react-zoom-pan-pinch (positionX in screen px applied to content) */
@@ -140,8 +129,6 @@ export interface GameState {
   dmCameras: Record<string, PlayerCameraSnapshot>;
   /** Single global combat state. Independent of activeMapId — combatants reference their own map via entry.mapId. */
   globalCombat: GlobalCombatState;
-  /** Global decision timer shared across windows. */
-  timer: TimerState;
 }
 
 const defaultGlobalCombat: GlobalCombatState = {
@@ -165,14 +152,6 @@ const defaultPlayerViewConfig: PlayerViewConfig = {
   syncSelection: false,
   showEnemyHpBars: false,
   hideUndeadHpBars: false,
-  showTimer: false,
-};
-
-const defaultTimer: TimerState = {
-  active: false,
-  durationMs: 60_000,
-  endsAt: null,
-  remainingMs: 60_000,
 };
 
 const defaultDmCamera: DmCameraState = {
@@ -199,7 +178,6 @@ const defaultState: GameState = {
   playerCameras: {},
   dmCameras: {},
   globalCombat: { ...defaultGlobalCombat },
-  timer: { ...defaultTimer },
 };
 
 /**
