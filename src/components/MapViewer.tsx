@@ -11,7 +11,7 @@ import { NarrativeLight } from './NarrativeLight';
 import { CellStateOverlay } from './CellStateOverlay';
 import { GridCalibrator } from './GridCalibrator';
 import { GMSidebar } from './GMSidebar';
-import { GlobalTimer } from './GlobalTimer';
+import { GMSidebar } from './GMSidebar';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -1595,7 +1595,7 @@ export const MapViewer = () => {
 
       {/* Global timer (top center) */}
       <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-        <GlobalTimer />
+        
       </div>
 
       {/* Copyright */}

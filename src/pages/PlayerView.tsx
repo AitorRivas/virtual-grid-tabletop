@@ -6,7 +6,7 @@ import { FogOfWar } from '@/components/FogOfWar';
 import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { GlobalSheetOpener } from '@/components/GlobalSheetOpener';
-import { GlobalTimer } from '@/components/GlobalTimer';
+
 import {
   ContextMenu,
   ContextMenuContent,
@@ -495,7 +495,7 @@ const PlayerView = () => {
 
       {/* Global timer (read-only, only when DM enabled it in PlayerViewConfig) */}
       <div className="fixed top-2 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
-        <GlobalTimer readOnly />
+        
       </div>
 
       <div className="h-full w-full">
