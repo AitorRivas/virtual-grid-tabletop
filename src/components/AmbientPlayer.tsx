@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useDraggable } from '@/hooks/useDraggable';
 import { useAudioLibrary, isSupportedAudioFile, type LibraryAudioMeta } from '@/hooks/useAudioLibrary';
 import { log, error as logError } from '@/lib/debug';
+import { SeamlessAudioEngine } from '@/lib/audio/seamlessEngine';
 
 interface Track {
   id: string;
@@ -63,8 +64,20 @@ export const AmbientPlayer = () => {
   const { musicItems, ambientItems, addToLibrary, removeFromLibrary, loadAudioData } = useAudioLibrary();
 
   const audioRef1 = useRef<HTMLAudioElement | null>(null);
-  const audioRef2 = useRef<HTMLAudioElement | null>(null);
+  // Channel 2 (ambient) uses Web Audio API for gapless looping.
+  const engineRef2 = useRef<SeamlessAudioEngine | null>(null);
+  const getEngine2 = useCallback(() => {
+    if (!engineRef2.current) engineRef2.current = new SeamlessAudioEngine();
+    return engineRef2.current;
+  }, []);
+  const channel2Ref = useRef<AudioChannel | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    channel2Ref.current = channel2;
+  }, [channel2]);
+
+  useEffect(() => () => engineRef2.current?.dispose(), []);
   
   // Calculate safe position when expanding
   const getDefaultPosition = useCallback(() => {
@@ -97,38 +110,52 @@ export const AmbientPlayer = () => {
     }
   }, [channel1.isLooping]);
 
-  // Channel 2 audio effects
+  // Channel 2 (engine) audio effects
   useEffect(() => {
-    if (audioRef2.current) {
-      audioRef2.current.volume = channel2.isMuted ? 0 : channel2.volume / 100;
-    }
+    const e = engineRef2.current;
+    if (!e) return;
+    e.setVolume(channel2.volume / 100);
+    e.setMuted(channel2.isMuted);
   }, [channel2.volume, channel2.isMuted]);
 
   useEffect(() => {
-    if (audioRef2.current) {
-      audioRef2.current.loop = channel2.isLooping;
-    }
+    engineRef2.current?.setLoop(channel2.isLooping);
   }, [channel2.isLooping]);
 
   // Listen for scene audio events
   useEffect(() => {
     const handleSceneAudio = (e: Event) => {
       const { channel, name, data } = (e as CustomEvent).detail as { channel: 1 | 2; name: string; data: string };
-      const audioRef = channel === 1 ? audioRef1 : audioRef2;
       const setChannel = channel === 1 ? setChannel1 : setChannel2;
 
       const newTrack: Track = { id: `scene-${Date.now()}`, name: name || 'Escena', url: data };
-      
+
       // Add track and play it
       setChannel(prev => {
         const filtered = prev.tracks.filter(t => t.name !== name);
         return { ...prev, tracks: [...filtered, newTrack], currentTrack: newTrack, isPlaying: true };
       });
 
-      if (audioRef.current) {
-        audioRef.current.src = data;
+      if (channel === 1) {
+        if (audioRef1.current) {
+          audioRef1.current.src = data;
+          log('audio:load', { channel, name: newTrack.name, source: 'scene' });
+          audioRef1.current.play().catch((err) => {
+            logError('audio:error', { channel, name: newTrack.name, source: 'scene', error: err instanceof Error ? err.message : String(err) });
+            toast.error(`No se pudo reproducir "${newTrack.name}"`);
+            setChannel(prev => ({ ...prev, isPlaying: false }));
+          });
+        }
+      } else {
+        const eng = getEngine2();
+        const ch = channel2Ref.current;
+        if (ch) {
+          eng.setVolume(ch.volume / 100);
+          eng.setMuted(ch.isMuted);
+          eng.setLoop(ch.isLooping);
+        }
         log('audio:load', { channel, name: newTrack.name, source: 'scene' });
-        audioRef.current.play().catch((err) => {
+        eng.loadAndPlay(data, ch?.isLooping ?? true).catch((err) => {
           logError('audio:error', { channel, name: newTrack.name, source: 'scene', error: err instanceof Error ? err.message : String(err) });
           toast.error(`No se pudo reproducir "${newTrack.name}"`);
           setChannel(prev => ({ ...prev, isPlaying: false }));
@@ -138,7 +165,7 @@ export const AmbientPlayer = () => {
 
     window.addEventListener('scene-play-audio', handleSceneAudio);
     return () => window.removeEventListener('scene-play-audio', handleSceneAudio);
-  }, []);
+  }, [getEngine2]);
 
   // Update current time for channel 1
   useEffect(() => {
@@ -160,24 +187,23 @@ export const AmbientPlayer = () => {
     };
   }, []);
 
-  // Update current time for channel 2
+  // Update current time/duration for channel 2 via rAF (engine driven).
   useEffect(() => {
-    const audio = audioRef2.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => setChannel2(prev => ({ ...prev, currentTime: audio.currentTime }));
-    const handleDurationChange = () => setChannel2(prev => ({ ...prev, duration: audio.duration || 0 }));
-    const handleLoadedMetadata = () => setChannel2(prev => ({ ...prev, duration: audio.duration || 0 }));
-
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('durationchange', handleDurationChange);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('durationchange', handleDurationChange);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    let raf = 0;
+    const tick = () => {
+      const e = engineRef2.current;
+      if (e) {
+        const cur = e.getCurrentTime();
+        const dur = e.getDuration();
+        setChannel2(prev => {
+          if (Math.abs(prev.currentTime - cur) < 0.05 && prev.duration === dur) return prev;
+          return { ...prev, currentTime: cur, duration: dur };
+        });
+      }
+      raf = requestAnimationFrame(tick);
     };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,72 +242,106 @@ export const AmbientPlayer = () => {
   };
 
   const playTrack = (track: Track, channelNum: 1 | 2) => {
-    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
     const channel = channelNum === 1 ? channel1 : channel2;
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
 
     if (channel.currentTrack?.id === track.id && channel.isPlaying) {
-      audioRef.current?.pause();
+      if (channelNum === 1) audioRef1.current?.pause();
+      else engineRef2.current?.pause();
       setChannel(prev => ({ ...prev, isPlaying: false }));
-    } else {
-      if (audioRef.current) {
-        audioRef.current.src = track.url;
-        log('audio:load', { channel: channelNum, name: track.name, source: track.libraryId ? 'library' : 'session' });
-        audioRef.current.play().catch((err) => {
-          logError('audio:error', { channel: channelNum, id: track.id, name: track.name, error: err instanceof Error ? err.message : String(err) });
+      return;
+    }
+
+    if (channelNum === 1) {
+      if (audioRef1.current) {
+        audioRef1.current.src = track.url;
+        log('audio:load', { channel: 1, name: track.name, source: track.libraryId ? 'library' : 'session' });
+        audioRef1.current.play().catch((err) => {
+          logError('audio:error', { channel: 1, id: track.id, name: track.name, error: err instanceof Error ? err.message : String(err) });
           toast.error(`No se pudo reproducir "${track.name}"`);
           setChannel(prev => ({ ...prev, isPlaying: false }));
         });
       }
-      setChannel(prev => ({ ...prev, currentTrack: track, isPlaying: true }));
+    } else {
+      const eng = getEngine2();
+      eng.setVolume(channel.volume / 100);
+      eng.setMuted(channel.isMuted);
+      eng.setLoop(channel.isLooping);
+      log('audio:load', { channel: 2, name: track.name, source: track.libraryId ? 'library' : 'session' });
+      eng.loadAndPlay(track.url, channel.isLooping).catch((err) => {
+        logError('audio:error', { channel: 2, id: track.id, name: track.name, error: err instanceof Error ? err.message : String(err) });
+        toast.error(`No se pudo reproducir "${track.name}"`);
+        setChannel(prev => ({ ...prev, isPlaying: false }));
+      });
     }
+    setChannel(prev => ({ ...prev, currentTrack: track, isPlaying: true }));
   };
 
   const togglePlayPause = (channelNum: 1 | 2) => {
-    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
     const channel = channelNum === 1 ? channel1 : channel2;
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
 
     if (!channel.currentTrack) return;
-    
+
     if (channel.isPlaying) {
-      audioRef.current?.pause();
+      if (channelNum === 1) audioRef1.current?.pause();
+      else engineRef2.current?.pause();
     } else {
       log('audio:load', { channel: channelNum, name: channel.currentTrack.name, source: 'resume' });
-      audioRef.current?.play().catch((err) => {
-        logError('audio:error', { channel: channelNum, name: channel.currentTrack?.name, source: 'resume', error: err instanceof Error ? err.message : String(err) });
-        toast.error(`No se pudo reproducir "${channel.currentTrack?.name ?? 'audio'}"`);
-        setChannel(prev => ({ ...prev, isPlaying: false }));
-      });
+      if (channelNum === 1) {
+        audioRef1.current?.play().catch((err) => {
+          logError('audio:error', { channel: 1, name: channel.currentTrack?.name, source: 'resume', error: err instanceof Error ? err.message : String(err) });
+          toast.error(`No se pudo reproducir "${channel.currentTrack?.name ?? 'audio'}"`);
+          setChannel(prev => ({ ...prev, isPlaying: false }));
+        });
+      } else {
+        try {
+          engineRef2.current?.resume();
+        } catch (err) {
+          logError('audio:error', { channel: 2, name: channel.currentTrack?.name, source: 'resume', error: err instanceof Error ? err.message : String(err) });
+          toast.error(`No se pudo reproducir "${channel.currentTrack?.name ?? 'audio'}"`);
+          setChannel(prev => ({ ...prev, isPlaying: false }));
+          return;
+        }
+      }
     }
     setChannel(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
   };
 
   const stopPlayback = (channelNum: 1 | 2) => {
-    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    if (channelNum === 1) {
+      if (audioRef1.current) {
+        audioRef1.current.pause();
+        audioRef1.current.currentTime = 0;
+      }
+    } else {
+      engineRef2.current?.stop();
     }
-    setChannel(prev => ({ 
-      ...prev, 
-      isPlaying: false, 
-      currentTrack: null, 
-      currentTime: 0, 
-      duration: 0 
+    setChannel(prev => ({
+      ...prev,
+      isPlaying: false,
+      currentTrack: null,
+      currentTime: 0,
+      duration: 0,
     }));
   };
 
   const handleSeek = (value: number[], channelNum: 1 | 2) => {
-    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
     const channel = channelNum === 1 ? channel1 : channel2;
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
 
-    if (audioRef.current && channel.duration > 0) {
-      audioRef.current.currentTime = value[0];
-      setChannel(prev => ({ ...prev, currentTime: value[0] }));
+    if (channelNum === 1) {
+      if (audioRef1.current && channel.duration > 0) {
+        audioRef1.current.currentTime = value[0];
+        setChannel(prev => ({ ...prev, currentTime: value[0] }));
+      }
+    } else {
+      if (channel.duration > 0) {
+        engineRef2.current?.seek(value[0]);
+        setChannel(prev => ({ ...prev, currentTime: value[0] }));
+      }
     }
   };
 
@@ -352,7 +412,6 @@ export const AmbientPlayer = () => {
     const channelNum: 1 | 2 = item.channel === 'ambient' ? 2 : 1;
     setActiveChannel(channelNum);
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
-    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
 
     const audioData = await loadAudioData(item.id);
     if (!audioData) return;
@@ -369,11 +428,27 @@ export const AmbientPlayer = () => {
       const tracks = exists ? prev.tracks : [...prev.tracks, newTrack];
       return { ...prev, tracks, currentTrack: newTrack, isPlaying: true };
     });
-    if (audioRef.current) {
-      audioRef.current.src = audioData;
-      log('audio:load', { channel: channelNum, name: item.name, source: 'library' });
-      audioRef.current.play().catch((err) => {
-        logError('audio:error', { channel: channelNum, id: item.id, name: item.name, source: 'library', error: err instanceof Error ? err.message : String(err) });
+
+    if (channelNum === 1) {
+      if (audioRef1.current) {
+        audioRef1.current.src = audioData;
+        log('audio:load', { channel: 1, name: item.name, source: 'library' });
+        audioRef1.current.play().catch((err) => {
+          logError('audio:error', { channel: 1, id: item.id, name: item.name, source: 'library', error: err instanceof Error ? err.message : String(err) });
+          toast.error(`No se pudo reproducir "${item.name}"`);
+        });
+      }
+    } else {
+      const eng = getEngine2();
+      const ch = channel2Ref.current;
+      if (ch) {
+        eng.setVolume(ch.volume / 100);
+        eng.setMuted(ch.isMuted);
+        eng.setLoop(ch.isLooping);
+      }
+      log('audio:load', { channel: 2, name: item.name, source: 'library' });
+      eng.loadAndPlay(audioData, ch?.isLooping ?? true).catch((err) => {
+        logError('audio:error', { channel: 2, id: item.id, name: item.name, source: 'library', error: err instanceof Error ? err.message : String(err) });
         toast.error(`No se pudo reproducir "${item.name}"`);
       });
     }
@@ -523,15 +598,7 @@ export const AmbientPlayer = () => {
           toast.error('Error al reproducir el audio');
         }}
       />
-      <audio 
-        ref={audioRef2} 
-        onEnded={() => !channel2.isLooping && setChannel2(prev => ({ ...prev, isPlaying: false }))}
-        onError={() => {
-          logError('audio:error', { channel: 2, name: channel2.currentTrack?.name ?? null, source: 'element' });
-          toast.error('Error al reproducir el audio');
-        }}
-      />
-      
+      {/* Channel 2 (ambient) is driven by SeamlessAudioEngine, no <audio> needed. */}
       <input
         ref={fileInputRef}
         type="file"
