@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -63,17 +62,11 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
 };
 
 export const useExtendedMonsters = () => {
-  const [monsters, setMonsters] = useState<ExtendedMonster[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const monstersQueryKey = ['extended-monsters', user?.id ?? 'anonymous'] as const;
 
-  const fetchMonsters = async () => {
-    if (!user) {
-      setMonsters([]);
-      setLoading(false);
-      return;
-    }
-
+  const fetchMonsters = async (): Promise<ExtendedMonster[]> => {
     const { data, error } = await supabase
       .from('monsters')
       .select('*')
@@ -86,15 +79,21 @@ export const useExtendedMonsters = () => {
         lastLoadErrorToastAt = now;
       }
       console.error('Error al cargar monstruos', error);
-    } else {
-      setMonsters((data || []).map(parseMonsterFromDB));
+      throw error;
     }
-    setLoading(false);
+
+    return (data || []).map(parseMonsterFromDB);
   };
 
-  useEffect(() => {
-    fetchMonsters();
-  }, [user]);
+  const { data: monsters = [], isLoading: loading, refetch } = useQuery({
+    queryKey: monstersQueryKey,
+    queryFn: fetchMonsters,
+    enabled: !!user,
+    staleTime: MONSTERS_QUERY_STALE_TIME_MS,
+    retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
   const createMonster = async (monster: Omit<ExtendedMonster, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
