@@ -110,38 +110,52 @@ export const AmbientPlayer = () => {
     }
   }, [channel1.isLooping]);
 
-  // Channel 2 audio effects
+  // Channel 2 (engine) audio effects
   useEffect(() => {
-    if (audioRef2.current) {
-      audioRef2.current.volume = channel2.isMuted ? 0 : channel2.volume / 100;
-    }
+    const e = engineRef2.current;
+    if (!e) return;
+    e.setVolume(channel2.volume / 100);
+    e.setMuted(channel2.isMuted);
   }, [channel2.volume, channel2.isMuted]);
 
   useEffect(() => {
-    if (audioRef2.current) {
-      audioRef2.current.loop = channel2.isLooping;
-    }
+    engineRef2.current?.setLoop(channel2.isLooping);
   }, [channel2.isLooping]);
 
   // Listen for scene audio events
   useEffect(() => {
     const handleSceneAudio = (e: Event) => {
       const { channel, name, data } = (e as CustomEvent).detail as { channel: 1 | 2; name: string; data: string };
-      const audioRef = channel === 1 ? audioRef1 : audioRef2;
       const setChannel = channel === 1 ? setChannel1 : setChannel2;
 
       const newTrack: Track = { id: `scene-${Date.now()}`, name: name || 'Escena', url: data };
-      
+
       // Add track and play it
       setChannel(prev => {
         const filtered = prev.tracks.filter(t => t.name !== name);
         return { ...prev, tracks: [...filtered, newTrack], currentTrack: newTrack, isPlaying: true };
       });
 
-      if (audioRef.current) {
-        audioRef.current.src = data;
+      if (channel === 1) {
+        if (audioRef1.current) {
+          audioRef1.current.src = data;
+          log('audio:load', { channel, name: newTrack.name, source: 'scene' });
+          audioRef1.current.play().catch((err) => {
+            logError('audio:error', { channel, name: newTrack.name, source: 'scene', error: err instanceof Error ? err.message : String(err) });
+            toast.error(`No se pudo reproducir "${newTrack.name}"`);
+            setChannel(prev => ({ ...prev, isPlaying: false }));
+          });
+        }
+      } else {
+        const eng = getEngine2();
+        const ch = channel2Ref.current;
+        if (ch) {
+          eng.setVolume(ch.volume / 100);
+          eng.setMuted(ch.isMuted);
+          eng.setLoop(ch.isLooping);
+        }
         log('audio:load', { channel, name: newTrack.name, source: 'scene' });
-        audioRef.current.play().catch((err) => {
+        eng.loadAndPlay(data, ch?.isLooping ?? true).catch((err) => {
           logError('audio:error', { channel, name: newTrack.name, source: 'scene', error: err instanceof Error ? err.message : String(err) });
           toast.error(`No se pudo reproducir "${newTrack.name}"`);
           setChannel(prev => ({ ...prev, isPlaying: false }));
@@ -151,7 +165,7 @@ export const AmbientPlayer = () => {
 
     window.addEventListener('scene-play-audio', handleSceneAudio);
     return () => window.removeEventListener('scene-play-audio', handleSceneAudio);
-  }, []);
+  }, [getEngine2]);
 
   // Update current time for channel 1
   useEffect(() => {
