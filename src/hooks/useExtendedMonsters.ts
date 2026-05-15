@@ -14,6 +14,9 @@ import {
   SaveType
 } from '@/types/dnd5e';
 
+let lastLoadErrorToastAt = 0;
+const MONSTER_LOAD_ERROR_TOAST_COOLDOWN_MS = 30_000;
+
 const parseMonsterFromDB = (data: any): ExtendedMonster => {
   return {
     id: data.id,
@@ -75,8 +78,12 @@ export const useExtendedMonsters = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      toast.error('Error al cargar monstruos', { id: 'monsters-load-error' });
-      console.error(error);
+      const now = Date.now();
+      if (now - lastLoadErrorToastAt > MONSTER_LOAD_ERROR_TOAST_COOLDOWN_MS) {
+        toast.error('Error al cargar monstruos', { id: 'monsters-load-error' });
+        lastLoadErrorToastAt = now;
+      }
+      console.error('Error al cargar monstruos', error);
     } else {
       setMonsters((data || []).map(parseMonsterFromDB));
     }
