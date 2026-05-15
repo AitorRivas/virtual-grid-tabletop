@@ -8,6 +8,8 @@ import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, Play
 
 export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, GlobalCombatState, CombatEntryStored, PlayerCameraSnapshot };
 
+const DEFAULT_GRID_SIZE = 100;
+
 type MapUpdate =
   | Partial<MapData>
   | ((currentMap: MapData | null, fullState: GameState) => Partial<MapData> | null);
@@ -18,12 +20,12 @@ export const createDefaultMap = (name = 'Mapa 1'): MapData => ({
   mapImage: null,
   tokens: [],
   showGrid: true,
-  gridSize: 50,
+  gridSize: DEFAULT_GRID_SIZE,
   gridColor: '#000000',
   gridLineWidth: 1,
   fogEnabled: false,
   fogData: null,
-  gridCellSize: 50,
+  gridCellSize: DEFAULT_GRID_SIZE,
   gridOffsetX: 0,
   gridOffsetY: 0,
   cellStates: {},

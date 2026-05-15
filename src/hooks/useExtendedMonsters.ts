@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -13,6 +13,10 @@ import {
   Skill,
   SaveType
 } from '@/types/dnd5e';
+
+let lastLoadErrorToastAt = 0;
+const MONSTER_LOAD_ERROR_TOAST_COOLDOWN_MS = 30_000;
+const MONSTERS_QUERY_STALE_TIME_MS = 60_000;
 
 const parseMonsterFromDB = (data: any): ExtendedMonster => {
   return {
@@ -58,34 +62,38 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
 };
 
 export const useExtendedMonsters = () => {
-  const [monsters, setMonsters] = useState<ExtendedMonster[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const monstersQueryKey = ['extended-monsters', user?.id ?? 'anonymous'] as const;
 
-  const fetchMonsters = async () => {
-    if (!user) {
-      setMonsters([]);
-      setLoading(false);
-      return;
-    }
-
+  const fetchMonsters = async (): Promise<ExtendedMonster[]> => {
     const { data, error } = await supabase
       .from('monsters')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      toast.error('Error al cargar monstruos', { id: 'monsters-load-error' });
-      console.error(error);
-    } else {
-      setMonsters((data || []).map(parseMonsterFromDB));
+      const now = Date.now();
+      if (now - lastLoadErrorToastAt > MONSTER_LOAD_ERROR_TOAST_COOLDOWN_MS) {
+        toast.error('Error al cargar monstruos', { id: 'monsters-load-error' });
+        lastLoadErrorToastAt = now;
+      }
+      console.error('Error al cargar monstruos', error);
+      throw error;
     }
-    setLoading(false);
+
+    return (data || []).map(parseMonsterFromDB);
   };
 
-  useEffect(() => {
-    fetchMonsters();
-  }, [user]);
+  const { data: monsters = [], isLoading: loading, refetch } = useQuery({
+    queryKey: monstersQueryKey,
+    queryFn: fetchMonsters,
+    enabled: !!user,
+    staleTime: MONSTERS_QUERY_STALE_TIME_MS,
+    retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
   const createMonster = async (monster: Omit<ExtendedMonster, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
@@ -141,7 +149,7 @@ export const useExtendedMonsters = () => {
     }
 
     const parsed = parseMonsterFromDB(data);
-    setMonsters(prev => [parsed, ...prev]);
+    queryClient.setQueryData<ExtendedMonster[]>(monstersQueryKey, (prev = []) => [parsed, ...prev]);
     toast.success('Monstruo creado');
     return parsed;
   };
@@ -176,7 +184,9 @@ export const useExtendedMonsters = () => {
       return false;
     }
 
-    setMonsters(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    queryClient.setQueryData<ExtendedMonster[]>(monstersQueryKey, (prev = []) => (
+      prev.map(m => m.id === id ? { ...m, ...updates } : m)
+    ));
     toast.success('Monstruo actualizado');
     return true;
   };
@@ -193,7 +203,7 @@ export const useExtendedMonsters = () => {
       return false;
     }
 
-    setMonsters(prev => prev.filter(m => m.id !== id));
+    queryClient.setQueryData<ExtendedMonster[]>(monstersQueryKey, (prev = []) => prev.filter(m => m.id !== id));
     toast.success('Monstruo eliminado');
     return true;
   };
@@ -213,6 +223,6 @@ export const useExtendedMonsters = () => {
     updateMonster, 
     deleteMonster, 
     cloneMonster,
-    refetch: fetchMonsters 
+    refetch 
   };
 };
