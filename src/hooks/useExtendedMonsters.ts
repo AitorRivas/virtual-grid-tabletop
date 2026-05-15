@@ -75,7 +75,7 @@ export const useExtendedMonsters = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      toast.error('Error al cargar monstruos');
+      toast.error('Error al cargar monstruos', { id: 'monsters-load-error' });
       console.error(error);
     } else {
       setMonsters((data || []).map(parseMonsterFromDB));
