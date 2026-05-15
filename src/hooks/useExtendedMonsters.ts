@@ -223,6 +223,6 @@ export const useExtendedMonsters = () => {
     updateMonster, 
     deleteMonster, 
     cloneMonster,
-    refetch: fetchMonsters 
+    refetch 
   };
 };
