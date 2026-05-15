@@ -598,15 +598,7 @@ export const AmbientPlayer = () => {
           toast.error('Error al reproducir el audio');
         }}
       />
-      <audio 
-        ref={audioRef2} 
-        onEnded={() => !channel2.isLooping && setChannel2(prev => ({ ...prev, isPlaying: false }))}
-        onError={() => {
-          logError('audio:error', { channel: 2, name: channel2.currentTrack?.name ?? null, source: 'element' });
-          toast.error('Error al reproducir el audio');
-        }}
-      />
-      
+      {/* Channel 2 (ambient) is driven by SeamlessAudioEngine, no <audio> needed. */}
       <input
         ref={fileInputRef}
         type="file"
