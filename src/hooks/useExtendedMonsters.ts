@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ import {
 
 let lastLoadErrorToastAt = 0;
 const MONSTER_LOAD_ERROR_TOAST_COOLDOWN_MS = 30_000;
+const MONSTERS_QUERY_STALE_TIME_MS = 60_000;
 
 const parseMonsterFromDB = (data: any): ExtendedMonster => {
   return {
