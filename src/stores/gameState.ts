@@ -8,6 +8,7 @@ import type { CellState } from '@/lib/gridEngine/types';
 
 const STORAGE_KEY = 'dnd-session';
 const BROADCAST_CHANNEL = 'vtt-gamestate-sync';
+const DEFAULT_GRID_SIZE = 100;
 
 export interface CombatEntryStored {
   id: string;
@@ -265,12 +266,12 @@ function migrateState(raw: any): GameState {
       mapImage: raw.mapImage ?? null,
       tokens: raw.tokens ?? [],
       showGrid: raw.showGrid ?? true,
-      gridSize: raw.gridSize ?? 50,
+      gridSize: raw.gridSize ?? DEFAULT_GRID_SIZE,
       gridColor: raw.gridColor ?? '#000000',
       gridLineWidth: raw.gridLineWidth ?? 1,
       fogEnabled: raw.fogEnabled ?? false,
       fogData: raw.fogData ?? null,
-      gridCellSize: raw.gridCellSize ?? 50,
+      gridCellSize: raw.gridCellSize ?? raw.gridSize ?? DEFAULT_GRID_SIZE,
       gridOffsetX: raw.gridOffsetX ?? 0,
       gridOffsetY: raw.gridOffsetY ?? 0,
       cellStates: raw.cellStates ?? {},
