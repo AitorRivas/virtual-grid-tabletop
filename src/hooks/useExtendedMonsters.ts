@@ -149,7 +149,7 @@ export const useExtendedMonsters = () => {
     }
 
     const parsed = parseMonsterFromDB(data);
-    setMonsters(prev => [parsed, ...prev]);
+    queryClient.setQueryData<ExtendedMonster[]>(monstersQueryKey, (prev = []) => [parsed, ...prev]);
     toast.success('Monstruo creado');
     return parsed;
   };
@@ -184,7 +184,9 @@ export const useExtendedMonsters = () => {
       return false;
     }
 
-    setMonsters(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    queryClient.setQueryData<ExtendedMonster[]>(monstersQueryKey, (prev = []) => (
+      prev.map(m => m.id === id ? { ...m, ...updates } : m)
+    ));
     toast.success('Monstruo actualizado');
     return true;
   };
@@ -201,7 +203,7 @@ export const useExtendedMonsters = () => {
       return false;
     }
 
-    setMonsters(prev => prev.filter(m => m.id !== id));
+    queryClient.setQueryData<ExtendedMonster[]>(monstersQueryKey, (prev = []) => prev.filter(m => m.id !== id));
     toast.success('Monstruo eliminado');
     return true;
   };
