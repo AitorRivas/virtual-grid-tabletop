@@ -64,8 +64,20 @@ export const AmbientPlayer = () => {
   const { musicItems, ambientItems, addToLibrary, removeFromLibrary, loadAudioData } = useAudioLibrary();
 
   const audioRef1 = useRef<HTMLAudioElement | null>(null);
-  const audioRef2 = useRef<HTMLAudioElement | null>(null);
+  // Channel 2 (ambient) uses Web Audio API for gapless looping.
+  const engineRef2 = useRef<SeamlessAudioEngine | null>(null);
+  const getEngine2 = useCallback(() => {
+    if (!engineRef2.current) engineRef2.current = new SeamlessAudioEngine();
+    return engineRef2.current;
+  }, []);
+  const channel2Ref = useRef<AudioChannel | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    channel2Ref.current = channel2;
+  }, [channel2]);
+
+  useEffect(() => () => engineRef2.current?.dispose(), []);
   
   // Calculate safe position when expanding
   const getDefaultPosition = useCallback(() => {
