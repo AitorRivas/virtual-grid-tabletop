@@ -412,7 +412,6 @@ export const AmbientPlayer = () => {
     const channelNum: 1 | 2 = item.channel === 'ambient' ? 2 : 1;
     setActiveChannel(channelNum);
     const setChannel = channelNum === 1 ? setChannel1 : setChannel2;
-    const audioRef = channelNum === 1 ? audioRef1 : audioRef2;
 
     const audioData = await loadAudioData(item.id);
     if (!audioData) return;
@@ -429,11 +428,27 @@ export const AmbientPlayer = () => {
       const tracks = exists ? prev.tracks : [...prev.tracks, newTrack];
       return { ...prev, tracks, currentTrack: newTrack, isPlaying: true };
     });
-    if (audioRef.current) {
-      audioRef.current.src = audioData;
-      log('audio:load', { channel: channelNum, name: item.name, source: 'library' });
-      audioRef.current.play().catch((err) => {
-        logError('audio:error', { channel: channelNum, id: item.id, name: item.name, source: 'library', error: err instanceof Error ? err.message : String(err) });
+
+    if (channelNum === 1) {
+      if (audioRef1.current) {
+        audioRef1.current.src = audioData;
+        log('audio:load', { channel: 1, name: item.name, source: 'library' });
+        audioRef1.current.play().catch((err) => {
+          logError('audio:error', { channel: 1, id: item.id, name: item.name, source: 'library', error: err instanceof Error ? err.message : String(err) });
+          toast.error(`No se pudo reproducir "${item.name}"`);
+        });
+      }
+    } else {
+      const eng = getEngine2();
+      const ch = channel2Ref.current;
+      if (ch) {
+        eng.setVolume(ch.volume / 100);
+        eng.setMuted(ch.isMuted);
+        eng.setLoop(ch.isLooping);
+      }
+      log('audio:load', { channel: 2, name: item.name, source: 'library' });
+      eng.loadAndPlay(audioData, ch?.isLooping ?? true).catch((err) => {
+        logError('audio:error', { channel: 2, id: item.id, name: item.name, source: 'library', error: err instanceof Error ? err.message : String(err) });
         toast.error(`No se pudo reproducir "${item.name}"`);
       });
     }
