@@ -512,7 +512,45 @@ const PlayerView = () => {
             setTransformReadyMapId(activeMap?.id ?? null);
           }}
           onZoom={(ref) => { transformApiRef.current = ref as any; }}
+          onZoomStop={(ref) => {
+            const root = rootRef.current;
+            const vw = root?.clientWidth ?? 0;
+            const vh = root?.clientHeight ?? 0;
+            const s = Number.isFinite(ref.state.scale) && ref.state.scale > 0 ? ref.state.scale : 1;
+            const sw = mapDimensions.width * s;
+            const sh = mapDimensions.height * s;
+            let nx = ref.state.positionX;
+            let ny = ref.state.positionY;
+            if (vw > 0 && mapDimensions.width > 0) {
+              nx = sw <= vw ? (vw - sw) / 2 : Math.min(0, Math.max(vw - sw, nx));
+            }
+            if (vh > 0 && mapDimensions.height > 0) {
+              ny = sh <= vh ? (vh - sh) / 2 : Math.min(0, Math.max(vh - sh, ny));
+            }
+            if (nx !== ref.state.positionX || ny !== ref.state.positionY) {
+              ref.setTransform(nx, ny, s, 120);
+            }
+          }}
           onPanning={(ref) => { transformApiRef.current = ref as any; }}
+          onPanningStop={(ref) => {
+            const root = rootRef.current;
+            const vw = root?.clientWidth ?? 0;
+            const vh = root?.clientHeight ?? 0;
+            const s = Number.isFinite(ref.state.scale) && ref.state.scale > 0 ? ref.state.scale : 1;
+            const sw = mapDimensions.width * s;
+            const sh = mapDimensions.height * s;
+            let nx = ref.state.positionX;
+            let ny = ref.state.positionY;
+            if (vw > 0 && mapDimensions.width > 0) {
+              nx = sw <= vw ? (vw - sw) / 2 : Math.min(0, Math.max(vw - sw, nx));
+            }
+            if (vh > 0 && mapDimensions.height > 0) {
+              ny = sh <= vh ? (vh - sh) / 2 : Math.min(0, Math.max(vh - sh, ny));
+            }
+            if (nx !== ref.state.positionX || ny !== ref.state.positionY) {
+              ref.setTransform(nx, ny, s, 200);
+            }
+          }}
           onTransformed={(ref) => { transformApiRef.current = ref as any; }}
         >
           <TransformComponent
