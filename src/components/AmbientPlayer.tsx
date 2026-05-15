@@ -187,24 +187,23 @@ export const AmbientPlayer = () => {
     };
   }, []);
 
-  // Update current time for channel 2
+  // Update current time/duration for channel 2 via rAF (engine driven).
   useEffect(() => {
-    const audio = audioRef2.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => setChannel2(prev => ({ ...prev, currentTime: audio.currentTime }));
-    const handleDurationChange = () => setChannel2(prev => ({ ...prev, duration: audio.duration || 0 }));
-    const handleLoadedMetadata = () => setChannel2(prev => ({ ...prev, duration: audio.duration || 0 }));
-
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('durationchange', handleDurationChange);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('durationchange', handleDurationChange);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    let raf = 0;
+    const tick = () => {
+      const e = engineRef2.current;
+      if (e) {
+        const cur = e.getCurrentTime();
+        const dur = e.getDuration();
+        setChannel2(prev => {
+          if (Math.abs(prev.currentTime - cur) < 0.05 && prev.duration === dur) return prev;
+          return { ...prev, currentTime: cur, duration: dur };
+        });
+      }
+      raf = requestAnimationFrame(tick);
     };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
