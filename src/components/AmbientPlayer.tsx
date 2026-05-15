@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useDraggable } from '@/hooks/useDraggable';
 import { useAudioLibrary, isSupportedAudioFile, type LibraryAudioMeta } from '@/hooks/useAudioLibrary';
 import { log, error as logError } from '@/lib/debug';
+import { SeamlessAudioEngine } from '@/lib/audio/seamlessEngine';
 
 interface Track {
   id: string;
