@@ -21,6 +21,8 @@ import { Maximize, Minimize } from 'lucide-react';
 import { log, warn } from '@/lib/debug';
 import { cn } from '@/lib/utils';
 
+const DEFAULT_GRID_SIZE = 100;
+
 interface LoadingState {
   mapReady: boolean;
   fogReady: boolean;
@@ -69,7 +71,7 @@ const PlayerView = () => {
   const mapImage = activeMap?.mapImage ?? null;
   const tokens = activeMap?.tokens ?? [];
   const showGrid = activeMap?.showGrid ?? true;
-  const gridSize = activeMap?.gridSize ?? 50;
+  const gridSize = activeMap?.gridSize ?? DEFAULT_GRID_SIZE;
   const gridColor = activeMap?.gridColor ?? '#000000';
   const gridLineWidth = activeMap?.gridLineWidth ?? 1;
   const fogEnabled = activeMap?.fogEnabled ?? false;
