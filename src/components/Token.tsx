@@ -72,6 +72,9 @@ export const Token = ({
   combatTooltip = null,
   hideHpBar = false,
   readOnly = false,
+  customStates = [],
+  customStatesLibrary = [],
+  onRemoveCustomState,
 }: TokenProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
