@@ -332,6 +332,7 @@ function migrateState(raw: any): GameState {
       playerCameras: {},
       dmCameras: {},
       globalCombat: { ...defaultGlobalCombat },
+      customStatesLibrary: [],
     };
   }
 
