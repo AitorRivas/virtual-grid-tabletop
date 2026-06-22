@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, GlobalCombatState, CombatEntryStored, PlayerCameraSnapshot } from '@/stores/gameState';
+import { gameStateStore, GameState, MapData, SceneData, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, GlobalCombatState, CombatEntryStored, PlayerCameraSnapshot, MapVariant, SceneOverlay, CustomState } from '@/stores/gameState';
 
-export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, GlobalCombatState, CombatEntryStored, PlayerCameraSnapshot };
+export type { MapData, SceneData, GameState, NarrativeLightData, PlayerViewConfig, DmCameraState, MapCombatState, GlobalCombatState, CombatEntryStored, PlayerCameraSnapshot, MapVariant, SceneOverlay, CustomState };
 
 const DEFAULT_GRID_SIZE = 100;
 
