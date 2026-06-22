@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Map, Users, Swords, ChevronRight, ChevronLeft, Monitor, Layers, Clapperboard, Image, X } from 'lucide-react';
+import { Map, Users, Swords, ChevronRight, ChevronLeft, Monitor, Layers, Clapperboard, Image, X, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MapManager } from './MapManager';
 import { TokenToolbar } from './TokenToolbar';
 import { SceneManager } from './SceneManager';
+import { ScenePanel } from './ScenePanel';
 import { CombatTracker, type CombatEntry } from './CombatTracker';
 import { PlayerViewConfigPanel } from './PlayerViewConfigPanel';
 import { MapData, SceneData, PlayerViewConfig } from '@/hooks/useGameState';
