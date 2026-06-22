@@ -70,8 +70,13 @@ const PlayerView = () => {
 
   const prevMapImageRef = useRef<string | null>(null);
 
-  // Derive state from shared store
-  const mapImage = activeMap?.mapImage ?? null;
+  // Derive state from shared store (apply variant override on top of base map image)
+  const baseMapImage = activeMap?.mapImage ?? null;
+  const activeVariant = activeMap?.activeVariantId
+    ? activeMap.variants?.find((v) => v.id === activeMap.activeVariantId) ?? null
+    : null;
+  const mapImage = activeVariant?.image ?? baseMapImage;
+  const overlays = activeMap?.overlays ?? [];
   const tokens = activeMap?.tokens ?? [];
   const showGrid = activeMap?.showGrid ?? true;
   const gridSize = activeMap?.gridSize ?? DEFAULT_GRID_SIZE;
