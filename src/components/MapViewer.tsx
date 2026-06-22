@@ -28,6 +28,9 @@ import { MapContextMenu } from './MapContextMenu';
 import { GlobalSheetOpener } from './GlobalSheetOpener';
 import { getDamageTypeLabel } from '@/types/dnd5e';
 import { log, warn } from '@/lib/debug';
+import { OverlayLayer } from './OverlayLayer';
+import { TokenStatesDialog } from './TokenStatesDialog';
+import { ScenePanel } from './ScenePanel';
 
 const DEFAULT_GRID_SIZE = 100;
 
@@ -61,6 +64,8 @@ export interface TokenData {
   /** Reference to the source library entity for combat tooltip lookup (DM-only). */
   sourceMonsterId?: string;
   sourceCharacterId?: string;
+  /** Custom state ids (refer to GameState.customStatesLibrary). Persist across maps/scenes/variants. */
+  customStates?: string[];
 }
 
 const clampPercent = (value: number) => {
@@ -108,10 +113,18 @@ export const MapViewer = () => {
     saveDmCamera,
     globalCombat,
     updateGlobalCombat,
+    customStatesLibrary,
+    setTokenCustomStates,
+    updateOverlay,
   } = useGameState();
 
-  // Derive current map state from activeMap
-  const mapImage = activeMap?.mapImage ?? null;
+  // Derive current map state from activeMap, applying active variant if any.
+  const baseMapImage = activeMap?.mapImage ?? null;
+  const activeVariant = activeMap?.activeVariantId
+    ? activeMap.variants?.find((v) => v.id === activeMap.activeVariantId) ?? null
+    : null;
+  const mapImage = activeVariant?.image ?? baseMapImage;
+  const overlays = activeMap?.overlays ?? [];
   const tokens = activeMap?.tokens ?? [];
   const showGrid = activeMap?.showGrid ?? true;
   const gridSize = activeMap?.gridSize ?? DEFAULT_GRID_SIZE;
@@ -122,6 +135,14 @@ export const MapViewer = () => {
   const gridOffsetX = activeMap?.gridOffsetX ?? 0;
   const gridOffsetY = activeMap?.gridOffsetY ?? 0;
   const cellStates = activeMap?.cellStates ?? {};
+
+  // Token states dialog
+  const [statesDialogTokenId, setStatesDialogTokenId] = useState<string | null>(null);
+  const statesDialogToken = tokens.find((t) => t.id === statesDialogTokenId) ?? null;
+  // Selected overlay (for DM drag/scale handles)
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+
+
 
   // Local UI state
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -1174,6 +1195,7 @@ export const MapViewer = () => {
             onToggleHidden={handleToggleHidden}
             onDeleteToken={handleDeleteToken}
             onCenterCamera={centerCameraOnToken}
+            onManageStates={(t) => setStatesDialogTokenId(t.id)}
             onRevealFog={(x, y) => paintFogAt(x, y, 'reveal')}
             onHideFog={(x, y) => paintFogAt(x, y, 'hide')}
             onResetFog={() => setFogData(null)}
@@ -1268,6 +1290,19 @@ export const MapViewer = () => {
               />
             )}
 
+            {/* Overlay layer (DM: draggable/scalable, between map and tokens) */}
+            {mapDimensions.width > 0 && overlays.length > 0 && activeMapId && (
+              <OverlayLayer
+                overlays={overlays}
+                mapWidth={mapDimensions.width}
+                mapHeight={mapDimensions.height}
+                editable={true}
+                selectedId={selectedOverlayId}
+                onSelect={setSelectedOverlayId}
+                onUpdate={(oid, patch) => updateOverlay(activeMapId, oid, patch)}
+              />
+            )}
+
             {/* Tokens — DM sees ALL tokens (hidden ones with semi-transparent style) */}
             {tokens.map(token => (
               <Token
@@ -1288,6 +1323,12 @@ export const MapViewer = () => {
                 onToggleHidden={() => handleToggleHidden(token.id)}
                 mapContainerRef={mapContainerRef}
                 combatTooltip={getCombatTooltip(token)}
+                customStates={token.customStates ?? []}
+                customStatesLibrary={customStatesLibrary}
+                onRemoveCustomState={(sid) => {
+                  if (!activeMapId) return;
+                  setTokenCustomStates(activeMapId, token.id, (token.customStates ?? []).filter((s) => s !== sid));
+                }}
               />
             ))}
           </div>
@@ -1619,6 +1660,27 @@ export const MapViewer = () => {
             Iniciar sesión
           </Button>
         </div>
+      )}
+
+      {/* Token states dialog (conditions + custom) */}
+      {statesDialogToken && activeMapId && (
+        <TokenStatesDialog
+          open={!!statesDialogTokenId}
+          onOpenChange={(o) => !o && setStatesDialogTokenId(null)}
+          tokenName={statesDialogToken.name}
+          activeConditions={statesDialogToken.conditions ?? []}
+          onToggleCondition={(cid) => {
+            const cur = statesDialogToken.conditions ?? [];
+            const next = cur.includes(cid) ? cur.filter((c) => c !== cid) : [...cur, cid];
+            setTokens(prev => prev.map(t => t.id === statesDialogToken.id ? { ...t, conditions: next } : t));
+          }}
+          activeCustomStates={statesDialogToken.customStates ?? []}
+          onToggleCustomState={(sid) => {
+            const cur = statesDialogToken.customStates ?? [];
+            const next = cur.includes(sid) ? cur.filter((s) => s !== sid) : [...cur, sid];
+            setTokenCustomStates(activeMapId, statesDialogToken.id, next);
+          }}
+        />
       )}
     </div>
   );

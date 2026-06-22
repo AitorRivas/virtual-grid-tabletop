@@ -6,6 +6,8 @@ import { FogOfWar } from '@/components/FogOfWar';
 import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { GlobalSheetOpener } from '@/components/GlobalSheetOpener';
+import { OverlayLayer } from '@/components/OverlayLayer';
+
 
 import {
   ContextMenu,
@@ -40,6 +42,7 @@ const PlayerView = () => {
     dmSelectedTokenId,
     globalCombat,
     maps,
+    customStatesLibrary,
   } = useGameState();
   const [mapDimensions, setMapDimensions] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -67,8 +70,13 @@ const PlayerView = () => {
 
   const prevMapImageRef = useRef<string | null>(null);
 
-  // Derive state from shared store
-  const mapImage = activeMap?.mapImage ?? null;
+  // Derive state from shared store (apply variant override on top of base map image)
+  const baseMapImage = activeMap?.mapImage ?? null;
+  const activeVariant = activeMap?.activeVariantId
+    ? activeMap.variants?.find((v) => v.id === activeMap.activeVariantId) ?? null
+    : null;
+  const mapImage = activeVariant?.image ?? baseMapImage;
+  const overlays = activeMap?.overlays ?? [];
   const tokens = activeMap?.tokens ?? [];
   const showGrid = activeMap?.showGrid ?? true;
   const gridSize = activeMap?.gridSize ?? DEFAULT_GRID_SIZE;
@@ -633,6 +641,16 @@ const PlayerView = () => {
               />
             )}
 
+            {/* Overlays (read-only for players) */}
+            {mapDimensions.width > 0 && overlays.length > 0 && (
+              <OverlayLayer
+                overlays={overlays}
+                mapWidth={mapDimensions.width}
+                mapHeight={mapDimensions.height}
+                editable={false}
+              />
+            )}
+
             {visibleTokens.map(token => {
               const isPj = (token.faction ?? (token.id.startsWith('char-') ? 'pj' : token.id.startsWith('monster-') ? 'enemy' : 'npc')) === 'pj';
               const isUndead = token.sourceMonsterId
@@ -657,6 +675,8 @@ const PlayerView = () => {
                   onMarkDead={() => {}}
                   onRotate={() => {}}
                   mapContainerRef={mapContainerRef}
+                  customStates={token.customStates ?? []}
+                  customStatesLibrary={customStatesLibrary}
                 />
               );
               if (!hasSheet) return tokenEl;

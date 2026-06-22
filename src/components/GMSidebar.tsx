@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Map, Users, Swords, ChevronRight, ChevronLeft, Monitor, Layers, Clapperboard, Image, X } from 'lucide-react';
+import { Map, Users, Swords, ChevronRight, ChevronLeft, Monitor, Layers, Clapperboard, Image, X, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MapManager } from './MapManager';
 import { TokenToolbar } from './TokenToolbar';
 import { SceneManager } from './SceneManager';
+import { ScenePanel } from './ScenePanel';
 import { CombatTracker, type CombatEntry } from './CombatTracker';
 import { PlayerViewConfigPanel } from './PlayerViewConfigPanel';
 import { MapData, SceneData, PlayerViewConfig } from '@/hooks/useGameState';
@@ -13,7 +14,7 @@ import { TokenData, TokenColor, TokenStatus } from './MapViewer';
 import { Character, Monster } from '@/types/dnd';
 import { cn } from '@/lib/utils';
 
-type SidebarSection = 'maps' | 'tokens' | 'scenes' | 'initiative';
+type SidebarSection = 'maps' | 'tokens' | 'scenes' | 'initiative' | 'variants';
 
 interface GMSidebarProps {
   // Maps
@@ -132,6 +133,7 @@ export const GMSidebar = ({
     { id: 'maps', icon: Layers, label: 'Mapas' },
     { id: 'tokens', icon: Users, label: 'Tokens' },
     { id: 'scenes', icon: Clapperboard, label: 'Escenas' },
+    { id: 'variants', icon: Sparkles, label: 'Variantes y Overlays' },
     { id: 'initiative', icon: Swords, label: 'Iniciativa' },
   ];
 
@@ -290,6 +292,15 @@ export const GMSidebar = ({
               />
             </ScrollArea>
           )}
+
+          {/* Variants & Overlays section */}
+          {activeSection === 'variants' && (
+            <ScrollArea className="flex-1">
+              <ScenePanel />
+            </ScrollArea>
+          )}
+
+
 
           {/* Initiative / Combat section */}
           {activeSection === 'initiative' && (

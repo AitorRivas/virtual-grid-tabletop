@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import {
   Eye, EyeOff, Trash2, Crosshair, FileText, Pencil,
   Cloud, CloudOff, RotateCcw, Plus, Search, User, Skull,
-  Swords, SkipForward,
+  Swords, SkipForward, Sparkles,
 } from 'lucide-react';
 import type { TokenData } from './MapViewer';
 import type { Character, Monster } from '@/types/dnd';
@@ -57,6 +57,8 @@ interface MapContextMenuProps {
   onToggleHidden: (id: string) => void;
   onDeleteToken: (id: string) => void;
   onCenterCamera: (token: TokenData) => void;
+  /** Open the states (conditions + custom) manager for the given token. */
+  onManageStates?: (token: TokenData) => void;
   /** Combat-mode actions (only used when combatActive=true). */
   onAttack?: (token: TokenData) => void;
   onEndTurn?: () => void;
@@ -74,6 +76,7 @@ export const MapContextMenu = ({
   children, tokens, characters, monsters, fogEnabled,
   combatActive = false, activeTurnTokenId = null,
   onViewSheet, onEditSheet, onToggleHidden, onDeleteToken, onCenterCamera,
+  onManageStates,
   onAttack, onEndTurn,
   onRevealFog, onHideFog, onResetFog, onAddCharacterAt, onAddMonsterAt,
   mapContainerRef,
@@ -151,6 +154,11 @@ export const MapContextMenu = ({
                 <ContextMenuItem onSelect={() => onCenterCamera(token)}>
                   <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
                 </ContextMenuItem>
+                {onManageStates && (
+                  <ContextMenuItem onSelect={() => onManageStates(token)}>
+                    <Sparkles className="w-4 h-4 mr-2" /> Añadir estado
+                  </ContextMenuItem>
+                )}
               </>
             ) : (
               <>
@@ -160,6 +168,11 @@ export const MapContextMenu = ({
                 <ContextMenuItem onSelect={() => onCenterCamera(token)}>
                   <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
                 </ContextMenuItem>
+                {onManageStates && (
+                  <ContextMenuItem onSelect={() => onManageStates(token)}>
+                    <Sparkles className="w-4 h-4 mr-2" /> Añadir estado
+                  </ContextMenuItem>
+                )}
                 <ContextMenuSeparator />
                 <ContextMenuItem onSelect={() => onToggleHidden(token.id)}>
                   {token.hidden ? (

@@ -36,6 +36,36 @@ export interface GlobalCombatState {
   round: number;
 }
 
+/** A visual variant of a map (e.g. "Puente intacto" vs "Puente derrumbado"). Only the image changes; tokens/grid/fog stay. */
+export interface MapVariant {
+  id: string;
+  name: string;
+  image: string | null;
+}
+
+/** A transparent image layered above the map (e.g. fire, runes, collapsed bridge). Position/scale in % of map. */
+export interface SceneOverlay {
+  id: string;
+  name: string;
+  imageUrl: string;
+  visible: boolean;
+  /** Center position in percent of map width/height (0-100). */
+  x: number;
+  y: number;
+  /** Width in percent of map width (0-100). 50 = covers half the map width. Height auto from aspect ratio. */
+  scale: number;
+  opacity?: number;
+  rotation?: number;
+}
+
+/** A custom token state created by the GM (icon + name + optional color). */
+export interface CustomState {
+  id: string;
+  name: string;
+  iconUrl: string;
+  color?: string;
+}
+
 export interface MapData {
   id: string;
   name: string;
@@ -53,6 +83,11 @@ export interface MapData {
   cellStates: Record<string, CellState>;
   /** Per-map combat state (initiative tracker scoped to this map only). */
   combat?: MapCombatState;
+  /** Optional visual variants of this map. The active variant overrides mapImage when set. */
+  variants?: MapVariant[];
+  activeVariantId?: string | null;
+  /** Overlays drawn on top of the map (independent of variant). */
+  overlays?: SceneOverlay[];
 }
 
 export interface SceneData {
@@ -130,6 +165,8 @@ export interface GameState {
   dmCameras: Record<string, PlayerCameraSnapshot>;
   /** Single global combat state. Independent of activeMapId — combatants reference their own map via entry.mapId. */
   globalCombat: GlobalCombatState;
+  /** GM-defined custom token states (icons + names). Shared across all tokens. */
+  customStatesLibrary: CustomState[];
 }
 
 const defaultGlobalCombat: GlobalCombatState = {
@@ -179,6 +216,7 @@ const defaultState: GameState = {
   playerCameras: {},
   dmCameras: {},
   globalCombat: { ...defaultGlobalCombat },
+  customStatesLibrary: [],
 };
 
 /**
@@ -256,6 +294,7 @@ function migrateState(raw: any): GameState {
       playerCameras: raw.playerCameras ?? {},
       dmCameras: raw.dmCameras ?? {},
       globalCombat,
+      customStatesLibrary: Array.isArray(raw.customStatesLibrary) ? raw.customStatesLibrary : [],
     };
   }
 
@@ -293,6 +332,7 @@ function migrateState(raw: any): GameState {
       playerCameras: {},
       dmCameras: {},
       globalCombat: { ...defaultGlobalCombat },
+      customStatesLibrary: [],
     };
   }
 
