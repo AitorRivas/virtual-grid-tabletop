@@ -5,6 +5,7 @@ import { getConditionById } from '@/data/conditions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card';
 import { CombatTokenTooltipContent, type CombatTooltipData } from './CombatTokenTooltipContent';
+import type { CustomState } from '@/stores/gameState';
 
 interface FloatingNumber {
   id: string;
