@@ -1290,6 +1290,19 @@ export const MapViewer = () => {
               />
             )}
 
+            {/* Overlay layer (DM: draggable/scalable, between map and tokens) */}
+            {mapDimensions.width > 0 && overlays.length > 0 && activeMapId && (
+              <OverlayLayer
+                overlays={overlays}
+                mapWidth={mapDimensions.width}
+                mapHeight={mapDimensions.height}
+                editable={true}
+                selectedId={selectedOverlayId}
+                onSelect={setSelectedOverlayId}
+                onUpdate={(oid, patch) => updateOverlay(activeMapId, oid, patch)}
+              />
+            )}
+
             {/* Tokens — DM sees ALL tokens (hidden ones with semi-transparent style) */}
             {tokens.map(token => (
               <Token
@@ -1310,6 +1323,12 @@ export const MapViewer = () => {
                 onToggleHidden={() => handleToggleHidden(token.id)}
                 mapContainerRef={mapContainerRef}
                 combatTooltip={getCombatTooltip(token)}
+                customStates={token.customStates ?? []}
+                customStatesLibrary={customStatesLibrary}
+                onRemoveCustomState={(sid) => {
+                  if (!activeMapId) return;
+                  setTokenCustomStates(activeMapId, token.id, (token.customStates ?? []).filter((s) => s !== sid));
+                }}
               />
             ))}
           </div>
