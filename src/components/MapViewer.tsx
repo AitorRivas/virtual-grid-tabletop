@@ -61,6 +61,8 @@ export interface TokenData {
   /** Reference to the source library entity for combat tooltip lookup (DM-only). */
   sourceMonsterId?: string;
   sourceCharacterId?: string;
+  /** Custom state ids (refer to GameState.customStatesLibrary). Persist across maps/scenes/variants. */
+  customStates?: string[];
 }
 
 const clampPercent = (value: number) => {
