@@ -641,6 +641,16 @@ const PlayerView = () => {
               />
             )}
 
+            {/* Overlays (read-only for players) */}
+            {mapDimensions.width > 0 && overlays.length > 0 && (
+              <OverlayLayer
+                overlays={overlays}
+                mapWidth={mapDimensions.width}
+                mapHeight={mapDimensions.height}
+                editable={false}
+              />
+            )}
+
             {visibleTokens.map(token => {
               const isPj = (token.faction ?? (token.id.startsWith('char-') ? 'pj' : token.id.startsWith('monster-') ? 'enemy' : 'npc')) === 'pj';
               const isUndead = token.sourceMonsterId
@@ -665,6 +675,8 @@ const PlayerView = () => {
                   onMarkDead={() => {}}
                   onRotate={() => {}}
                   mapContainerRef={mapContainerRef}
+                  customStates={token.customStates ?? []}
+                  customStatesLibrary={customStatesLibrary}
                 />
               );
               if (!hasSheet) return tokenEl;
