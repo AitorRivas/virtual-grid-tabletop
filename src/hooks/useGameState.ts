@@ -345,6 +345,7 @@ export const useGameState = () => {
     playerCameras: state.playerCameras,
     dmCameras: state.dmCameras,
     globalCombat: state.globalCombat,
+    customStatesLibrary: state.customStatesLibrary,
     updateGlobalCombat,
     isLoaded,
     setActiveMapId,
@@ -365,5 +366,15 @@ export const useGameState = () => {
     savePlayerCamera,
     saveDmCamera,
     clearSession,
+    addMapVariant,
+    updateMapVariant,
+    removeMapVariant,
+    setActiveMapVariant,
+    addOverlay,
+    updateOverlay,
+    removeOverlay,
+    addCustomState,
+    removeCustomStateFromLibrary,
+    setTokenCustomStates,
   };
 };
