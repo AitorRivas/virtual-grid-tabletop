@@ -57,6 +57,8 @@ interface MapContextMenuProps {
   onToggleHidden: (id: string) => void;
   onDeleteToken: (id: string) => void;
   onCenterCamera: (token: TokenData) => void;
+  /** Open the states (conditions + custom) manager for the given token. */
+  onManageStates?: (token: TokenData) => void;
   /** Combat-mode actions (only used when combatActive=true). */
   onAttack?: (token: TokenData) => void;
   onEndTurn?: () => void;
