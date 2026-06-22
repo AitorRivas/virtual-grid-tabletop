@@ -14,7 +14,7 @@ import { TokenData, TokenColor, TokenStatus } from './MapViewer';
 import { Character, Monster } from '@/types/dnd';
 import { cn } from '@/lib/utils';
 
-type SidebarSection = 'maps' | 'tokens' | 'scenes' | 'initiative';
+type SidebarSection = 'maps' | 'tokens' | 'scenes' | 'initiative' | 'variants';
 
 interface GMSidebarProps {
   // Maps
