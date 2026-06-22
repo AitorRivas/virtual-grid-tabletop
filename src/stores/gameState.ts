@@ -216,6 +216,7 @@ const defaultState: GameState = {
   playerCameras: {},
   dmCameras: {},
   globalCombat: { ...defaultGlobalCombat },
+  customStatesLibrary: [],
 };
 
 /**
