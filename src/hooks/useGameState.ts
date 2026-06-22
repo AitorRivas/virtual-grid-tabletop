@@ -225,6 +225,110 @@ export const useGameState = () => {
     gameStateStore.clear();
   }, []);
 
+  // ============ Map variants ============
+  const addMapVariant = useCallback((mapId: string, variant: Omit<MapVariant, 'id'>) => {
+    const id = `var-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({
+        ...m,
+        variants: [...(m.variants ?? []), { ...variant, id }],
+      })),
+    }));
+    return id;
+  }, []);
+
+  const updateMapVariant = useCallback((mapId: string, variantId: string, patch: Partial<MapVariant>) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({
+        ...m,
+        variants: (m.variants ?? []).map((v) => v.id === variantId ? { ...v, ...patch } : v),
+      })),
+    }));
+  }, []);
+
+  const removeMapVariant = useCallback((mapId: string, variantId: string) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({
+        ...m,
+        variants: (m.variants ?? []).filter((v) => v.id !== variantId),
+        activeVariantId: m.activeVariantId === variantId ? null : m.activeVariantId,
+      })),
+    }));
+  }, []);
+
+  const setActiveMapVariant = useCallback((mapId: string, variantId: string | null) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({ ...m, activeVariantId: variantId })),
+    }));
+  }, []);
+
+  // ============ Overlays ============
+  const addOverlay = useCallback((mapId: string, overlay: Omit<SceneOverlay, 'id'>) => {
+    const id = `ov-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({
+        ...m,
+        overlays: [...(m.overlays ?? []), { ...overlay, id }],
+      })),
+    }));
+    return id;
+  }, []);
+
+  const updateOverlay = useCallback((mapId: string, overlayId: string, patch: Partial<SceneOverlay>) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({
+        ...m,
+        overlays: (m.overlays ?? []).map((o) => o.id === overlayId ? { ...o, ...patch } : o),
+      })),
+    }));
+  }, []);
+
+  const removeOverlay = useCallback((mapId: string, overlayId: string) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({
+        ...m,
+        overlays: (m.overlays ?? []).filter((o) => o.id !== overlayId),
+      })),
+    }));
+  }, []);
+
+  // ============ Custom states library ============
+  const addCustomState = useCallback((cs: Omit<CustomState, 'id'>) => {
+    const id = `cs-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      customStatesLibrary: [...prev.customStatesLibrary, { ...cs, id }],
+    }));
+    return id;
+  }, []);
+
+  const removeCustomStateFromLibrary = useCallback((id: string) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      customStatesLibrary: prev.customStatesLibrary.filter((c) => c.id !== id),
+    }));
+  }, []);
+
+  // ============ Token custom states ============
+  const setTokenCustomStates = useCallback((mapId: string, tokenId: string, stateIds: string[]) => {
+    gameStateStore.setState((prev) => ({
+      ...prev,
+      maps: prev.maps.map((m) => m.id !== mapId ? m : ({
+        ...m,
+        tokens: m.tokens.map((t: any) => t.id === tokenId ? { ...t, customStates: stateIds } : t),
+      })),
+    }));
+  }, []);
+
+
+
 
   return {
     maps: state.maps,
