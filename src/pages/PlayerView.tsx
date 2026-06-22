@@ -6,6 +6,8 @@ import { FogOfWar } from '@/components/FogOfWar';
 import { NarrativeLight } from '@/components/NarrativeLight';
 import { CellStateOverlay } from '@/components/CellStateOverlay';
 import { GlobalSheetOpener } from '@/components/GlobalSheetOpener';
+import { OverlayLayer } from '@/components/OverlayLayer';
+
 
 import {
   ContextMenu,
