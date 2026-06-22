@@ -76,6 +76,7 @@ export const MapContextMenu = ({
   children, tokens, characters, monsters, fogEnabled,
   combatActive = false, activeTurnTokenId = null,
   onViewSheet, onEditSheet, onToggleHidden, onDeleteToken, onCenterCamera,
+  onManageStates,
   onAttack, onEndTurn,
   onRevealFog, onHideFog, onResetFog, onAddCharacterAt, onAddMonsterAt,
   mapContainerRef,
