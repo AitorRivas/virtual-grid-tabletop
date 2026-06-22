@@ -1195,6 +1195,7 @@ export const MapViewer = () => {
             onToggleHidden={handleToggleHidden}
             onDeleteToken={handleDeleteToken}
             onCenterCamera={centerCameraOnToken}
+            onManageStates={(t) => setStatesDialogTokenId(t.id)}
             onRevealFog={(x, y) => paintFogAt(x, y, 'reveal')}
             onHideFog={(x, y) => paintFogAt(x, y, 'hide')}
             onResetFog={() => setFogData(null)}
