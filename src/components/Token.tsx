@@ -45,6 +45,12 @@ interface TokenProps {
   hideHpBar?: boolean;
   /** When true, the token is read-only: no hover action buttons (kill/delete/hide) are shown. */
   readOnly?: boolean;
+  /** Token's custom state ids. */
+  customStates?: string[];
+  /** Library of available custom states (so we can render their icons). */
+  customStatesLibrary?: CustomState[];
+  /** Click a custom-state icon to remove it from the token. */
+  onRemoveCustomState?: (stateId: string) => void;
 }
 
 const colorClasses: Record<TokenColor, string> = {
