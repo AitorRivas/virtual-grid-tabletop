@@ -348,6 +348,51 @@ export const Token = ({
             )}
           </div>
         )}
+
+        {/* Custom states row (bottom of token) */}
+        {customStates.length > 0 && customStatesLibrary.length > 0 && (() => {
+          const active = customStates
+            .map((sid) => customStatesLibrary.find((c) => c.id === sid))
+            .filter(Boolean) as CustomState[];
+          if (active.length === 0) return null;
+          const iconSize = Math.max(14, size * 0.22);
+          return (
+            <div
+              className="absolute left-1/2 flex gap-0.5 z-[110] pointer-events-none"
+              style={{
+                top: `calc(100% + 6px)`,
+                transform: 'translateX(-50%)',
+              }}
+            >
+              {active.slice(0, 6).map((cs) => (
+                <Tooltip key={cs.id}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={`rounded-full border bg-card/95 shadow-md flex items-center justify-center ${onRemoveCustomState ? 'pointer-events-auto cursor-pointer hover:bg-destructive/30' : ''}`}
+                      style={{
+                        width: iconSize, height: iconSize,
+                        borderColor: cs.color || 'hsl(var(--border))',
+                      }}
+                      onClick={(e) => {
+                        if (!onRemoveCustomState) return;
+                        e.stopPropagation();
+                        onRemoveCustomState(cs.id);
+                      }}
+                    >
+                      <img src={cs.iconUrl} alt={cs.name} className="w-[80%] h-[80%] object-contain" draggable={false} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    <p className="font-semibold">{cs.name}</p>
+                    {onRemoveCustomState && <p className="text-muted-foreground">Click para quitar</p>}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          );
+        })()}
+
+
         
         {/* Token circle (wrapped in HoverCard when combat tooltip available and token is alive) */}
         {combatTooltip && !isDead ? (
