@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import {
   Eye, EyeOff, Trash2, Crosshair, FileText, Pencil,
   Cloud, CloudOff, RotateCcw, Plus, Search, User, Skull,
-  Swords, SkipForward,
+  Swords, SkipForward, Sparkles,
 } from 'lucide-react';
 import type { TokenData } from './MapViewer';
 import type { Character, Monster } from '@/types/dnd';
