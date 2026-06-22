@@ -165,6 +165,8 @@ export interface GameState {
   dmCameras: Record<string, PlayerCameraSnapshot>;
   /** Single global combat state. Independent of activeMapId — combatants reference their own map via entry.mapId. */
   globalCombat: GlobalCombatState;
+  /** GM-defined custom token states (icons + names). Shared across all tokens. */
+  customStatesLibrary: CustomState[];
 }
 
 const defaultGlobalCombat: GlobalCombatState = {
