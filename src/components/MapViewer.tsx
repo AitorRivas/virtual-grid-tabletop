@@ -113,10 +113,18 @@ export const MapViewer = () => {
     saveDmCamera,
     globalCombat,
     updateGlobalCombat,
+    customStatesLibrary,
+    setTokenCustomStates,
+    updateOverlay,
   } = useGameState();
 
-  // Derive current map state from activeMap
-  const mapImage = activeMap?.mapImage ?? null;
+  // Derive current map state from activeMap, applying active variant if any.
+  const baseMapImage = activeMap?.mapImage ?? null;
+  const activeVariant = activeMap?.activeVariantId
+    ? activeMap.variants?.find((v) => v.id === activeMap.activeVariantId) ?? null
+    : null;
+  const mapImage = activeVariant?.image ?? baseMapImage;
+  const overlays = activeMap?.overlays ?? [];
   const tokens = activeMap?.tokens ?? [];
   const showGrid = activeMap?.showGrid ?? true;
   const gridSize = activeMap?.gridSize ?? DEFAULT_GRID_SIZE;
@@ -127,6 +135,14 @@ export const MapViewer = () => {
   const gridOffsetX = activeMap?.gridOffsetX ?? 0;
   const gridOffsetY = activeMap?.gridOffsetY ?? 0;
   const cellStates = activeMap?.cellStates ?? {};
+
+  // Token states dialog
+  const [statesDialogTokenId, setStatesDialogTokenId] = useState<string | null>(null);
+  const statesDialogToken = tokens.find((t) => t.id === statesDialogTokenId) ?? null;
+  // Selected overlay (for DM drag/scale handles)
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+
+
 
   // Local UI state
   const [zoomLevel, setZoomLevel] = useState(1);
