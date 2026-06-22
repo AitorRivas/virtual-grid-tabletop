@@ -28,6 +28,9 @@ import { MapContextMenu } from './MapContextMenu';
 import { GlobalSheetOpener } from './GlobalSheetOpener';
 import { getDamageTypeLabel } from '@/types/dnd5e';
 import { log, warn } from '@/lib/debug';
+import { OverlayLayer } from './OverlayLayer';
+import { TokenStatesDialog } from './TokenStatesDialog';
+import { ScenePanel } from './ScenePanel';
 
 const DEFAULT_GRID_SIZE = 100;
 
