@@ -294,6 +294,7 @@ function migrateState(raw: any): GameState {
       playerCameras: raw.playerCameras ?? {},
       dmCameras: raw.dmCameras ?? {},
       globalCombat,
+      customStatesLibrary: Array.isArray(raw.customStatesLibrary) ? raw.customStatesLibrary : [],
     };
   }
 
