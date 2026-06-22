@@ -1661,6 +1661,27 @@ export const MapViewer = () => {
           </Button>
         </div>
       )}
+
+      {/* Token states dialog (conditions + custom) */}
+      {statesDialogToken && activeMapId && (
+        <TokenStatesDialog
+          open={!!statesDialogTokenId}
+          onOpenChange={(o) => !o && setStatesDialogTokenId(null)}
+          tokenName={statesDialogToken.name}
+          activeConditions={statesDialogToken.conditions ?? []}
+          onToggleCondition={(cid) => {
+            const cur = statesDialogToken.conditions ?? [];
+            const next = cur.includes(cid) ? cur.filter((c) => c !== cid) : [...cur, cid];
+            setTokens(prev => prev.map(t => t.id === statesDialogToken.id ? { ...t, conditions: next } : t));
+          }}
+          activeCustomStates={statesDialogToken.customStates ?? []}
+          onToggleCustomState={(sid) => {
+            const cur = statesDialogToken.customStates ?? [];
+            const next = cur.includes(sid) ? cur.filter((s) => s !== sid) : [...cur, sid];
+            setTokenCustomStates(activeMapId, statesDialogToken.id, next);
+          }}
+        />
+      )}
     </div>
   );
 };
