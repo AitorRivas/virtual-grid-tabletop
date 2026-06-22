@@ -133,6 +133,7 @@ export const GMSidebar = ({
     { id: 'maps', icon: Layers, label: 'Mapas' },
     { id: 'tokens', icon: Users, label: 'Tokens' },
     { id: 'scenes', icon: Clapperboard, label: 'Escenas' },
+    { id: 'variants', icon: Sparkles, label: 'Variantes y Overlays' },
     { id: 'initiative', icon: Swords, label: 'Iniciativa' },
   ];
 
