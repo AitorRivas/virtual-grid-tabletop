@@ -154,6 +154,11 @@ export const MapContextMenu = ({
                 <ContextMenuItem onSelect={() => onCenterCamera(token)}>
                   <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
                 </ContextMenuItem>
+                {onManageStates && (
+                  <ContextMenuItem onSelect={() => onManageStates(token)}>
+                    <Sparkles className="w-4 h-4 mr-2" /> Añadir estado
+                  </ContextMenuItem>
+                )}
               </>
             ) : (
               <>
@@ -163,6 +168,11 @@ export const MapContextMenu = ({
                 <ContextMenuItem onSelect={() => onCenterCamera(token)}>
                   <Crosshair className="w-4 h-4 mr-2" /> Centrar cámara
                 </ContextMenuItem>
+                {onManageStates && (
+                  <ContextMenuItem onSelect={() => onManageStates(token)}>
+                    <Sparkles className="w-4 h-4 mr-2" /> Añadir estado
+                  </ContextMenuItem>
+                )}
                 <ContextMenuSeparator />
                 <ContextMenuItem onSelect={() => onToggleHidden(token.id)}>
                   {token.hidden ? (
