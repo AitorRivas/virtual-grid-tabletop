@@ -180,7 +180,7 @@ export const ScenePanel = () => {
                   checked={o.visible}
                   onCheckedChange={(v) => updateOverlay(activeMapId, o.id, { visible: !!v })}
                 />
-                <img src={o.imageUrl} alt="" className="w-7 h-7 object-contain rounded" />
+                <img src={o.imageUrl} alt="" loading="lazy" decoding="async" className="w-7 h-7 object-contain rounded" />
                 <Input
                   value={o.name}
                   onChange={(e) => updateOverlay(activeMapId, o.id, { name: e.target.value })}
