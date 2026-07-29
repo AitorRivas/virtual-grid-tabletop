@@ -73,6 +73,7 @@ export const Token = ({
   onMove, onClick, onDelete, onMarkDead, onRevive, onRotate, onToggleHidden, mapContainerRef,
   combatTooltip = null,
   hideHpBar = false,
+  hideName = false,
   readOnly = false,
   customStates = [],
   customStatesLibrary = [],
