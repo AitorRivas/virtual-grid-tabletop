@@ -364,6 +364,16 @@ class GameStateStore {
   private loaded = false;
   private channel: BroadcastChannel | null = null;
   private instanceId: string;
+  /**
+   * Persist + broadcast are heavy when the state contains large base64 assets
+   * (map images, variants, overlays, fog data URLs). We coalesce rapid updates
+   * (token drags, overlay moves, timer ticks) into a single flush per frame
+   * window so a burst of setState calls does not stringify multi-MB payloads
+   * dozens of times per second.
+   */
+  private flushHandle: number | null = null;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly FLUSH_DEBOUNCE_MS = 120;
 
   constructor() {
     this.state = defaultState;
@@ -375,6 +385,12 @@ class GameStateStore {
     this.attachBroadcastChannel();
 
     window.addEventListener('storage', this.handleStorageEvent);
+    // Make sure pending work is not lost on unload/tab hide.
+    window.addEventListener('beforeunload', () => this.flushPending());
+    window.addEventListener('pagehide', () => this.flushPending());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.flushPending();
+    });
     this.requestLatestState();
   }
 
@@ -388,6 +404,8 @@ class GameStateStore {
 
       if (message.type === 'REQUEST_STATE') {
         if (this.isStateNewerThan(message.revision, message.updatedAt)) {
+          // Ensure we broadcast the freshest state, not a stale pre-flush one.
+          this.flushPending();
           this.channel?.postMessage({
             type: 'STATE_UPDATE',
             sourceId: this.instanceId,
@@ -487,6 +505,35 @@ class GameStateStore {
     }
   }
 
+  /** Schedule a coalesced persist + broadcast. Safe to call many times per frame. */
+  private scheduleFlush() {
+    if (this.flushHandle !== null || this.flushTimer !== null) return;
+
+    const run = () => {
+      this.flushHandle = null;
+      this.flushTimer = null;
+      this.persist();
+      this.broadcastState();
+    };
+
+    // Prefer rAF for UI-driven bursts; fall back to a short timeout so state
+    // still flushes when the tab is backgrounded.
+    if (typeof requestAnimationFrame === 'function') {
+      this.flushHandle = requestAnimationFrame(run);
+    }
+    this.flushTimer = setTimeout(run, this.FLUSH_DEBOUNCE_MS);
+  }
+
+  private flushPending() {
+    if (this.flushHandle === null && this.flushTimer === null) return;
+    if (this.flushHandle !== null) cancelAnimationFrame(this.flushHandle);
+    if (this.flushTimer !== null) clearTimeout(this.flushTimer);
+    this.flushHandle = null;
+    this.flushTimer = null;
+    this.persist();
+    this.broadcastState();
+  }
+
   private notify() {
     this.listeners.forEach((fn) => fn());
   }
@@ -515,9 +562,9 @@ class GameStateStore {
       updatedAt: Date.now(),
     };
 
-    this.persist();
-    this.broadcastState();
+    // Local UI updates immediately; heavy IO is coalesced.
     this.notify();
+    this.scheduleFlush();
   }
 
   clear() {
@@ -528,10 +575,12 @@ class GameStateStore {
     };
 
     localStorage.removeItem(STORAGE_KEY);
+    this.flushPending();
     this.broadcastState();
     this.notify();
   }
 }
+
 
 // Singleton instance
 export const gameStateStore = new GameStateStore();
