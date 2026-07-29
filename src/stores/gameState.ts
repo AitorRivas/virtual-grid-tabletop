@@ -192,6 +192,7 @@ const defaultPlayerViewConfig: PlayerViewConfig = {
   syncSelection: false,
   showEnemyHpBars: false,
   hideUndeadHpBars: false,
+  hideEnemyNames: true,
 };
 
 const defaultDmCamera: DmCameraState = {
