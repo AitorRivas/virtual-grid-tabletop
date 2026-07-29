@@ -35,6 +35,12 @@ const ITEMS: { key: keyof PlayerViewConfig; label: string; description: string; 
     description: 'Oculta la barra de vida de criaturas de tipo no-muerto, aunque el resto de enemigos sí se muestren',
     icon: Skull,
   },
+  {
+    key: 'hideEnemyNames',
+    label: 'Ocultar nombres de enemigos',
+    description: 'Oculta las etiquetas de nombre de enemigos y NPCs en la Vista de Jugadores. Los PJ siempre son visibles.',
+    icon: EyeOff,
+  },
 ];
 
 export const PlayerViewConfigPanel = ({ config, onChange }: PlayerViewConfigPanelProps) => {
