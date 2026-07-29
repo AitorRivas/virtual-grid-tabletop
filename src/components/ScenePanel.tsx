@@ -33,11 +33,7 @@ export const ScenePanel = () => {
   const variants = activeMap.variants ?? [];
   const overlays = activeMap.overlays ?? [];
 
-  const readFile = (file: File, onLoad: (data: string) => void, maxMB = 8) => {
-    if (file.size > maxMB * 1024 * 1024) {
-      toast.error(`Imagen demasiado grande (máx ${maxMB} MB)`);
-      return;
-    }
+  const readFile = (file: File, onLoad: (data: string) => void) => {
     const reader = new FileReader();
     reader.onload = () => onLoad(String(reader.result || ''));
     reader.readAsDataURL(file);
