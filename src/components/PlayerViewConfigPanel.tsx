@@ -1,4 +1,4 @@
-import { ZoomIn, MousePointerClick, Settings2, Heart, Skull } from 'lucide-react';
+import { ZoomIn, MousePointerClick, Settings2, Heart, Skull, EyeOff } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
