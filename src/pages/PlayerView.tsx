@@ -668,6 +668,7 @@ const PlayerView = () => {
                   isActiveInitiative={token.id === activeInitiativeTokenId}
                   showHiddenStyle={false}
                   hideHpBar={hideHpBar}
+                  hideName={!isPj && playerViewConfig.hideEnemyNames}
                   readOnly={true}
                   onMove={() => {}}
                   onClick={() => {}}

@@ -118,6 +118,8 @@ export interface PlayerViewConfig {
   showEnemyHpBars: boolean;
   /** When true, HP bars of undead-type creatures are hidden (overrides showEnemyHpBars for that subset). */
   hideUndeadHpBars: boolean;
+  /** When true (default), enemy/NPC name labels are hidden in Player View. PJ names always visible. */
+  hideEnemyNames: boolean;
 }
 
 
@@ -190,6 +192,7 @@ const defaultPlayerViewConfig: PlayerViewConfig = {
   syncSelection: false,
   showEnemyHpBars: false,
   hideUndeadHpBars: false,
+  hideEnemyNames: true,
 };
 
 const defaultDmCamera: DmCameraState = {

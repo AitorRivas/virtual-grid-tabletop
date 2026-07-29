@@ -43,6 +43,8 @@ interface TokenProps {
   combatTooltip?: CombatTooltipData | null;
   /** When true, the HP bar underneath the token is not rendered (used by Player View to hide enemy/NPC HP). */
   hideHpBar?: boolean;
+  /** When true, the name label under the token is not rendered (used by Player View to hide enemy/NPC names). */
+  hideName?: boolean;
   /** When true, the token is read-only: no hover action buttons (kill/delete/hide) are shown. */
   readOnly?: boolean;
   /** Token's custom state ids. */
@@ -71,6 +73,7 @@ export const Token = ({
   onMove, onClick, onDelete, onMarkDead, onRevive, onRotate, onToggleHidden, mapContainerRef,
   combatTooltip = null,
   hideHpBar = false,
+  hideName = false,
   readOnly = false,
   customStates = [],
   customStatesLibrary = [],
@@ -527,19 +530,21 @@ export const Token = ({
         )}
         
         {/* Token name label */}
-        <div
-          className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-card/90 backdrop-blur-sm rounded font-semibold text-card-foreground border border-border pointer-events-none"
-          style={{ 
-            top: hpMax > 0 && status === 'active' && !hideHpBar ? size + Math.max(4, size * 0.08) + 8 : size + 4,
-            fontSize: Math.max(10, size * 0.2),
-            padding: `${Math.max(2, size * 0.04)}px ${Math.max(6, size * 0.08)}px`,
-            lineHeight: 1.2,
-          }}
-        >
-          {name}
-          {isDead && ' 💀'}
-          {isInactive && ' ⏸️'}
-        </div>
+        {!hideName && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-card/90 backdrop-blur-sm rounded font-semibold text-card-foreground border border-border pointer-events-none"
+            style={{ 
+              top: hpMax > 0 && status === 'active' && !hideHpBar ? size + Math.max(4, size * 0.08) + 8 : size + 4,
+              fontSize: Math.max(10, size * 0.2),
+              padding: `${Math.max(2, size * 0.04)}px ${Math.max(6, size * 0.08)}px`,
+              lineHeight: 1.2,
+            }}
+          >
+            {name}
+            {isDead && ' 💀'}
+            {isInactive && ' ⏸️'}
+          </div>
+        )}
 
         {/* Quick action buttons (with invisible bridge to prevent hover gap) */}
         {!readOnly && showActions && (status === 'active' || isDead) && (
