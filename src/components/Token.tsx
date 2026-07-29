@@ -43,6 +43,8 @@ interface TokenProps {
   combatTooltip?: CombatTooltipData | null;
   /** When true, the HP bar underneath the token is not rendered (used by Player View to hide enemy/NPC HP). */
   hideHpBar?: boolean;
+  /** When true, the name label under the token is not rendered (used by Player View to hide enemy/NPC names). */
+  hideName?: boolean;
   /** When true, the token is read-only: no hover action buttons (kill/delete/hide) are shown. */
   readOnly?: boolean;
   /** Token's custom state ids. */
