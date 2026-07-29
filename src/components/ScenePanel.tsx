@@ -106,10 +106,11 @@ export const ScenePanel = () => {
                 className="flex items-center gap-2 flex-1 min-w-0"
               >
                 {v.image ? (
-                  <img src={v.image} alt="" className="w-6 h-6 object-cover rounded" />
+                  <img src={v.image} alt="" loading="lazy" decoding="async" className="w-6 h-6 object-cover rounded" />
                 ) : (
                   <div className="w-6 h-6 rounded bg-muted" />
                 )}
+
                 <Input
                   value={v.name}
                   onChange={(e) => updateMapVariant(activeMapId, v.id, { name: e.target.value })}
@@ -179,7 +180,7 @@ export const ScenePanel = () => {
                   checked={o.visible}
                   onCheckedChange={(v) => updateOverlay(activeMapId, o.id, { visible: !!v })}
                 />
-                <img src={o.imageUrl} alt="" className="w-7 h-7 object-contain rounded" />
+                <img src={o.imageUrl} alt="" loading="lazy" decoding="async" className="w-7 h-7 object-contain rounded" />
                 <Input
                   value={o.name}
                   onChange={(e) => updateOverlay(activeMapId, o.id, { name: e.target.value })}
