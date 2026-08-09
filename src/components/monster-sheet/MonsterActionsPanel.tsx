@@ -415,35 +415,39 @@ export const MonsterActionsPanel = ({
   reactions,
   legendaryActions,
   lairActions,
+  mythicActions,
   abilities,
   proficiencyBonus,
   onChange,
   readOnly
 }: MonsterActionsPanelProps) => {
+  const mythic = mythicActions ?? { trigger: null, actions: [] };
+  // In read-only mode, empty sections are hidden entirely.
+  const show = (has: boolean) => !readOnly || has;
+  const tabs = [
+    { value: 'actions', label: 'Acciones', icon: Swords, visible: show(actions.length > 0) },
+    { value: 'bonus', label: 'Adicionales', icon: Zap, visible: show(bonusActions.length > 0) },
+    { value: 'reactions', label: 'Reacciones', icon: Shield, visible: show(reactions.length > 0) },
+    { value: 'legendary', label: 'Legendarias', icon: Crown, visible: show(legendaryActions.actions.length > 0 || legendaryActions.count > 0) },
+    { value: 'mythic', label: 'Míticas', icon: Sparkles, visible: show(mythic.actions.length > 0 || !!mythic.trigger) },
+    { value: 'lair', label: 'Guarida', icon: Castle, visible: show(lairActions.length > 0) },
+  ].filter(t => t.visible);
+
+  if (tabs.length === 0) {
+    return <p className="text-sm text-muted-foreground italic py-2">Esta criatura no tiene acciones.</p>;
+  }
+
   return (
-    <Tabs defaultValue="actions" className="w-full">
-      <TabsList className="grid w-full grid-cols-5 text-xs">
-        <TabsTrigger value="actions" className="gap-1 px-1">
-          <Swords className="w-3 h-3" />
-          <span className="hidden sm:inline">Acciones</span>
-        </TabsTrigger>
-        <TabsTrigger value="bonus" className="gap-1 px-1">
-          <Zap className="w-3 h-3" />
-          <span className="hidden sm:inline">Adicionales</span>
-        </TabsTrigger>
-        <TabsTrigger value="reactions" className="gap-1 px-1">
-          <Shield className="w-3 h-3" />
-          <span className="hidden sm:inline">Reacciones</span>
-        </TabsTrigger>
-        <TabsTrigger value="legendary" className="gap-1 px-1">
-          <Crown className="w-3 h-3" />
-          <span className="hidden sm:inline">Legendarias</span>
-        </TabsTrigger>
-        <TabsTrigger value="lair" className="gap-1 px-1">
-          <Castle className="w-3 h-3" />
-          <span className="hidden sm:inline">Guarida</span>
-        </TabsTrigger>
+    <Tabs defaultValue={tabs[0].value} className="w-full">
+      <TabsList className="grid w-full text-xs" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+        {tabs.map(t => (
+          <TabsTrigger key={t.value} value={t.value} className="gap-1 px-1">
+            <t.icon className="w-3 h-3" />
+            <span className="hidden sm:inline">{t.label}</span>
+          </TabsTrigger>
+        ))}
       </TabsList>
+
 
       <TabsContent value="actions" className="mt-4">
         <ActionList
