@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, ChevronDown, Swords, Zap, Shield, Crown, Castle } from 'lucide-react';
-import { CharacterAction, ActionType, DAMAGE_TYPES, SAVES } from '@/types/dnd5e';
+import { Plus, Trash2, ChevronDown, Swords, Zap, Shield, Crown, Castle, Sparkles } from 'lucide-react';
+import { CharacterAction, ActionType, DAMAGE_TYPES, SAVES, MythicActions } from '@/types/dnd5e';
 import { getModifier, formatModifier } from '@/types/dnd';
 
 interface MonsterActionsPanelProps {
