@@ -5,6 +5,7 @@ import { useLibraryGroups } from '@/hooks/useLibraryGroups';
 import { LibraryGroupsBar } from './library/LibraryGroupsBar';
 import { GroupAssignMenu } from './library/GroupAssignMenu';
 import { EncounterManager } from './EncounterManager';
+import { BestiaryImportDialog } from './library/BestiaryImportDialog';
 import {
   Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS,
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
