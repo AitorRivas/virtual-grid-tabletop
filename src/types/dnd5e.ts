@@ -544,6 +544,8 @@ export interface ExtendedMonster {
   external_id: string | null;
   source: string | null;
   source_version: string | null;
+  /** Criatura del bestiario público: visible para todos y solo editable por administradores. */
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 }
