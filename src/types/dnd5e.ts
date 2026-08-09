@@ -144,6 +144,8 @@ export interface Feature {
 }
 
 // ============= SPEEDS & SENSES =============
+export type SpeedKind = 'walk' | 'fly' | 'swim' | 'climb' | 'burrow';
+
 export interface Speeds {
   walk: number;
   fly?: number;
@@ -151,6 +153,10 @@ export interface Speeds {
   climb?: number;
   burrow?: number;
   hover?: boolean;
+  /** Extra text per speed, e.g. { fly: "(flotar)" } */
+  notes?: Partial<Record<SpeedKind, string>>;
+  /** Non-standard movement modes coming from imported stat blocks. */
+  other?: { name: string; value?: number; note?: string }[];
 }
 
 export interface Senses {
@@ -161,6 +167,10 @@ export interface Senses {
   blindsight?: number;
   tremorsense?: number;
   truesight?: number;
+  /** Extra text per sense, e.g. { blindsight: "(ciego más allá)" } */
+  notes?: Partial<Record<'darkvision' | 'blindsight' | 'tremorsense' | 'truesight', string>>;
+  /** Non-standard senses. */
+  other?: { name: string; range?: number; note?: string }[];
 }
 
 // ============= RESISTANCES =============
@@ -169,12 +179,61 @@ export interface Resistances {
   conditions: string[];
 }
 
+/**
+ * Conditional/special text for defenses that cannot be reduced to plain tags,
+ * e.g. "contundente, cortante y perforante de ataques no mágicos".
+ */
+export interface DefenseNotes {
+  vulnerabilities?: string;
+  resistances?: string;
+  immunities?: string;
+  condition_immunities?: string;
+}
+
+// ============= MONSTER SPELLCASTING =============
+export interface SpellcastingGroup {
+  /** e.g. "A voluntad", "3/día cada uno", "Nivel 1 (4 espacios)" */
+  label: string;
+  spells: string[];
+  /** Optional slot count for level-based groups. */
+  slots?: number;
+  level?: number;
+}
+
+export interface MonsterSpellcasting {
+  /** Free-form intro text of the spellcasting trait. */
+  description?: string;
+  ability?: SaveType;
+  save_dc?: number;
+  attack_bonus?: number;
+  /** "A voluntad" spells. */
+  at_will?: string[];
+  /** Grouped per-day / per-level / special uses. */
+  groups?: SpellcastingGroup[];
+}
+
+// ============= MYTHIC ACTIONS =============
+export interface MythicActions {
+  /** Text describing what happens when the mythic phase triggers. */
+  trigger?: string | null;
+  actions: CharacterAction[];
+}
+
+// ============= SPECIAL EQUIPMENT =============
+export interface SpecialEquipmentEntry {
+  id: string;
+  name: string;
+  description?: string;
+  quantity?: number;
+}
+
 // ============= MULTICLASS =============
 export interface MulticlassEntry {
   class: string;
   subclass?: string;
   level: number;
 }
+
 
 // ============= SKILL DATA =============
 export const SKILLS: { value: Skill; label: string; ability: SaveType }[] = [
