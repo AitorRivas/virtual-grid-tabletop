@@ -183,8 +183,19 @@ export const useExtendedMonsters = () => {
     return parsed;
   };
 
+  const isLocked = (id: string) => {
+    const target = monsters.find(m => m.id === id);
+    return !!target?.is_public && !isAdmin;
+  };
+
   const updateMonster = async (id: string, updates: Partial<ExtendedMonster>): Promise<boolean> => {
+    if (isLocked(id)) {
+      toast.error('Las criaturas del bestiario público no se pueden editar');
+      return false;
+    }
     const dbUpdates: any = { ...updates };
+    delete dbUpdates.is_public;
+    
     
     // Convert complex types to JSON
     if (updates.speeds) dbUpdates.speeds = updates.speeds;
