@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useCharacters } from '@/hooks/useCharacters';
+import { useAuth } from '@/hooks/useAuth';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
 import { useLibraryGroups } from '@/hooks/useLibraryGroups';
 import { LibraryGroupsBar } from './library/LibraryGroupsBar';
@@ -36,6 +37,7 @@ interface CharacterManagerProps {
 }
 
 export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: CharacterManagerProps) => {
+  const { isAdmin } = useAuth();
   const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter, cloneCharacter } = useCharacters();
   const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster, refetch: refetchMonsters } = useExtendedMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
