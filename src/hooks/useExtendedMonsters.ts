@@ -105,7 +105,7 @@ export const useExtendedMonsters = () => {
   const { data: monsters = [], isLoading: loading, refetch } = useQuery({
     queryKey: monstersQueryKey,
     queryFn: fetchMonsters,
-    enabled: !!user,
+    enabled: !!user || isGuest,
     staleTime: MONSTERS_QUERY_STALE_TIME_MS,
     retry: false,
     refetchOnMount: false,
