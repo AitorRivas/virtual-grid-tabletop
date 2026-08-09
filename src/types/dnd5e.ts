@@ -36,6 +36,12 @@ export interface EquipmentItem {
 // ============= ACTION TYPES =============
 export type ActionType = 'action' | 'bonus_action' | 'reaction' | 'legendary' | 'lair' | 'free';
 
+/**
+ * Flexible action model reused by every action-like section:
+ * actions, bonus_actions, reactions, legendary_actions, lair_actions, mythic_actions.
+ * Only `id`, `name` and `type` are structurally required; a valid action can be
+ * just a name + description (e.g. "Multiataque").
+ */
 export interface CharacterAction {
   id: string;
   name: string;
@@ -45,24 +51,41 @@ export interface CharacterAction {
   is_attack?: boolean;
   attack_ability?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
   attack_bonus?: number; // Additional bonus on top of calculated
+  /** Fully pre-computed attack bonus coming from an imported stat block (overrides calculation). */
+  attack_bonus_override?: number;
   // Damage info
   damage_dice?: string;
   damage_type?: DamageType;
   damage_ability?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma' | 'none';
   damage_bonus?: number;
+  /** Free-form damage text, e.g. "12 (2d8 + 3) cortante más 7 (2d6) fuego" */
+  damage_text?: string;
+  /** Secondary damage instances (multi-type attacks). */
+  extra_damage?: { dice?: string; type?: DamageType; text?: string }[];
   // Save info
   save_dc_ability?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
   save_dc_bonus?: number;
+  /** Fixed save DC coming from an imported stat block. */
+  save_dc?: number;
   save_type?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
   // Range
   range?: string;
-  // Legendary action cost
+  /** Melee reach, when different from `range` (e.g. "10 pies"). */
+  melee_range?: string;
+  /** Conditions applied on hit/failed save. */
+  conditions_applied?: string[];
+  /** Extra effects text (push, grapple, ongoing damage...). */
+  additional_effects?: string;
+  // Legendary / mythic action cost
   legendary_cost?: number;
+  /** Generic action cost (alias-free, used by mythic/legendary imports). */
+  cost?: number;
   // Uses
   uses_max?: number;
   uses_current?: number;
   recharge?: string; // "short rest", "long rest", "recharge 5-6"
 }
+
 
 // ============= SPELL TYPES =============
 export type SpellSchool = 'abjuration' | 'conjuration' | 'divination' | 'enchantment' | 'evocation' | 'illusion' | 'necromancy' | 'transmutation';
