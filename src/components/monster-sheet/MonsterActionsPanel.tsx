@@ -517,6 +517,31 @@ export const MonsterActionsPanel = ({
         />
       </TabsContent>
 
+      <TabsContent value="mythic" className="mt-4 space-y-4">
+        {readOnly ? (
+          mythic.trigger ? <p className="text-sm whitespace-pre-wrap">{mythic.trigger}</p> : null
+        ) : (
+          <div>
+            <Label className="text-xs">Desencadenante de la fase mítica</Label>
+            <Textarea
+              value={mythic.trigger || ''}
+              onChange={(e) => onChange({ mythic_actions: { ...mythic, trigger: e.target.value || null } })}
+              rows={2}
+              placeholder="Si la criatura muere, en su lugar..."
+            />
+          </div>
+        )}
+        <ActionList
+          actions={mythic.actions}
+          abilities={abilities}
+          profBonus={proficiencyBonus}
+          onChange={(a) => onChange({ mythic_actions: { ...mythic, actions: a } })}
+          readOnly={readOnly}
+          addLabel="Añadir acción mítica"
+          showCost
+        />
+      </TabsContent>
+
       <TabsContent value="lair" className="mt-4">
         <ActionList
           actions={lairActions}
