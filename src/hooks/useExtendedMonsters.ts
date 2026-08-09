@@ -79,9 +79,9 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
 
 
 export const useExtendedMonsters = () => {
-  const { user } = useAuth();
+  const { user, isGuest, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const monstersQueryKey = ['extended-monsters', user?.id ?? 'anonymous'] as const;
+  const monstersQueryKey = ['extended-monsters', user?.id ?? (isGuest ? 'guest' : 'anonymous')] as const;
 
   const fetchMonsters = async (): Promise<ExtendedMonster[]> => {
     const { data, error } = await supabase
