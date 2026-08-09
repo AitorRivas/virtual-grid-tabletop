@@ -71,6 +71,7 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
     external_id: data.external_id ?? null,
     source: data.source ?? null,
     source_version: data.source_version ?? null,
+    is_public: data.is_public ?? false,
     created_at: data.created_at,
     updated_at: data.updated_at,
   };
