@@ -37,7 +37,7 @@ interface CharacterManagerProps {
 
 export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: CharacterManagerProps) => {
   const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter, cloneCharacter } = useCharacters();
-  const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster } = useExtendedMonsters();
+  const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster, refetch: refetchMonsters } = useExtendedMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
   const [showNewMonster, setShowNewMonster] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<ExtendedCharacter | null>(null);
