@@ -963,7 +963,14 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                           />
                         )}
                         <div className="min-w-0">
-                          <span className="font-semibold text-sm block truncate">{monster.name}</span>
+                          <span className="font-semibold text-sm block truncate">
+                            {monster.name}
+                            {monster.is_public && (
+                              <span className="ml-1.5 align-middle text-[10px] font-normal text-primary border border-primary/40 rounded px-1 py-px">
+                                Pública
+                              </span>
+                            )}
+                          </span>
                           <span className="text-xs text-muted-foreground block">
                             {getMonsterTypeLabel(monster.type)} {getCreatureSizeLabel(monster.size)} · CR {monster.challenge_rating}
                           </span>
@@ -993,9 +1000,11 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                             <DropdownMenuItem onClick={() => cloneMonster(monster)}>
                               <Copy className="w-4 h-4 mr-2" /> Clonar
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => deleteMonster(monster.id)}>
-                              <Trash2 className="w-4 h-4 mr-2" /> Eliminar
-                            </DropdownMenuItem>
+                            {(!monster.is_public || isAdmin) && (
+                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMonster(monster.id)}>
+                                <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -1018,6 +1027,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                 <MonsterSheet
                   monster={selectedMonster}
                   onClose={() => setSelectedMonster(null)}
+                  canEdit={!selectedMonster.is_public || isAdmin}
                   onSave={async (m) => {
                     const success = await updateMonster(m.id, m);
                     if (success) {
