@@ -96,9 +96,28 @@ const ActionItem = ({
           <div className="p-3 border-t space-y-3">
             {readOnly ? (
               <>
-                <p className="text-sm whitespace-pre-wrap">{action.description}</p>
+                {action.description && <p className="text-sm whitespace-pre-wrap">{action.description}</p>}
                 {action.range && <p className="text-xs text-muted-foreground">Alcance: {action.range}</p>}
+                {action.melee_range && <p className="text-xs text-muted-foreground">Alcance c. a c.: {action.melee_range}</p>}
+                {action.damage_text && <p className="text-xs text-destructive">Daño: {action.damage_text}</p>}
+                {(action.save_dc || action.save_type) && (
+                  <p className="text-xs text-muted-foreground">
+                    Salvación: {action.save_type ? SAVES.find(s => s.value === action.save_type)?.label : ''}
+                    {action.save_dc ? ` CD ${action.save_dc}` : ''}
+                  </p>
+                )}
+                {action.conditions_applied && action.conditions_applied.length > 0 && (
+                  <p className="text-xs text-muted-foreground">Condiciones: {action.conditions_applied.join(', ')}</p>
+                )}
+                {action.additional_effects && (
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{action.additional_effects}</p>
+                )}
+                {action.recharge && <p className="text-xs text-muted-foreground">Recarga: {action.recharge}</p>}
+                {action.uses_max ? (
+                  <p className="text-xs text-muted-foreground">Usos: {action.uses_current ?? action.uses_max}/{action.uses_max}</p>
+                ) : null}
               </>
+
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-2">
