@@ -5,6 +5,7 @@ import { useLibraryGroups } from '@/hooks/useLibraryGroups';
 import { LibraryGroupsBar } from './library/LibraryGroupsBar';
 import { GroupAssignMenu } from './library/GroupAssignMenu';
 import { EncounterManager } from './EncounterManager';
+import { BestiaryImportDialog } from './library/BestiaryImportDialog';
 import {
   Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS,
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
@@ -36,7 +37,7 @@ interface CharacterManagerProps {
 
 export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: CharacterManagerProps) => {
   const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter, cloneCharacter } = useCharacters();
-  const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster } = useExtendedMonsters();
+  const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster, refetch: refetchMonsters } = useExtendedMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
   const [showNewMonster, setShowNewMonster] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<ExtendedCharacter | null>(null);
@@ -680,6 +681,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
         </TabsContent>
 
         <TabsContent value="monsters" className="m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
+          <BestiaryImportDialog monsters={monsters} onImported={() => { refetchMonsters(); }} />
           <Dialog open={showNewMonster} onOpenChange={setShowNewMonster}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2" variant="secondary">
