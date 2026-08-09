@@ -24,9 +24,11 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
     user_id: data.user_id,
     name: data.name,
     type: data.type,
+    subtype: data.subtype ?? null,
     size: data.size,
     alignment: data.alignment,
     challenge_rating: data.challenge_rating,
+    xp: data.xp ?? null,
     proficiency_bonus: data.proficiency_bonus || 2,
     strength: data.strength,
     dexterity: data.dexterity,
@@ -37,6 +39,7 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
     armor_class: data.armor_class,
     hit_points: data.hit_points,
     hit_dice: data.hit_dice,
+    initiative_bonus: data.initiative_bonus ?? 0,
     speed: data.speed,
     speeds: (data.speeds as Speeds) || { walk: 30 },
     senses: (data.senses as Senses) || { passive_perception: 10 },
@@ -44,6 +47,7 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
     resistances: (data.resistances as Resistances) || { damage: [], conditions: [] },
     immunities: (data.immunities as Resistances) || { damage: [], conditions: [] },
     vulnerabilities: (data.vulnerabilities as DamageType[]) || [],
+    defense_notes: (data.defense_notes as DefenseNotes) || {},
     saves: (data.saves as { ability: SaveType; bonus: number }[]) || [],
     skills: (data.skills as { skill: Skill; bonus: number }[]) || [],
     traits: (data.traits as Feature[]) || [],
@@ -52,14 +56,22 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
     reactions: (data.reactions as CharacterAction[]) || [],
     legendary_actions: (data.legendary_actions as { count: number; actions: CharacterAction[] }) || { count: 0, actions: [] },
     lair_actions: (data.lair_actions as CharacterAction[]) || [],
+    mythic_actions: (data.mythic_actions as MythicActions) || { trigger: null, actions: [] },
+    spellcasting: (data.spellcasting as MonsterSpellcasting) ?? null,
+    special_equipment: (data.special_equipment as SpecialEquipmentEntry[]) || [],
     token_color: data.token_color,
     token_size: data.token_size,
     image_url: data.image_url,
+    token_image_url: data.token_image_url ?? null,
     notes: data.notes,
+    external_id: data.external_id ?? null,
+    source: data.source ?? null,
+    source_version: data.source_version ?? null,
     created_at: data.created_at,
     updated_at: data.updated_at,
   };
 };
+
 
 export const useExtendedMonsters = () => {
   const { user } = useAuth();
