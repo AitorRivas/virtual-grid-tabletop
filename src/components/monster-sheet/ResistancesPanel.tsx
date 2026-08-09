@@ -3,16 +3,20 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, X, Shield, Flame, Skull } from 'lucide-react';
-import { Resistances, DamageType, DAMAGE_TYPES, CONDITIONS } from '@/types/dnd5e';
+import { Input } from '@/components/ui/input';
+import { Resistances, DamageType, DAMAGE_TYPES, CONDITIONS, DefenseNotes } from '@/types/dnd5e';
 
 interface ResistancesPanelProps {
   resistances: Resistances;
   immunities: Resistances;
   vulnerabilities: DamageType[];
+  /** Conditional/free-form defense text (e.g. "de armas no mágicas"). */
+  defenseNotes?: DefenseNotes;
   onChange: (updates: {
     resistances?: Resistances;
     immunities?: Resistances;
     vulnerabilities?: DamageType[];
+    defense_notes?: DefenseNotes;
   }) => void;
   readOnly: boolean;
 }
@@ -142,9 +146,28 @@ export const ResistancesPanel = ({
   resistances,
   immunities,
   vulnerabilities,
+  defenseNotes = {},
   onChange,
   readOnly
 }: ResistancesPanelProps) => {
+  const noteField = (key: keyof DefenseNotes, label: string, placeholder: string) => {
+    const value = defenseNotes[key];
+    if (readOnly) {
+      return value ? <p className="text-xs text-muted-foreground italic">{value}</p> : null;
+    }
+    return (
+      <div>
+        <Label className="text-[11px] text-muted-foreground">{label}</Label>
+        <Input
+          value={value || ''}
+          onChange={(e) => onChange({ defense_notes: { ...defenseNotes, [key]: e.target.value || undefined } })}
+          placeholder={placeholder}
+          className="h-7 text-xs"
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Vulnerabilities */}
@@ -156,6 +179,7 @@ export const ResistancesPanel = ({
         readOnly={readOnly}
         variant="destructive"
       />
+      {noteField('vulnerabilities', 'Nota de vulnerabilidades', 'ej: de armas de plata')}
 
       {/* Resistances */}
       <div className="space-y-4">
@@ -173,6 +197,7 @@ export const ResistancesPanel = ({
           onChange={(v) => onChange({ resistances: { ...resistances, conditions: v } })}
           readOnly={readOnly}
         />
+        {noteField('resistances', 'Nota de resistencias', 'ej: contundente, cortante y perforante de ataques no mágicos')}
       </div>
 
       {/* Immunities */}
@@ -190,6 +215,8 @@ export const ResistancesPanel = ({
           onChange={(v) => onChange({ immunities: { ...immunities, conditions: v } })}
           readOnly={readOnly}
         />
+        {noteField('immunities', 'Nota de inmunidades', 'ej: veneno de origen mágico')}
+        {noteField('condition_immunities', 'Nota de inmunidades a condiciones', 'ej: mientras esté en su guarida')}
       </div>
     </div>
   );
