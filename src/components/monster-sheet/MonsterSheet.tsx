@@ -332,22 +332,30 @@ export const MonsterSheet = ({
           </div>
 
           <Tabs defaultValue={initialTab ?? "abilities"} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="abilities" className="text-xs gap-1">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="abilities" className="text-xs gap-1 px-1">
                 <User className="w-3 h-3" />
                 <span className="hidden sm:inline">Atributos</span>
               </TabsTrigger>
-              <TabsTrigger value="traits" className="text-xs gap-1">
+              <TabsTrigger value="traits" className="text-xs gap-1 px-1">
                 <Star className="w-3 h-3" />
                 <span className="hidden sm:inline">Rasgos</span>
               </TabsTrigger>
-              <TabsTrigger value="actions" className="text-xs gap-1">
+              <TabsTrigger value="actions" className="text-xs gap-1 px-1">
                 <Swords className="w-3 h-3" />
                 <span className="hidden sm:inline">Acciones</span>
               </TabsTrigger>
-              <TabsTrigger value="defenses" className="text-xs gap-1">
+              <TabsTrigger value="defenses" className="text-xs gap-1 px-1">
                 <Shield className="w-3 h-3" />
                 <span className="hidden sm:inline">Defensas</span>
+              </TabsTrigger>
+              <TabsTrigger value="movement" className="text-xs gap-1 px-1">
+                <Footprints className="w-3 h-3" />
+                <span className="hidden sm:inline">Movimiento</span>
+              </TabsTrigger>
+              <TabsTrigger value="magic" className="text-xs gap-1 px-1">
+                <Sparkles className="w-3 h-3" />
+                <span className="hidden sm:inline">Magia</span>
               </TabsTrigger>
             </TabsList>
 
@@ -395,6 +403,7 @@ export const MonsterSheet = ({
                 reactions={monster.reactions}
                 legendaryActions={monster.legendary_actions}
                 lairActions={monster.lair_actions}
+                mythicActions={monster.mythic_actions ?? { trigger: null, actions: [] }}
                 abilities={{
                   strength: monster.strength,
                   dexterity: monster.dexterity,
@@ -414,11 +423,32 @@ export const MonsterSheet = ({
                 resistances={monster.resistances}
                 immunities={monster.immunities}
                 vulnerabilities={monster.vulnerabilities}
+                defenseNotes={monster.defense_notes ?? {}}
+                onChange={(updates) => updateMultiple(updates as Partial<ExtendedMonster>)}
+                readOnly={readOnly}
+              />
+            </TabsContent>
+
+            <TabsContent value="movement" className="mt-4">
+              <MonsterMovementPanel
+                speeds={monster.speeds}
+                senses={monster.senses}
+                languages={monster.languages}
+                onChange={(updates) => updateMultiple(updates as Partial<ExtendedMonster>)}
+                readOnly={readOnly}
+              />
+            </TabsContent>
+
+            <TabsContent value="magic" className="mt-4">
+              <MonsterSpellcastingPanel
+                spellcasting={monster.spellcasting ?? null}
+                specialEquipment={monster.special_equipment ?? []}
                 onChange={(updates) => updateMultiple(updates as Partial<ExtendedMonster>)}
                 readOnly={readOnly}
               />
             </TabsContent>
           </Tabs>
+
 
           {/* Notes Section */}
           <div className="space-y-2">
