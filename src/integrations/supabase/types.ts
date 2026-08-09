@@ -264,6 +264,48 @@ export type Database = {
           },
         ]
       }
+      import_history: {
+        Row: {
+          created_at: string
+          created_count: number
+          error_count: number
+          errors: Json
+          file_name: string | null
+          id: string
+          skipped_count: number
+          source: string
+          total: number
+          updated_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_count?: number
+          error_count?: number
+          errors?: Json
+          file_name?: string | null
+          id?: string
+          skipped_count?: number
+          source?: string
+          total?: number
+          updated_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_count?: number
+          error_count?: number
+          errors?: Json
+          file_name?: string | null
+          id?: string
+          skipped_count?: number
+          source?: string
+          total?: number
+          updated_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       library_groups: {
         Row: {
           color: string | null
