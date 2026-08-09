@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload, Bookmark, Image, Link, Trash2 } from 'lucide-react';
+import { User, Swords, Shield, Star, Edit, Save, X, Download, Upload, Bookmark, Image, Link, Trash2, Footprints, Sparkles } from 'lucide-react';
 import { SharedImagePicker } from '@/components/SharedImagePicker';
 import { useTemplates } from '@/hooks/useTemplates';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,6 +13,8 @@ import { MonsterSheetHeader } from './MonsterSheetHeader';
 import { TraitsPanel } from './TraitsPanel';
 import { MonsterActionsPanel } from './MonsterActionsPanel';
 import { ResistancesPanel } from './ResistancesPanel';
+import { MonsterMovementPanel } from './MonsterMovementPanel';
+import { MonsterSpellcastingPanel } from './MonsterSpellcastingPanel';
 import { AbilityScoresPanel } from '@/components/character-sheet/AbilityScoresPanel';
 import { toast } from 'sonner';
 import { 
