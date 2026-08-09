@@ -230,6 +230,95 @@ const ActionItem = ({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Alcance cuerpo a cuerpo</Label>
+                    <Input
+                      value={action.melee_range || ''}
+                      onChange={(e) => onUpdate({ melee_range: e.target.value || undefined })}
+                      placeholder="5 pies"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Daño (texto libre)</Label>
+                    <Input
+                      value={action.damage_text || ''}
+                      onChange={(e) => onUpdate({ damage_text: e.target.value || undefined })}
+                      placeholder="12 (2d8+3) cortante"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Salvación</Label>
+                    <Select
+                      value={action.save_type || 'none'}
+                      onValueChange={(v) => onUpdate({ save_type: v === 'none' ? undefined : v as CharacterAction['save_type'] })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Ninguna</SelectItem>
+                        {SAVES.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.abbr}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">CD</Label>
+                    <Input
+                      type="number"
+                      value={action.save_dc ?? ''}
+                      onChange={(e) => onUpdate({ save_dc: e.target.value ? parseInt(e.target.value) : undefined })}
+                      placeholder="13"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Recarga</Label>
+                    <Input
+                      value={action.recharge || ''}
+                      onChange={(e) => onUpdate({ recharge: e.target.value || undefined })}
+                      placeholder="recarga 5-6"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Usos máximos</Label>
+                    <Input
+                      type="number"
+                      value={action.uses_max ?? ''}
+                      onChange={(e) => onUpdate({ uses_max: e.target.value ? parseInt(e.target.value) : undefined })}
+                      placeholder="3"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Condiciones aplicadas</Label>
+                    <Input
+                      value={(action.conditions_applied || []).join(', ')}
+                      onChange={(e) => {
+                        const list = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                        onUpdate({ conditions_applied: list.length ? list : undefined });
+                      }}
+                      placeholder="Derribado, Apresado"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Efectos adicionales</Label>
+                  <Textarea
+                    value={action.additional_effects || ''}
+                    onChange={(e) => onUpdate({ additional_effects: e.target.value || undefined })}
+                    rows={2}
+                    placeholder="Empuja 10 pies, daño continuo..."
+                  />
+                </div>
+
                 {showCost && (
                   <div>
                     <Label className="text-xs">Coste (acciones legendarias)</Label>
