@@ -494,10 +494,15 @@ export interface ExtendedMonster {
   id: string;
   user_id: string;
   name: string;
+  /** Free-form creature type; not restricted to the built-in list. */
   type: string;
+  /** Optional subtype, e.g. "(elfo, mago)". */
+  subtype: string | null;
   size: string;
   alignment: string | null;
   challenge_rating: string;
+  /** Experience points; derived from CR when absent. */
+  xp: number | null;
   proficiency_bonus: number;
   strength: number;
   dexterity: number;
@@ -508,6 +513,7 @@ export interface ExtendedMonster {
   armor_class: number;
   hit_points: number;
   hit_dice: string | null;
+  initiative_bonus: number;
   speed: number;
   speeds: Speeds;
   senses: Senses;
@@ -515,6 +521,8 @@ export interface ExtendedMonster {
   resistances: Resistances;
   immunities: Resistances;
   vulnerabilities: DamageType[];
+  /** Conditional text for vulnerabilities/resistances/immunities. */
+  defense_notes: DefenseNotes;
   saves: { ability: SaveType; bonus: number }[];
   skills: { skill: Skill; bonus: number }[];
   traits: Feature[];
@@ -523,10 +531,20 @@ export interface ExtendedMonster {
   reactions: CharacterAction[];
   legendary_actions: { count: number; actions: CharacterAction[] };
   lair_actions: CharacterAction[];
+  mythic_actions: MythicActions;
+  spellcasting: MonsterSpellcasting | null;
+  special_equipment: SpecialEquipmentEntry[];
   token_color: string;
   token_size: number;
   image_url: string | null;
+  /** Optional dedicated token art (falls back to image_url). */
+  token_image_url: string | null;
   notes: string | null;
+  // ---- Import metadata (internal, not shown in the UI) ----
+  external_id: string | null;
+  source: string | null;
+  source_version: string | null;
   created_at: string;
   updated_at: string;
 }
+
