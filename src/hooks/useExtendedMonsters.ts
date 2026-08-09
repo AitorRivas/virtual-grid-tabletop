@@ -150,7 +150,19 @@ export const useExtendedMonsters = () => {
       reactions: monster.reactions as any,
       legendary_actions: monster.legendary_actions as any,
       lair_actions: monster.lair_actions as any,
+      subtype: monster.subtype ?? null,
+      xp: monster.xp ?? null,
+      initiative_bonus: monster.initiative_bonus ?? 0,
+      defense_notes: (monster.defense_notes ?? {}) as any,
+      mythic_actions: (monster.mythic_actions ?? { trigger: null, actions: [] }) as any,
+      spellcasting: (monster.spellcasting ?? null) as any,
+      special_equipment: (monster.special_equipment ?? []) as any,
+      token_image_url: monster.token_image_url ?? null,
+      external_id: monster.external_id ?? null,
+      source: monster.source ?? null,
+      source_version: monster.source_version ?? null,
     };
+
 
     const { data, error } = await supabase
       .from('monsters')
