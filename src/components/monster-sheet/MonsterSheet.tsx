@@ -32,6 +32,8 @@ interface MonsterSheetProps {
   onSave: (monster: ExtendedMonster) => Promise<boolean>;
   onClose?: () => void;
   initialReadOnly?: boolean;
+  /** Cuando es false, la ficha es solo lectura permanente (bestiario público). */
+  canEdit?: boolean;
   /** When provided, the sheet opens on this tab (e.g. 'actions'). */
   initialTab?: string;
 }
@@ -42,6 +44,7 @@ export const MonsterSheet = ({
   onClose,
   initialReadOnly = true,
   initialTab,
+  canEdit = true,
 }: MonsterSheetProps) => {
   const [monster, setMonster] = useState<ExtendedMonster>(initialMonster);
   const [readOnly, setReadOnly] = useState(initialReadOnly);
@@ -198,10 +201,14 @@ export const MonsterSheet = ({
           </label>
 
           {readOnly ? (
-            <Button size="sm" variant="outline" onClick={() => setReadOnly(false)}>
-              <Edit className="w-4 h-4 mr-1" />
-              Editar
-            </Button>
+            canEdit ? (
+              <Button size="sm" variant="outline" onClick={() => setReadOnly(false)}>
+                <Edit className="w-4 h-4 mr-1" />
+                Editar
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground px-2">Bestiario público</span>
+            )
           ) : (
             <>
               <Button size="sm" variant="ghost" onClick={handleCancel}>

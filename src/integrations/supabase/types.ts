@@ -353,6 +353,7 @@ export type Database = {
           immunities: Json | null
           initiative_bonus: number
           intelligence: number
+          is_public: boolean
           lair_actions: Json | null
           languages: Json | null
           legendary_actions: Json | null
@@ -404,6 +405,7 @@ export type Database = {
           immunities?: Json | null
           initiative_bonus?: number
           intelligence?: number
+          is_public?: boolean
           lair_actions?: Json | null
           languages?: Json | null
           legendary_actions?: Json | null
@@ -455,6 +457,7 @@ export type Database = {
           immunities?: Json | null
           initiative_bonus?: number
           intelligence?: number
+          is_public?: boolean
           lair_actions?: Json | null
           languages?: Json | null
           legendary_actions?: Json | null

@@ -307,6 +307,7 @@ export const runBestiaryImport = async ({
             user_id: userId,
             source: creature.source,
             external_id: creature.external_id,
+            is_public: true,
           };
           if (imageUrl) row.image_url = imageUrl;
           if (tokenUrl) row.token_image_url = tokenUrl;

@@ -71,6 +71,7 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
     external_id: data.external_id ?? null,
     source: data.source ?? null,
     source_version: data.source_version ?? null,
+    is_public: data.is_public ?? false,
     created_at: data.created_at,
     updated_at: data.updated_at,
   };
@@ -78,9 +79,9 @@ const parseMonsterFromDB = (data: any): ExtendedMonster => {
 
 
 export const useExtendedMonsters = () => {
-  const { user } = useAuth();
+  const { user, isGuest, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const monstersQueryKey = ['extended-monsters', user?.id ?? 'anonymous'] as const;
+  const monstersQueryKey = ['extended-monsters', user?.id ?? (isGuest ? 'guest' : 'anonymous')] as const;
 
   const fetchMonsters = async (): Promise<ExtendedMonster[]> => {
     const { data, error } = await supabase
@@ -104,7 +105,7 @@ export const useExtendedMonsters = () => {
   const { data: monsters = [], isLoading: loading, refetch } = useQuery({
     queryKey: monstersQueryKey,
     queryFn: fetchMonsters,
-    enabled: !!user,
+    enabled: !!user || isGuest,
     staleTime: MONSTERS_QUERY_STALE_TIME_MS,
     retry: false,
     refetchOnMount: false,
@@ -182,8 +183,19 @@ export const useExtendedMonsters = () => {
     return parsed;
   };
 
+  const isLocked = (id: string) => {
+    const target = monsters.find(m => m.id === id);
+    return !!target?.is_public && !isAdmin;
+  };
+
   const updateMonster = async (id: string, updates: Partial<ExtendedMonster>): Promise<boolean> => {
+    if (isLocked(id)) {
+      toast.error('Las criaturas del bestiario público no se pueden editar');
+      return false;
+    }
     const dbUpdates: any = { ...updates };
+    delete dbUpdates.is_public;
+    
     
     // Convert complex types to JSON
     if (updates.speeds) dbUpdates.speeds = updates.speeds;
@@ -220,6 +232,10 @@ export const useExtendedMonsters = () => {
   };
 
   const deleteMonster = async (id: string) => {
+    if (isLocked(id)) {
+      toast.error('Las criaturas del bestiario público no se pueden eliminar');
+      return false;
+    }
     const { error } = await supabase
       .from('monsters')
       .delete()
@@ -240,9 +256,11 @@ export const useExtendedMonsters = () => {
     const { id, user_id, created_at, updated_at, ...rest } = monster;
     return createMonster({
       ...rest,
+      is_public: false,
       name: `${monster.name} (copia)`
     });
   };
+
 
   return { 
     monsters, 
