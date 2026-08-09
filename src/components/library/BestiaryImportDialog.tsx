@@ -41,7 +41,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'dest
 };
 
 export const BestiaryImportDialog = ({ monsters, onImported }: BestiaryImportDialogProps) => {
-  const { user, isGuest } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { history, logImport } = useImportHistory();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +54,7 @@ export const BestiaryImportDialog = ({ monsters, onImported }: BestiaryImportDia
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [result, setResult] = useState<ImportResult | null>(null);
 
-  const canImport = !!user && !isGuest;
+  const canImport = !!user && isAdmin;
 
   const reset = () => {
     setBatch(null);
