@@ -16,6 +16,7 @@ interface MonsterActionsPanelProps {
   reactions: CharacterAction[];
   legendaryActions: { count: number; actions: CharacterAction[] };
   lairActions: CharacterAction[];
+  mythicActions: MythicActions;
   abilities: {
     strength: number;
     dexterity: number;
@@ -31,7 +32,9 @@ interface MonsterActionsPanelProps {
     reactions?: CharacterAction[];
     legendary_actions?: { count: number; actions: CharacterAction[] };
     lair_actions?: CharacterAction[];
+    mythic_actions?: MythicActions;
   }) => void;
+
   readOnly: boolean;
 }
 
