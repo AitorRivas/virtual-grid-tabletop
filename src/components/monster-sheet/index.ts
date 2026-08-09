@@ -3,3 +3,5 @@ export { MonsterSheetHeader } from './MonsterSheetHeader';
 export { TraitsPanel } from './TraitsPanel';
 export { MonsterActionsPanel } from './MonsterActionsPanel';
 export { ResistancesPanel } from './ResistancesPanel';
+export { MonsterMovementPanel } from './MonsterMovementPanel';
+export { MonsterSpellcastingPanel } from './MonsterSpellcastingPanel';

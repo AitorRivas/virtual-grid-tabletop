@@ -36,6 +36,12 @@ export interface EquipmentItem {
 // ============= ACTION TYPES =============
 export type ActionType = 'action' | 'bonus_action' | 'reaction' | 'legendary' | 'lair' | 'free';
 
+/**
+ * Flexible action model reused by every action-like section:
+ * actions, bonus_actions, reactions, legendary_actions, lair_actions, mythic_actions.
+ * Only `id`, `name` and `type` are structurally required; a valid action can be
+ * just a name + description (e.g. "Multiataque").
+ */
 export interface CharacterAction {
   id: string;
   name: string;
@@ -45,24 +51,41 @@ export interface CharacterAction {
   is_attack?: boolean;
   attack_ability?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
   attack_bonus?: number; // Additional bonus on top of calculated
+  /** Fully pre-computed attack bonus coming from an imported stat block (overrides calculation). */
+  attack_bonus_override?: number;
   // Damage info
   damage_dice?: string;
   damage_type?: DamageType;
   damage_ability?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma' | 'none';
   damage_bonus?: number;
+  /** Free-form damage text, e.g. "12 (2d8 + 3) cortante más 7 (2d6) fuego" */
+  damage_text?: string;
+  /** Secondary damage instances (multi-type attacks). */
+  extra_damage?: { dice?: string; type?: DamageType; text?: string }[];
   // Save info
   save_dc_ability?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
   save_dc_bonus?: number;
+  /** Fixed save DC coming from an imported stat block. */
+  save_dc?: number;
   save_type?: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
   // Range
   range?: string;
-  // Legendary action cost
+  /** Melee reach, when different from `range` (e.g. "10 pies"). */
+  melee_range?: string;
+  /** Conditions applied on hit/failed save. */
+  conditions_applied?: string[];
+  /** Extra effects text (push, grapple, ongoing damage...). */
+  additional_effects?: string;
+  // Legendary / mythic action cost
   legendary_cost?: number;
+  /** Generic action cost (alias-free, used by mythic/legendary imports). */
+  cost?: number;
   // Uses
   uses_max?: number;
   uses_current?: number;
   recharge?: string; // "short rest", "long rest", "recharge 5-6"
 }
+
 
 // ============= SPELL TYPES =============
 export type SpellSchool = 'abjuration' | 'conjuration' | 'divination' | 'enchantment' | 'evocation' | 'illusion' | 'necromancy' | 'transmutation';
@@ -121,6 +144,8 @@ export interface Feature {
 }
 
 // ============= SPEEDS & SENSES =============
+export type SpeedKind = 'walk' | 'fly' | 'swim' | 'climb' | 'burrow';
+
 export interface Speeds {
   walk: number;
   fly?: number;
@@ -128,6 +153,10 @@ export interface Speeds {
   climb?: number;
   burrow?: number;
   hover?: boolean;
+  /** Extra text per speed, e.g. { fly: "(flotar)" } */
+  notes?: Partial<Record<SpeedKind, string>>;
+  /** Non-standard movement modes coming from imported stat blocks. */
+  other?: { name: string; value?: number; note?: string }[];
 }
 
 export interface Senses {
@@ -138,6 +167,10 @@ export interface Senses {
   blindsight?: number;
   tremorsense?: number;
   truesight?: number;
+  /** Extra text per sense, e.g. { blindsight: "(ciego más allá)" } */
+  notes?: Partial<Record<'darkvision' | 'blindsight' | 'tremorsense' | 'truesight', string>>;
+  /** Non-standard senses. */
+  other?: { name: string; range?: number; note?: string }[];
 }
 
 // ============= RESISTANCES =============
@@ -146,12 +179,61 @@ export interface Resistances {
   conditions: string[];
 }
 
+/**
+ * Conditional/special text for defenses that cannot be reduced to plain tags,
+ * e.g. "contundente, cortante y perforante de ataques no mágicos".
+ */
+export interface DefenseNotes {
+  vulnerabilities?: string;
+  resistances?: string;
+  immunities?: string;
+  condition_immunities?: string;
+}
+
+// ============= MONSTER SPELLCASTING =============
+export interface SpellcastingGroup {
+  /** e.g. "A voluntad", "3/día cada uno", "Nivel 1 (4 espacios)" */
+  label: string;
+  spells: string[];
+  /** Optional slot count for level-based groups. */
+  slots?: number;
+  level?: number;
+}
+
+export interface MonsterSpellcasting {
+  /** Free-form intro text of the spellcasting trait. */
+  description?: string;
+  ability?: SaveType;
+  save_dc?: number;
+  attack_bonus?: number;
+  /** "A voluntad" spells. */
+  at_will?: string[];
+  /** Grouped per-day / per-level / special uses. */
+  groups?: SpellcastingGroup[];
+}
+
+// ============= MYTHIC ACTIONS =============
+export interface MythicActions {
+  /** Text describing what happens when the mythic phase triggers. */
+  trigger?: string | null;
+  actions: CharacterAction[];
+}
+
+// ============= SPECIAL EQUIPMENT =============
+export interface SpecialEquipmentEntry {
+  id: string;
+  name: string;
+  description?: string;
+  quantity?: number;
+}
+
 // ============= MULTICLASS =============
 export interface MulticlassEntry {
   class: string;
   subclass?: string;
   level: number;
 }
+
 
 // ============= SKILL DATA =============
 export const SKILLS: { value: Skill; label: string; ability: SaveType }[] = [
@@ -412,10 +494,15 @@ export interface ExtendedMonster {
   id: string;
   user_id: string;
   name: string;
+  /** Free-form creature type; not restricted to the built-in list. */
   type: string;
+  /** Optional subtype, e.g. "(elfo, mago)". */
+  subtype: string | null;
   size: string;
   alignment: string | null;
   challenge_rating: string;
+  /** Experience points; derived from CR when absent. */
+  xp: number | null;
   proficiency_bonus: number;
   strength: number;
   dexterity: number;
@@ -426,6 +513,7 @@ export interface ExtendedMonster {
   armor_class: number;
   hit_points: number;
   hit_dice: string | null;
+  initiative_bonus: number;
   speed: number;
   speeds: Speeds;
   senses: Senses;
@@ -433,6 +521,8 @@ export interface ExtendedMonster {
   resistances: Resistances;
   immunities: Resistances;
   vulnerabilities: DamageType[];
+  /** Conditional text for vulnerabilities/resistances/immunities. */
+  defense_notes: DefenseNotes;
   saves: { ability: SaveType; bonus: number }[];
   skills: { skill: Skill; bonus: number }[];
   traits: Feature[];
@@ -441,10 +531,20 @@ export interface ExtendedMonster {
   reactions: CharacterAction[];
   legendary_actions: { count: number; actions: CharacterAction[] };
   lair_actions: CharacterAction[];
+  mythic_actions: MythicActions;
+  spellcasting: MonsterSpellcasting | null;
+  special_equipment: SpecialEquipmentEntry[];
   token_color: string;
   token_size: number;
   image_url: string | null;
+  /** Optional dedicated token art (falls back to image_url). */
+  token_image_url: string | null;
   notes: string | null;
+  // ---- Import metadata (internal, not shown in the UI) ----
+  external_id: string | null;
+  source: string | null;
+  source_version: string | null;
   created_at: string;
   updated_at: string;
 }
+

@@ -301,16 +301,20 @@ export type Database = {
           charisma: number
           constitution: number
           created_at: string
+          defense_notes: Json
           dexterity: number
+          external_id: string | null
           hit_dice: string | null
           hit_points: number
           id: string
           image_url: string | null
           immunities: Json | null
+          initiative_bonus: number
           intelligence: number
           lair_actions: Json | null
           languages: Json | null
           legendary_actions: Json | null
+          mythic_actions: Json
           name: string
           notes: string | null
           proficiency_bonus: number | null
@@ -320,10 +324,16 @@ export type Database = {
           senses: Json | null
           size: Database["public"]["Enums"]["creature_size"]
           skills: Json | null
+          source: string | null
+          source_version: string | null
+          special_equipment: Json
           speed: number
           speeds: Json | null
+          spellcasting: Json | null
           strength: number
+          subtype: string | null
           token_color: Database["public"]["Enums"]["token_color"]
+          token_image_url: string | null
           token_size: number
           traits: Json | null
           type: string
@@ -331,6 +341,7 @@ export type Database = {
           user_id: string
           vulnerabilities: Json | null
           wisdom: number
+          xp: number | null
         }
         Insert: {
           actions?: Json | null
@@ -341,16 +352,20 @@ export type Database = {
           charisma?: number
           constitution?: number
           created_at?: string
+          defense_notes?: Json
           dexterity?: number
+          external_id?: string | null
           hit_dice?: string | null
           hit_points?: number
           id?: string
           image_url?: string | null
           immunities?: Json | null
+          initiative_bonus?: number
           intelligence?: number
           lair_actions?: Json | null
           languages?: Json | null
           legendary_actions?: Json | null
+          mythic_actions?: Json
           name: string
           notes?: string | null
           proficiency_bonus?: number | null
@@ -360,10 +375,16 @@ export type Database = {
           senses?: Json | null
           size?: Database["public"]["Enums"]["creature_size"]
           skills?: Json | null
+          source?: string | null
+          source_version?: string | null
+          special_equipment?: Json
           speed?: number
           speeds?: Json | null
+          spellcasting?: Json | null
           strength?: number
+          subtype?: string | null
           token_color?: Database["public"]["Enums"]["token_color"]
+          token_image_url?: string | null
           token_size?: number
           traits?: Json | null
           type?: string
@@ -371,6 +392,7 @@ export type Database = {
           user_id: string
           vulnerabilities?: Json | null
           wisdom?: number
+          xp?: number | null
         }
         Update: {
           actions?: Json | null
@@ -381,16 +403,20 @@ export type Database = {
           charisma?: number
           constitution?: number
           created_at?: string
+          defense_notes?: Json
           dexterity?: number
+          external_id?: string | null
           hit_dice?: string | null
           hit_points?: number
           id?: string
           image_url?: string | null
           immunities?: Json | null
+          initiative_bonus?: number
           intelligence?: number
           lair_actions?: Json | null
           languages?: Json | null
           legendary_actions?: Json | null
+          mythic_actions?: Json
           name?: string
           notes?: string | null
           proficiency_bonus?: number | null
@@ -400,10 +426,16 @@ export type Database = {
           senses?: Json | null
           size?: Database["public"]["Enums"]["creature_size"]
           skills?: Json | null
+          source?: string | null
+          source_version?: string | null
+          special_equipment?: Json
           speed?: number
           speeds?: Json | null
+          spellcasting?: Json | null
           strength?: number
+          subtype?: string | null
           token_color?: Database["public"]["Enums"]["token_color"]
+          token_image_url?: string | null
           token_size?: number
           traits?: Json | null
           type?: string
@@ -411,6 +443,7 @@ export type Database = {
           user_id?: string
           vulnerabilities?: Json | null
           wisdom?: number
+          xp?: number | null
         }
         Relationships: []
       }

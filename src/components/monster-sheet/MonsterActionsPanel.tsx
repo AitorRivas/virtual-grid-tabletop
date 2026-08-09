@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, ChevronDown, Swords, Zap, Shield, Crown, Castle } from 'lucide-react';
-import { CharacterAction, ActionType, DAMAGE_TYPES, SAVES } from '@/types/dnd5e';
+import { Plus, Trash2, ChevronDown, Swords, Zap, Shield, Crown, Castle, Sparkles } from 'lucide-react';
+import { CharacterAction, ActionType, DAMAGE_TYPES, SAVES, MythicActions } from '@/types/dnd5e';
 import { getModifier, formatModifier } from '@/types/dnd';
 
 interface MonsterActionsPanelProps {
@@ -16,6 +16,7 @@ interface MonsterActionsPanelProps {
   reactions: CharacterAction[];
   legendaryActions: { count: number; actions: CharacterAction[] };
   lairActions: CharacterAction[];
+  mythicActions: MythicActions;
   abilities: {
     strength: number;
     dexterity: number;
@@ -31,7 +32,9 @@ interface MonsterActionsPanelProps {
     reactions?: CharacterAction[];
     legendary_actions?: { count: number; actions: CharacterAction[] };
     lair_actions?: CharacterAction[];
+    mythic_actions?: MythicActions;
   }) => void;
+
   readOnly: boolean;
 }
 
@@ -96,9 +99,28 @@ const ActionItem = ({
           <div className="p-3 border-t space-y-3">
             {readOnly ? (
               <>
-                <p className="text-sm whitespace-pre-wrap">{action.description}</p>
+                {action.description && <p className="text-sm whitespace-pre-wrap">{action.description}</p>}
                 {action.range && <p className="text-xs text-muted-foreground">Alcance: {action.range}</p>}
+                {action.melee_range && <p className="text-xs text-muted-foreground">Alcance c. a c.: {action.melee_range}</p>}
+                {action.damage_text && <p className="text-xs text-destructive">Daño: {action.damage_text}</p>}
+                {(action.save_dc || action.save_type) && (
+                  <p className="text-xs text-muted-foreground">
+                    Salvación: {action.save_type ? SAVES.find(s => s.value === action.save_type)?.label : ''}
+                    {action.save_dc ? ` CD ${action.save_dc}` : ''}
+                  </p>
+                )}
+                {action.conditions_applied && action.conditions_applied.length > 0 && (
+                  <p className="text-xs text-muted-foreground">Condiciones: {action.conditions_applied.join(', ')}</p>
+                )}
+                {action.additional_effects && (
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{action.additional_effects}</p>
+                )}
+                {action.recharge && <p className="text-xs text-muted-foreground">Recarga: {action.recharge}</p>}
+                {action.uses_max ? (
+                  <p className="text-xs text-muted-foreground">Usos: {action.uses_current ?? action.uses_max}/{action.uses_max}</p>
+                ) : null}
               </>
+
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-2">
@@ -211,6 +233,95 @@ const ActionItem = ({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Alcance cuerpo a cuerpo</Label>
+                    <Input
+                      value={action.melee_range || ''}
+                      onChange={(e) => onUpdate({ melee_range: e.target.value || undefined })}
+                      placeholder="5 pies"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Daño (texto libre)</Label>
+                    <Input
+                      value={action.damage_text || ''}
+                      onChange={(e) => onUpdate({ damage_text: e.target.value || undefined })}
+                      placeholder="12 (2d8+3) cortante"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">Salvación</Label>
+                    <Select
+                      value={action.save_type || 'none'}
+                      onValueChange={(v) => onUpdate({ save_type: v === 'none' ? undefined : v as CharacterAction['save_type'] })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Ninguna</SelectItem>
+                        {SAVES.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.abbr}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">CD</Label>
+                    <Input
+                      type="number"
+                      value={action.save_dc ?? ''}
+                      onChange={(e) => onUpdate({ save_dc: e.target.value ? parseInt(e.target.value) : undefined })}
+                      placeholder="13"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Recarga</Label>
+                    <Input
+                      value={action.recharge || ''}
+                      onChange={(e) => onUpdate({ recharge: e.target.value || undefined })}
+                      placeholder="recarga 5-6"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Usos máximos</Label>
+                    <Input
+                      type="number"
+                      value={action.uses_max ?? ''}
+                      onChange={(e) => onUpdate({ uses_max: e.target.value ? parseInt(e.target.value) : undefined })}
+                      placeholder="3"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Condiciones aplicadas</Label>
+                    <Input
+                      value={(action.conditions_applied || []).join(', ')}
+                      onChange={(e) => {
+                        const list = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                        onUpdate({ conditions_applied: list.length ? list : undefined });
+                      }}
+                      placeholder="Derribado, Apresado"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Efectos adicionales</Label>
+                  <Textarea
+                    value={action.additional_effects || ''}
+                    onChange={(e) => onUpdate({ additional_effects: e.target.value || undefined })}
+                    rows={2}
+                    placeholder="Empuja 10 pies, daño continuo..."
+                  />
+                </div>
+
                 {showCost && (
                   <div>
                     <Label className="text-xs">Coste (acciones legendarias)</Label>
@@ -304,35 +415,39 @@ export const MonsterActionsPanel = ({
   reactions,
   legendaryActions,
   lairActions,
+  mythicActions,
   abilities,
   proficiencyBonus,
   onChange,
   readOnly
 }: MonsterActionsPanelProps) => {
+  const mythic = mythicActions ?? { trigger: null, actions: [] };
+  // In read-only mode, empty sections are hidden entirely.
+  const show = (has: boolean) => !readOnly || has;
+  const tabs = [
+    { value: 'actions', label: 'Acciones', icon: Swords, visible: show(actions.length > 0) },
+    { value: 'bonus', label: 'Adicionales', icon: Zap, visible: show(bonusActions.length > 0) },
+    { value: 'reactions', label: 'Reacciones', icon: Shield, visible: show(reactions.length > 0) },
+    { value: 'legendary', label: 'Legendarias', icon: Crown, visible: show(legendaryActions.actions.length > 0 || legendaryActions.count > 0) },
+    { value: 'mythic', label: 'Míticas', icon: Sparkles, visible: show(mythic.actions.length > 0 || !!mythic.trigger) },
+    { value: 'lair', label: 'Guarida', icon: Castle, visible: show(lairActions.length > 0) },
+  ].filter(t => t.visible);
+
+  if (tabs.length === 0) {
+    return <p className="text-sm text-muted-foreground italic py-2">Esta criatura no tiene acciones.</p>;
+  }
+
   return (
-    <Tabs defaultValue="actions" className="w-full">
-      <TabsList className="grid w-full grid-cols-5 text-xs">
-        <TabsTrigger value="actions" className="gap-1 px-1">
-          <Swords className="w-3 h-3" />
-          <span className="hidden sm:inline">Acciones</span>
-        </TabsTrigger>
-        <TabsTrigger value="bonus" className="gap-1 px-1">
-          <Zap className="w-3 h-3" />
-          <span className="hidden sm:inline">Adicionales</span>
-        </TabsTrigger>
-        <TabsTrigger value="reactions" className="gap-1 px-1">
-          <Shield className="w-3 h-3" />
-          <span className="hidden sm:inline">Reacciones</span>
-        </TabsTrigger>
-        <TabsTrigger value="legendary" className="gap-1 px-1">
-          <Crown className="w-3 h-3" />
-          <span className="hidden sm:inline">Legendarias</span>
-        </TabsTrigger>
-        <TabsTrigger value="lair" className="gap-1 px-1">
-          <Castle className="w-3 h-3" />
-          <span className="hidden sm:inline">Guarida</span>
-        </TabsTrigger>
+    <Tabs defaultValue={tabs[0].value} className="w-full">
+      <TabsList className="grid w-full text-xs" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+        {tabs.map(t => (
+          <TabsTrigger key={t.value} value={t.value} className="gap-1 px-1">
+            <t.icon className="w-3 h-3" />
+            <span className="hidden sm:inline">{t.label}</span>
+          </TabsTrigger>
+        ))}
       </TabsList>
+
 
       <TabsContent value="actions" className="mt-4">
         <ActionList
@@ -398,6 +513,31 @@ export const MonsterActionsPanel = ({
           onChange={(a) => onChange({ legendary_actions: { ...legendaryActions, actions: a } })}
           readOnly={readOnly}
           addLabel="Añadir acción legendaria"
+          showCost
+        />
+      </TabsContent>
+
+      <TabsContent value="mythic" className="mt-4 space-y-4">
+        {readOnly ? (
+          mythic.trigger ? <p className="text-sm whitespace-pre-wrap">{mythic.trigger}</p> : null
+        ) : (
+          <div>
+            <Label className="text-xs">Desencadenante de la fase mítica</Label>
+            <Textarea
+              value={mythic.trigger || ''}
+              onChange={(e) => onChange({ mythic_actions: { ...mythic, trigger: e.target.value || null } })}
+              rows={2}
+              placeholder="Si la criatura muere, en su lugar..."
+            />
+          </div>
+        )}
+        <ActionList
+          actions={mythic.actions}
+          abilities={abilities}
+          profBonus={proficiencyBonus}
+          onChange={(a) => onChange({ mythic_actions: { ...mythic, actions: a } })}
+          readOnly={readOnly}
+          addLabel="Añadir acción mítica"
           showCost
         />
       </TabsContent>
