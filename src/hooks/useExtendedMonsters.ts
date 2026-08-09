@@ -11,7 +11,11 @@ import {
   Resistances,
   DamageType,
   Skill,
-  SaveType
+  SaveType,
+  DefenseNotes,
+  MythicActions,
+  MonsterSpellcasting,
+  SpecialEquipmentEntry
 } from '@/types/dnd5e';
 
 let lastLoadErrorToastAt = 0;
