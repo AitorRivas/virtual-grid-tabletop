@@ -232,6 +232,10 @@ export const useExtendedMonsters = () => {
   };
 
   const deleteMonster = async (id: string) => {
+    if (isLocked(id)) {
+      toast.error('Las criaturas del bestiario público no se pueden eliminar');
+      return false;
+    }
     const { error } = await supabase
       .from('monsters')
       .delete()
@@ -252,9 +256,11 @@ export const useExtendedMonsters = () => {
     const { id, user_id, created_at, updated_at, ...rest } = monster;
     return createMonster({
       ...rest,
+      is_public: false,
       name: `${monster.name} (copia)`
     });
   };
+
 
   return { 
     monsters, 
