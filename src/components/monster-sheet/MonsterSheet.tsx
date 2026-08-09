@@ -229,6 +229,8 @@ export const MonsterSheet = ({
             monster={{
               name: monster.name,
               type: monster.type,
+              subtype: monster.subtype ?? null,
+              xp: monster.xp ?? null,
               size: monster.size,
               alignment: monster.alignment,
               challenge_rating: monster.challenge_rating,

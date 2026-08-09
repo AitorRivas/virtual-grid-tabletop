@@ -8,6 +8,8 @@ type AlignmentOption = { value: string; label: string };
 interface MonsterHeaderData {
   name: string;
   type: string;
+  subtype: string | null;
+  xp: number | null;
   size: string;
   alignment: string | null;
   challenge_rating: string;
@@ -29,12 +31,15 @@ export const MonsterSheetHeader = ({ monster, onChange, readOnly }: MonsterSheet
           <span className="capitalize text-xs text-muted-foreground">
             {CREATURE_SIZES.find(s => s.value === monster.size)?.label || monster.size} {MONSTER_TYPES.find(t => t.value === monster.type)?.label || monster.type}
           </span>
+          {monster.subtype && (
+            <span className="text-xs text-muted-foreground">{monster.subtype}</span>
+          )}
           {monster.alignment && (
             <span className="text-xs text-muted-foreground">· {monster.alignment}</span>
           )}
         </div>
         <div className="flex gap-4 text-sm">
-          <span><strong>CR</strong> {monster.challenge_rating}</span>
+          <span><strong>CR</strong> {monster.challenge_rating}{monster.xp ? ` (${monster.xp.toLocaleString('es-ES')} PX)` : ''}</span>
           <span><strong>Competencia</strong> +{monster.proficiency_bonus}</span>
           {monster.hit_dice && <span><strong>Dados de golpe</strong> {monster.hit_dice}</span>}
         </div>
@@ -71,16 +76,17 @@ export const MonsterSheetHeader = ({ monster, onChange, readOnly }: MonsterSheet
       <div className="grid grid-cols-3 gap-3">
         <div>
           <Label className="text-xs">Tipo</Label>
-          <Select value={monster.type} onValueChange={(v) => onChange({ type: v })}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MONSTER_TYPES.map(t => (
-                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            list="monster-type-options"
+            value={monster.type}
+            onChange={(e) => onChange({ type: e.target.value })}
+            placeholder="ej: Aberración"
+          />
+          <datalist id="monster-type-options">
+            {MONSTER_TYPES.map(t => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </datalist>
         </div>
         <div>
           <Label className="text-xs">Tamaño</Label>
@@ -120,6 +126,23 @@ export const MonsterSheetHeader = ({ monster, onChange, readOnly }: MonsterSheet
             max={10}
             value={monster.proficiency_bonus}
             onChange={(e) => onChange({ proficiency_bonus: parseInt(e.target.value) || 2 })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Subtipo</Label>
+          <Input
+            value={monster.subtype || ''}
+            onChange={(e) => onChange({ subtype: e.target.value || null })}
+            placeholder="ej: (elfo, mago)"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Puntos de experiencia</Label>
+          <Input
+            type="number"
+            value={monster.xp ?? ''}
+            onChange={(e) => onChange({ xp: e.target.value ? parseInt(e.target.value) : null })}
+            placeholder="ej: 1800"
           />
         </div>
         <div>
