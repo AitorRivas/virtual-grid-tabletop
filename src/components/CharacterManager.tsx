@@ -7,6 +7,9 @@ import { LibraryGroupsBar } from './library/LibraryGroupsBar';
 import { GroupAssignMenu } from './library/GroupAssignMenu';
 import { EncounterManager } from './EncounterManager';
 import { BestiaryImportDialog } from './library/BestiaryImportDialog';
+import { CreatureLibrary } from './library/CreatureLibrary';
+import { useCreatureLibrary, CreatureListItem } from '@/hooks/useCreatureLibrary';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS,
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
@@ -37,7 +40,11 @@ interface CharacterManagerProps {
 }
 
 export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: CharacterManagerProps) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
+  const queryClient = useQueryClient();
+  const { registerUsage, fetchFullCreature } = useCreatureLibrary();
+  const [sheetEditMode, setSheetEditMode] = useState(false);
+  const refreshLibrary = () => queryClient.invalidateQueries({ queryKey: ['creature-library'] });
   const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter, cloneCharacter } = useCharacters();
   const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster, refetch: refetchMonsters } = useExtendedMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
@@ -179,6 +186,22 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     }
   };
 
+  /** Abre la ficha detallada: solo aquí se descarga la ilustración y los datos completos. */
+  const handleOpenCreatureSheet = async (id: string, editMode: boolean) => {
+    const full = await fetchFullCreature(id);
+    if (!full) return;
+    setSheetEditMode(editMode);
+    setSelectedMonster(full);
+  };
+
+  /** Crear token desde la biblioteca: usa la ficha completa y suma el contador de uso. */
+  const handleCreateTokenFromLibrary = async (creature: CreatureListItem) => {
+    const full = await fetchFullCreature(creature.id);
+    if (!full) return;
+    onAddMonsterToMap(full as any);
+    registerUsage(creature.id);
+  };
+
   // New character form state
   const [charForm, setCharForm] = useState({
     name: '',
@@ -264,6 +287,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
       image_url: monsterForm.image_url.trim() || null
     } as any);
     setShowNewMonster(false);
+    refreshLibrary();
     setMonsterForm({
       name: '', type: 'Beast', size: 'medium', challenge_rating: '1',
       strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10,
@@ -683,7 +707,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
         </TabsContent>
 
         <TabsContent value="monsters" className="m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
-          <BestiaryImportDialog monsters={monsters} onImported={() => { refetchMonsters(); }} />
+          <BestiaryImportDialog monsters={monsters} onImported={() => { refetchMonsters(); refreshLibrary(); }} />
           <Dialog open={showNewMonster} onOpenChange={setShowNewMonster}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2" variant="secondary">
@@ -907,10 +931,11 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     const success = await updateMonster(m.id, m);
                     if (success) {
                       setSelectedMonster(null);
+                      refreshLibrary();
                     }
                     return success;
                   }}
-                  initialReadOnly={true}
+                  initialReadOnly={!sheetEditMode}
                 />
               )}
             </DialogContent>
