@@ -180,12 +180,15 @@ export const parseBestiaryZip = async (
     let status: ImportRowStatus = 'new';
     if (found) status = differs(normalized, found.row) ? 'updatable' : 'existing';
 
-    const lookups = [raw.image_file, raw.image, raw.token_file, raw.token, externalId, name]
-      .filter(Boolean)
-      .map((v: string) => stripExt(baseName(String(v).toLowerCase())));
+    const norm = (v: string) => stripExt(baseName(String(v).toLowerCase()));
+    // La ilustración principal y el token son recursos independientes: se buscan
+    // en carpetas distintas (images/ y tokens/) y con sus propias claves.
+    const imageLookups = [raw.image_file, raw.image, externalId, name].filter(Boolean).map(norm);
+    const tokenLookups = [raw.token_file, raw.token, externalId, name].filter(Boolean).map(norm);
 
-    const imageFile = lookups.map(k => (images[k] ? images[k].name : null)).find(Boolean) || undefined;
-    const tokenFile = lookups.map(k => (tokens[k] ? tokens[k].name : null)).find(Boolean) || undefined;
+    const imageFile = imageLookups.map(k => (images[k] ? images[k].name : null)).find(Boolean) || undefined;
+    const tokenFile = tokenLookups.map(k => (tokens[k] ? tokens[k].name : null)).find(Boolean) || undefined;
+
 
     return {
       data: raw,

@@ -53,7 +53,9 @@ export const MonsterSheet = ({
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [tokenInputMode, setTokenInputMode] = useState<'upload' | 'url'>('upload');
   const imageFileRef = useRef<HTMLInputElement>(null);
+  const tokenFileRef = useRef<HTMLInputElement>(null);
   const { createMonsterTemplate } = useTemplates();
 
   const updateMonster = <K extends keyof ExtendedMonster>(
@@ -154,16 +156,31 @@ export const MonsterSheet = ({
     if (imageFileRef.current) imageFileRef.current.value = '';
   };
 
+  const handleTokenUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Sube una imagen válida'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Máximo 5MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      updateMonster('token_image_url', e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    if (tokenFileRef.current) tokenFileRef.current.value = '';
+  };
+
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 overflow-hidden">
       <input ref={imageFileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+      <input ref={tokenFileRef} type="file" accept="image/*" onChange={handleTokenUpload} className="hidden" />
+
 
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-card/50">
         <div className="flex items-center gap-2">
-          {monster.image_url ? (
+          {(monster.token_image_url || monster.image_url) ? (
             <img 
-              src={monster.image_url} 
+              src={monster.token_image_url || monster.image_url || ''} 
               alt={monster.name}
               className="w-10 h-10 rounded-full object-cover border-2 border-destructive/30"
             />
@@ -248,11 +265,37 @@ export const MonsterSheet = ({
             readOnly={readOnly}
           />
 
+          {/* Ilustración principal + previsualización del token (siempre visible) */}
+          {(monster.image_url || monster.token_image_url) && (
+            <div className="flex items-start gap-4">
+              {monster.image_url && (
+                <div className="flex-1 min-w-0">
+                  <Label className="text-xs text-muted-foreground">Ilustración</Label>
+                  <img
+                    src={monster.image_url}
+                    alt={monster.name}
+                    className="mt-1 w-full max-h-64 object-contain rounded-lg border border-border bg-card"
+                  />
+                </div>
+              )}
+              {monster.token_image_url && (
+                <div className="shrink-0">
+                  <Label className="text-xs text-muted-foreground">Token</Label>
+                  <img
+                    src={monster.token_image_url}
+                    alt={`${monster.name} token`}
+                    className="mt-1 w-16 h-16 rounded-full object-cover border-2 border-destructive/30"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Image editing section (only in edit mode) */}
           {!readOnly && (
             <div className="space-y-2">
               <Label className="text-sm font-semibold flex items-center gap-1">
-                <Image className="w-4 h-4" /> Imagen
+                <Image className="w-4 h-4" /> Ilustración
               </Label>
               {monster.image_url && (
                 <div className="relative group w-24 h-24">
@@ -292,6 +335,55 @@ export const MonsterSheet = ({
               )}
             </div>
           )}
+
+          {/* Token image editing (only in edit mode) */}
+          {!readOnly && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1">
+                <Image className="w-4 h-4" /> Imagen de token
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Se usa al crear tokens en el mapa. Si está vacía, se usará la ilustración.
+              </p>
+              {monster.token_image_url && (
+                <div className="relative group w-16 h-16">
+                  <img src={monster.token_image_url} alt="" className="w-full h-full object-cover rounded-full border border-border" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => updateMonster('token_image_url', null)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-1 mb-1">
+                <Button type="button" size="sm" variant={tokenInputMode === 'upload' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setTokenInputMode('upload')}>
+                  <Upload className="w-3 h-3 mr-1" /> Archivo
+                </Button>
+                <Button type="button" size="sm" variant={tokenInputMode === 'url' ? 'default' : 'outline'} className="h-6 px-2 text-xs" onClick={() => setTokenInputMode('url')}>
+                  <Link className="w-3 h-3 mr-1" /> URL
+                </Button>
+              </div>
+              {tokenInputMode === 'upload' ? (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1 flex-1" onClick={() => tokenFileRef.current?.click()}>
+                    <Upload className="w-3 h-3" /> Subir token
+                  </Button>
+                  <SharedImagePicker category="monster" onSelect={(data) => updateMonster('token_image_url', data)} selectedImage={monster.token_image_url || undefined} />
+                </div>
+              ) : (
+                <Input
+                  value={monster.token_image_url || ''}
+                  onChange={(e) => updateMonster('token_image_url', e.target.value || null)}
+                  placeholder="https://..."
+                  className="h-7 text-xs"
+                />
+              )}
+            </div>
+          )}
+
 
           {/* Combat Stats */}
           <div className="grid grid-cols-4 gap-3">
