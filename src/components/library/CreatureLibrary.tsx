@@ -8,8 +8,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
-  Search, Star, SlidersHorizontal, FileText, MapPin, Pencil, X,
+  Search, Star, SlidersHorizontal, FileText, MapPin, Pencil, X, MoreVertical, Copy, Trash2,
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   MONSTER_TYPES, CREATURE_SIZES, CHALLENGE_RATINGS,
   getMonsterTypeLabel, getCreatureSizeLabel,
@@ -63,6 +64,8 @@ interface CreatureLibraryProps {
   /** Crea el token en el mapa a partir de la criatura del catálogo. */
   onCreateToken: (creature: CreatureListItem) => void;
   canEditCreature: (creature: CreatureListItem) => boolean;
+  onClone: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export const CreatureLibrary = ({
@@ -70,6 +73,8 @@ export const CreatureLibrary = ({
   onOpenSheet,
   onCreateToken,
   canEditCreature,
+  onClone,
+  onDelete,
 }: CreatureLibraryProps) => {
   const { creatures, loading, statsById, sources, toggleFavorite } = useCreatureLibrary();
 
@@ -389,6 +394,23 @@ export const CreatureLibrary = ({
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                             )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-7 w-7" title="Más">
+                                  <MoreVertical className="w-3.5 h-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => onClone(creature.id)}>
+                                  <Copy className="w-4 h-4 mr-2" /> Clonar
+                                </DropdownMenuItem>
+                                {canEditCreature(creature) && (
+                                  <DropdownMenuItem className="text-destructive" onClick={() => onDelete(creature.id)}>
+                                    <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         )}
                       </div>
