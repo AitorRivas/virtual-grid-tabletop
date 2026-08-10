@@ -178,9 +178,9 @@ export const MonsterSheet = ({
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-card/50">
         <div className="flex items-center gap-2">
-          {monster.image_url ? (
+          {(monster.token_image_url || monster.image_url) ? (
             <img 
-              src={monster.image_url} 
+              src={monster.token_image_url || monster.image_url || ''} 
               alt={monster.name}
               className="w-10 h-10 rounded-full object-cover border-2 border-destructive/30"
             />

@@ -1041,7 +1041,7 @@ export const MapViewer = () => {
       conditions: [],
       hpMax: monster.hit_points,
       hpCurrent: monster.hit_points,
-      imageUrl: monster.image_url || undefined,
+      imageUrl: (monster as any).token_image_url || monster.image_url || undefined,
       speedFeet: monster.speed,
       sizeInCells,
       faction: 'enemy',
