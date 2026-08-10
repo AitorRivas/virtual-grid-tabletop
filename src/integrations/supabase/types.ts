@@ -549,6 +549,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_creature_stats: {
+        Row: {
+          created_at: string
+          favorite: boolean
+          id: string
+          last_used_at: string | null
+          monster_id: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          favorite?: boolean
+          id?: string
+          last_used_at?: string | null
+          monster_id: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          favorite?: boolean
+          id?: string
+          last_used_at?: string | null
+          monster_id?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_creature_stats_monster_id_fkey"
+            columns: ["monster_id"]
+            isOneToOne: false
+            referencedRelation: "monsters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_creature_stats_monster_id_fkey"
+            columns: ["monster_id"]
+            isOneToOne: false
+            referencedRelation: "monsters_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -569,7 +617,90 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      monsters_library: {
+        Row: {
+          armor_class: number | null
+          challenge_rating: string | null
+          created_at: string | null
+          dexterity: number | null
+          has_image: boolean | null
+          has_lair: boolean | null
+          has_legendary: boolean | null
+          has_mythic: boolean | null
+          has_reactions: boolean | null
+          has_spellcasting: boolean | null
+          has_token: boolean | null
+          hit_points: number | null
+          id: string | null
+          initiative_bonus: number | null
+          is_public: boolean | null
+          name: string | null
+          size: Database["public"]["Enums"]["creature_size"] | null
+          source: string | null
+          speed: number | null
+          subtype: string | null
+          token_color: Database["public"]["Enums"]["token_color"] | null
+          token_image_url: string | null
+          token_size: number | null
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          armor_class?: number | null
+          challenge_rating?: string | null
+          created_at?: string | null
+          dexterity?: number | null
+          has_image?: never
+          has_lair?: never
+          has_legendary?: never
+          has_mythic?: never
+          has_reactions?: never
+          has_spellcasting?: never
+          has_token?: never
+          hit_points?: number | null
+          id?: string | null
+          initiative_bonus?: number | null
+          is_public?: boolean | null
+          name?: string | null
+          size?: Database["public"]["Enums"]["creature_size"] | null
+          source?: string | null
+          speed?: number | null
+          subtype?: string | null
+          token_color?: Database["public"]["Enums"]["token_color"] | null
+          token_image_url?: string | null
+          token_size?: number | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          armor_class?: number | null
+          challenge_rating?: string | null
+          created_at?: string | null
+          dexterity?: number | null
+          has_image?: never
+          has_lair?: never
+          has_legendary?: never
+          has_mythic?: never
+          has_reactions?: never
+          has_spellcasting?: never
+          has_token?: never
+          hit_points?: number | null
+          id?: string | null
+          initiative_bonus?: number | null
+          is_public?: boolean | null
+          name?: string | null
+          size?: Database["public"]["Enums"]["creature_size"] | null
+          source?: string | null
+          speed?: number | null
+          subtype?: string | null
+          token_color?: Database["public"]["Enums"]["token_color"] | null
+          token_image_url?: string | null
+          token_size?: number | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

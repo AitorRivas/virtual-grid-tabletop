@@ -7,6 +7,9 @@ import { LibraryGroupsBar } from './library/LibraryGroupsBar';
 import { GroupAssignMenu } from './library/GroupAssignMenu';
 import { EncounterManager } from './EncounterManager';
 import { BestiaryImportDialog } from './library/BestiaryImportDialog';
+import { CreatureLibrary } from './library/CreatureLibrary';
+import { useCreatureLibrary, CreatureListItem } from '@/hooks/useCreatureLibrary';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Character, Monster, DND_RACES, DND_CLASSES, MONSTER_TYPES, CHALLENGE_RATINGS,
   ALIGNMENTS, CREATURE_SIZES, getModifier, formatModifier, TokenColor, CreatureSize,
@@ -37,7 +40,11 @@ interface CharacterManagerProps {
 }
 
 export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: CharacterManagerProps) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
+  const queryClient = useQueryClient();
+  const { registerUsage, fetchFullCreature } = useCreatureLibrary();
+  const [sheetEditMode, setSheetEditMode] = useState(false);
+  const refreshLibrary = () => queryClient.invalidateQueries({ queryKey: ['creature-library'] });
   const { characters, loading: loadingChars, createCharacter, updateCharacter, deleteCharacter, cloneCharacter } = useCharacters();
   const { monsters, loading: loadingMonsters, createMonster, updateMonster, deleteMonster, cloneMonster, refetch: refetchMonsters } = useExtendedMonsters();
   const [showNewCharacter, setShowNewCharacter] = useState(false);
@@ -179,6 +186,22 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
     }
   };
 
+  /** Abre la ficha detallada: solo aquí se descarga la ilustración y los datos completos. */
+  const handleOpenCreatureSheet = async (id: string, editMode: boolean) => {
+    const full = await fetchFullCreature(id);
+    if (!full) return;
+    setSheetEditMode(editMode);
+    setSelectedMonster(full);
+  };
+
+  /** Crear token desde la biblioteca: usa la ficha completa y suma el contador de uso. */
+  const handleCreateTokenFromLibrary = async (creature: CreatureListItem) => {
+    const full = await fetchFullCreature(creature.id);
+    if (!full) return;
+    onAddMonsterToMap(full as any);
+    registerUsage(creature.id);
+  };
+
   // New character form state
   const [charForm, setCharForm] = useState({
     name: '',
@@ -264,6 +287,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
       image_url: monsterForm.image_url.trim() || null
     } as any);
     setShowNewMonster(false);
+    refreshLibrary();
     setMonsterForm({
       name: '', type: 'Beast', size: 'medium', challenge_rating: '1',
       strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10,
@@ -683,7 +707,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
         </TabsContent>
 
         <TabsContent value="monsters" className="m-0 px-3 pt-3 gap-2 min-h-0 overflow-hidden data-[state=inactive]:hidden data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1">
-          <BestiaryImportDialog monsters={monsters} onImported={() => { refetchMonsters(); }} />
+          <BestiaryImportDialog monsters={monsters} onImported={() => { refetchMonsters(); refreshLibrary(); }} />
           <Dialog open={showNewMonster} onOpenChange={setShowNewMonster}>
             <DialogTrigger asChild>
               <Button size="sm" className="w-full gap-2" variant="secondary">
@@ -886,141 +910,22 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             onSelectGroup={setMonsterGroupFilter}
           />
 
-          {/* Search & Filter Controls */}
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar monstruo..." 
-                value={monsterSearch} 
-                onChange={e => setMonsterSearch(e.target.value)}
-                className="pl-8 h-8 text-xs"
-              />
-            </div>
-            <div className="flex gap-1.5 items-center">
-              <Select value={monsterTypeFilter} onValueChange={setMonsterTypeFilter}>
-                <SelectTrigger className="h-7 text-xs flex-1">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  {MONSTER_TYPES.map(t => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={monsterCrFilter} onValueChange={setMonsterCrFilter}>
-                <SelectTrigger className="h-7 text-xs w-20">
-                  <SelectValue placeholder="CR" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">CR</SelectItem>
-                  {CHALLENGE_RATINGS.map(cr => (
-                    <SelectItem key={cr} value={cr}>{cr}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={monsterSortField} onValueChange={(v) => setMonsterSortField(v as any)}>
-                <SelectTrigger className="h-7 text-xs w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Nombre</SelectItem>
-                  <SelectItem value="cr">CR</SelectItem>
-                  <SelectItem value="type">Tipo</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => setMonsterSortAsc(!monsterSortAsc)}>
-                {monsterSortAsc ? <SortAsc className="w-3.5 h-3.5" /> : <SortDesc className="w-3.5 h-3.5" />}
-              </Button>
-            </div>
-          </div>
+          {/* Catálogo de criaturas (buscador, filtros, vistas y cuadrícula virtualizada) */}
+          <CreatureLibrary
+            userId={user?.id}
+            onOpenSheet={handleOpenCreatureSheet}
+            onCreateToken={handleCreateTokenFromLibrary}
+            canEditCreature={(c) => !c.is_public || isAdmin}
+            onClone={async (id) => {
+              const full = await fetchFullCreature(id);
+              if (full) { await cloneMonster(full); refreshLibrary(); }
+            }}
+            onDelete={async (id) => {
+              const ok = await deleteMonster(id);
+              if (ok) refreshLibrary();
+            }}
+          />
 
-          <ScrollArea className="flex-1 min-h-0">
-            {loadingMonsters ? (
-              <p className="text-center text-muted-foreground py-4">Cargando...</p>
-            ) : filteredMonsters.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                {monsters.length === 0 ? 'No tienes monstruos' : 'Sin resultados'}
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {filteredMonsters.map(monster => (
-                  <div key={monster.id} className="p-3 bg-muted/50 rounded-lg border border-border hover:border-primary/50 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <button 
-                        className="flex items-center gap-2 text-left flex-1 min-w-0"
-                        onClick={() => setSelectedMonster(monster)}
-                      >
-                        {monster.image_url ? (
-                          <img 
-                            src={monster.image_url} 
-                            alt={monster.name}
-                            className="w-8 h-8 rounded-full border-2 border-foreground/30 object-cover flex-shrink-0"
-                          />
-                        ) : (
-                          <div
-                            className="w-8 h-8 rounded-full border-2 border-foreground/30 flex-shrink-0"
-                            style={{ backgroundColor: monster.token_color === 'black' ? '#1a1a1a' : monster.token_color }}
-                          />
-                        )}
-                        <div className="min-w-0">
-                          <span className="font-semibold text-sm block truncate">
-                            {monster.name}
-                            {monster.is_public && (
-                              <span className="ml-1.5 align-middle text-[10px] font-normal text-primary border border-primary/40 rounded px-1 py-px">
-                                Pública
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-xs text-muted-foreground block">
-                            {getMonsterTypeLabel(monster.type)} {getCreatureSizeLabel(monster.size)} · CR {monster.challenge_rating}
-                          </span>
-                        </div>
-                      </button>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <Button 
-                          size="icon" 
-                          variant="default" 
-                          className="h-7 w-7" 
-                          title="Añadir al mapa"
-                          onClick={() => onAddMonsterToMap(monster as any)}
-                        >
-                          <MapPin className="w-4 h-4" />
-                        </Button>
-                        <GroupAssignMenu entityId={monster.id} entityType="monster" />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-7 w-7">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedMonster(monster)}>
-                              <FileText className="w-4 h-4 mr-2" /> Ver ficha
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => cloneMonster(monster)}>
-                              <Copy className="w-4 h-4 mr-2" /> Clonar
-                            </DropdownMenuItem>
-                            {(!monster.is_public || isAdmin) && (
-                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMonster(monster.id)}>
-                                <Trash2 className="w-4 h-4 mr-2" /> Eliminar
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-xs">
-                      <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> CA {monster.armor_class}</span>
-                      <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> PG {monster.hit_points}</span>
-                      <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {monster.speed}ft</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
 
           {/* Monster Sheet Dialog */}
           <Dialog open={!!selectedMonster} onOpenChange={(open) => !open && setSelectedMonster(null)}>
@@ -1034,10 +939,11 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
                     const success = await updateMonster(m.id, m);
                     if (success) {
                       setSelectedMonster(null);
+                      refreshLibrary();
                     }
                     return success;
                   }}
-                  initialReadOnly={true}
+                  initialReadOnly={!sheetEditMode}
                 />
               )}
             </DialogContent>
