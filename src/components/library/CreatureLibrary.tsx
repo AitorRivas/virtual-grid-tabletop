@@ -18,6 +18,8 @@ import {
 import {
   useCreatureLibrary, CreatureListItem, crToNumber, normalizeText,
 } from '@/hooks/useCreatureLibrary';
+import { useLibraryGroups } from '@/hooks/useLibraryGroups';
+import { GroupAssignMenu } from './GroupAssignMenu';
 import { cn } from '@/lib/utils';
 
 type QuickView = 'all' | 'favorites' | 'mine' | 'imported' | 'recent' | 'used';
@@ -66,6 +68,8 @@ interface CreatureLibraryProps {
   canEditCreature: (creature: CreatureListItem) => boolean;
   onClone: (id: string) => void;
   onDelete: (id: string) => void;
+  /** null = todos, "__none__" = sin grupo, otro = id de grupo */
+  groupFilter?: string | null;
 }
 
 export const CreatureLibrary = ({
@@ -75,8 +79,19 @@ export const CreatureLibrary = ({
   canEditCreature,
   onClone,
   onDelete,
+  groupFilter = null,
 }: CreatureLibraryProps) => {
   const { creatures, loading, statsById, sources, toggleFavorite } = useCreatureLibrary();
+  const { links } = useLibraryGroups();
+
+  const groupedIds = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    links.filter(l => l.entity_type === 'monster').forEach(l => {
+      if (!map.has(l.entity_id)) map.set(l.entity_id, new Set());
+      map.get(l.entity_id)!.add(l.group_id);
+    });
+    return map;
+  }, [links]);
 
   const [search, setSearch] = useState('');
   const [quickView, setQuickView] = useState<QuickView>('all');
@@ -130,6 +145,12 @@ export const CreatureLibrary = ({
       }
       if (specials.some(k => !(c as any)[k])) return false;
 
+      if (groupFilter) {
+        const gs = groupedIds.get(c.id);
+        if (groupFilter === '__none__') { if (gs && gs.size) return false; }
+        else if (!gs?.has(groupFilter)) return false;
+      }
+
       if (quickView === 'favorites' && !statsById.get(c.id)?.favorite) return false;
       if (quickView === 'mine' && (c.source || c.user_id !== userId)) return false;
       if (quickView === 'imported' && !c.source) return false;
@@ -152,7 +173,7 @@ export const CreatureLibrary = ({
     });
 
     return list;
-  }, [creatures, search, searchIndex, typeFilter, sizeFilter, crFilter, sourceFilter, specials, quickView, sort, statsById, userId]);
+  }, [creatures, search, searchIndex, typeFilter, sizeFilter, crFilter, sourceFilter, specials, quickView, sort, statsById, userId, groupFilter, groupedIds]);
 
   // Cuadrícula virtualizada: solo se montan las tarjetas visibles
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -394,6 +415,7 @@ export const CreatureLibrary = ({
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                             )}
+                            <GroupAssignMenu entityId={creature.id} entityType="monster" />
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-7 w-7" title="Más">
