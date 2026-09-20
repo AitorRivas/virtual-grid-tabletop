@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
+import { useCreatureLibrary } from '@/hooks/useCreatureLibrary';
 import { CharacterSheet } from './character-sheet';
 import { MonsterSheet } from './monster-sheet';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -30,6 +31,7 @@ const parseDetail = (e: Event): { id: string; tab?: string } | null => {
 export const GlobalSheetOpener = () => {
   const { characters, updateCharacter } = useCharacters();
   const { monsters, updateMonster } = useExtendedMonsters();
+  const { fetchFullCreature } = useCreatureLibrary();
   const [character, setCharacter] = useState<ExtendedCharacter | null>(null);
   const [characterTab, setCharacterTab] = useState<string | undefined>(undefined);
   const [monster, setMonster] = useState<ExtendedMonster | null>(null);
@@ -45,10 +47,12 @@ export const GlobalSheetOpener = () => {
         setCharacter(c as ExtendedCharacter);
       }
     };
-    const openMonster = (e: Event) => {
+    const openMonster = async (e: Event) => {
       const payload = parseDetail(e);
       if (!payload) return;
-      const m = monsters.find(x => x.id === payload.id);
+      const listedMonster = monsters.find(x => x.id === payload.id);
+      if (!listedMonster) return;
+      const m = await fetchFullCreature(payload.id);
       if (m) {
         setMonsterTab(payload.tab);
         setMonster(m as ExtendedMonster);
@@ -60,7 +64,7 @@ export const GlobalSheetOpener = () => {
       window.removeEventListener('vtt:open-character-sheet', openCharacter);
       window.removeEventListener('vtt:open-monster-sheet', openMonster);
     };
-  }, [characters, monsters]);
+  }, [characters, monsters, fetchFullCreature]);
 
   return (
     <>
