@@ -145,6 +145,12 @@ export const CreatureLibrary = ({
       }
       if (specials.some(k => !(c as any)[k])) return false;
 
+      if (groupFilter) {
+        const gs = groupedIds.get(c.id);
+        if (groupFilter === '__none__') { if (gs && gs.size) return false; }
+        else if (!gs?.has(groupFilter)) return false;
+      }
+
       if (quickView === 'favorites' && !statsById.get(c.id)?.favorite) return false;
       if (quickView === 'mine' && (c.source || c.user_id !== userId)) return false;
       if (quickView === 'imported' && !c.source) return false;
@@ -167,7 +173,7 @@ export const CreatureLibrary = ({
     });
 
     return list;
-  }, [creatures, search, searchIndex, typeFilter, sizeFilter, crFilter, sourceFilter, specials, quickView, sort, statsById, userId]);
+  }, [creatures, search, searchIndex, typeFilter, sizeFilter, crFilter, sourceFilter, specials, quickView, sort, statsById, userId, groupFilter, groupedIds]);
 
   // Cuadrícula virtualizada: solo se montan las tarjetas visibles
   const scrollRef = useRef<HTMLDivElement>(null);

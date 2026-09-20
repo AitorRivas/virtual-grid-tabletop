@@ -916,6 +916,7 @@ export const CharacterManager = ({ onAddCharacterToMap, onAddMonsterToMap }: Cha
             onOpenSheet={handleOpenCreatureSheet}
             onCreateToken={handleCreateTokenFromLibrary}
             canEditCreature={(c) => !c.is_public || isAdmin}
+            groupFilter={monsterGroupFilter}
             onClone={async (id) => {
               const full = await fetchFullCreature(id);
               if (full) { await cloneMonster(full); refreshLibrary(); }
