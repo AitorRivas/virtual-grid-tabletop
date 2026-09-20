@@ -18,6 +18,8 @@ import {
 import {
   useCreatureLibrary, CreatureListItem, crToNumber, normalizeText,
 } from '@/hooks/useCreatureLibrary';
+import { useLibraryGroups } from '@/hooks/useLibraryGroups';
+import { GroupAssignMenu } from './GroupAssignMenu';
 import { cn } from '@/lib/utils';
 
 type QuickView = 'all' | 'favorites' | 'mine' | 'imported' | 'recent' | 'used';
@@ -66,6 +68,8 @@ interface CreatureLibraryProps {
   canEditCreature: (creature: CreatureListItem) => boolean;
   onClone: (id: string) => void;
   onDelete: (id: string) => void;
+  /** null = todos, "__none__" = sin grupo, otro = id de grupo */
+  groupFilter?: string | null;
 }
 
 export const CreatureLibrary = ({
@@ -75,8 +79,19 @@ export const CreatureLibrary = ({
   canEditCreature,
   onClone,
   onDelete,
+  groupFilter = null,
 }: CreatureLibraryProps) => {
   const { creatures, loading, statsById, sources, toggleFavorite } = useCreatureLibrary();
+  const { links } = useLibraryGroups();
+
+  const groupedIds = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    links.filter(l => l.entity_type === 'monster').forEach(l => {
+      if (!map.has(l.entity_id)) map.set(l.entity_id, new Set());
+      map.get(l.entity_id)!.add(l.group_id);
+    });
+    return map;
+  }, [links]);
 
   const [search, setSearch] = useState('');
   const [quickView, setQuickView] = useState<QuickView>('all');
