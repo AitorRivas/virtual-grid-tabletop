@@ -22,6 +22,22 @@ let lastLoadErrorToastAt = 0;
 const MONSTER_LOAD_ERROR_TOAST_COOLDOWN_MS = 30_000;
 const MONSTERS_QUERY_STALE_TIME_MS = 60_000;
 
+// Do not include image_url/token_image_url here. User-created creatures can store
+// multi-megabyte data URLs in both columns, and selecting them for every consumer
+// made the shared list query exceed the database statement timeout. Screens that
+// need the assets fetch one complete creature on demand through useCreatureLibrary.
+const MONSTER_LIST_COLUMNS = [
+  'id', 'user_id', 'name', 'type', 'subtype', 'size', 'alignment',
+  'challenge_rating', 'xp', 'proficiency_bonus', 'strength', 'dexterity',
+  'constitution', 'intelligence', 'wisdom', 'charisma', 'armor_class',
+  'hit_points', 'hit_dice', 'initiative_bonus', 'speed', 'speeds', 'senses',
+  'languages', 'resistances', 'immunities', 'vulnerabilities', 'defense_notes',
+  'saves', 'skills', 'traits', 'actions', 'bonus_actions', 'reactions',
+  'legendary_actions', 'lair_actions', 'mythic_actions', 'spellcasting',
+  'special_equipment', 'token_color', 'token_size', 'notes', 'external_id',
+  'source', 'source_version', 'is_public', 'created_at', 'updated_at',
+].join(',');
+
 const parseMonsterFromDB = (data: any): ExtendedMonster => {
   return {
     id: data.id,
@@ -86,7 +102,7 @@ export const useExtendedMonsters = () => {
   const fetchMonsters = async (): Promise<ExtendedMonster[]> => {
     const { data, error } = await supabase
       .from('monsters')
-      .select('*')
+      .select(MONSTER_LIST_COLUMNS)
       .order('created_at', { ascending: false });
 
     if (error) {

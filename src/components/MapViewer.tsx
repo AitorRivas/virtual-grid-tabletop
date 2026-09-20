@@ -21,6 +21,7 @@ import { useGameState, GlobalCombatState } from '@/hooks/useGameState';
 import { useAuth } from '@/hooks/useAuth';
 import { useCharacters } from '@/hooks/useCharacters';
 import { useExtendedMonsters } from '@/hooks/useExtendedMonsters';
+import { useCreatureLibrary } from '@/hooks/useCreatureLibrary';
 import { GridConfig, CellState, CREATURE_SIZE_CELLS, CREATURE_SIZE_PIXELS } from '@/lib/gridEngine/types';
 import { percentToCell, cellToPercent, snapToGrid } from '@/lib/gridEngine';
 import { type CombatTooltipData, localizeSize, localizeType } from './CombatTokenTooltipContent';
@@ -83,6 +84,7 @@ export const MapViewer = () => {
   const { isGuest, signOut } = useAuth();
   const { characters: libraryCharacters } = useCharacters();
   const { monsters: libraryMonsters } = useExtendedMonsters();
+  const { fetchFullCreature } = useCreatureLibrary();
   const {
     maps,
     activeMapId,
@@ -838,12 +840,14 @@ export const MapViewer = () => {
     ));
   }, []);
 
-  const addMonsterAt = useCallback((monster: Monster, xPercent: number, yPercent: number) => {
-    handleAddMonsterToMap(monster);
+  const addMonsterAt = useCallback(async (monster: Monster, xPercent: number, yPercent: number) => {
+    const fullMonster = await fetchFullCreature(monster.id);
+    if (!fullMonster) return;
+    handleAddMonsterToMap(fullMonster as Monster);
     setTokens(prev => prev.map((t, idx) =>
       idx === prev.length - 1 ? { ...t, x: xPercent, y: yPercent } : t
     ));
-  }, []);
+  }, [fetchFullCreature]);
 
   // Smooth-center the camera on a token (uses TransformWrapper API).
   const centerCameraOnToken = useCallback((token: TokenData) => {
