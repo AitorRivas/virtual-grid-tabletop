@@ -415,6 +415,7 @@ export const CreatureLibrary = ({
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                             )}
+                            <GroupAssignMenu entityId={creature.id} entityType="monster" />
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-7 w-7" title="Más">
